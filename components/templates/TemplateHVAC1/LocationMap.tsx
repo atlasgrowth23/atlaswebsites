@@ -6,94 +6,116 @@ interface LocationMapProps {
 }
 
 const LocationMap: React.FC<LocationMapProps> = ({ company }) => {
-  const mapApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-  const mapUrl = company.place_id
-    ? `https://www.google.com/maps/embed/v1/place?key=${mapApiKey}&q=place_id:${company.place_id}`
-    : `https://www.google.com/maps/embed/v1/place?key=${mapApiKey}&q=${encodeURIComponent(
-        `${company.name}, ${company.address || ''} ${company.city}, ${company.state} ${company.zip_code || ''}`
-      )}`;
+  // The place_id is used to embed a Google Map
+  // Note: This requires a Google Maps API key to be set in the environment variables
+  const mapUrl = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 
+    ? `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=place_id:${company.place_id}`
+    : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(`${company.address || ''} ${company.city}, ${company.state} ${company.zip_code || ''}`)}`;
 
   return (
-    <section id="location" className="py-16 bg-slate-50">
+    <section className="py-16" id="contact">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold">Our Location</h2>
-          <p className="text-gray-600 mt-2">Serving {company.city}, {company.state} and surrounding areas</p>
+          <h2 className="text-3xl font-bold mb-4">Our Location</h2>
+          <p className="text-gray-600 max-w-3xl mx-auto">
+            {company.name} proudly serves {company.city}, {company.state} and surrounding areas.
+          </p>
         </div>
-        
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          {mapApiKey ? (
-            <div className="aspect-w-16 aspect-h-9">
-              <iframe
-                title={`${company.name} location map`}
-                width="100%"
-                height="450"
-                style={{ border: 0 }}
-                loading="lazy"
-                allowFullScreen
-                src={mapUrl}
-              ></iframe>
-            </div>
-          ) : (
-            <div className="h-64 bg-slate-200 flex items-center justify-center">
-              <p className="text-gray-600">Map will be displayed here</p>
-            </div>
-          )}
-          
-          <div className="p-6">
-            <h3 className="text-xl font-bold mb-4">{company.name}</h3>
-            <div className="space-y-2">
-              {company.address && (
-                <p className="flex items-start">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-map-pin mr-3 text-slate-700 mt-1">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          {/* Contact Information */}
+          <div className="bg-white p-8 rounded-lg shadow-md">
+            <h3 className="text-2xl font-bold mb-6">Contact Information</h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-start">
+                <div className="text-primary mr-4 mt-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                   </svg>
-                  <span>
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-700">Address</div>
+                  <address className="not-italic text-gray-600">
                     {company.address}<br />
-                    {company.city}, {company.state} {company.zip_code || ''}
-                  </span>
-                </p>
-              )}
+                    {company.city}, {company.state} {company.zip_code}
+                  </address>
+                </div>
+              </div>
               
               {company.phone && (
-                <p className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-phone mr-3 text-slate-700">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                  </svg>
-                  {company.phone}
-                </p>
+                <div className="flex items-start">
+                  <div className="text-primary mr-4 mt-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-700">Phone</div>
+                    <div className="text-gray-600">
+                      <a href={`tel:${company.phone}`} className="hover:text-primary">{company.phone}</a>
+                    </div>
+                  </div>
+                </div>
               )}
               
               {company.email && (
-                <p className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-mail mr-3 text-slate-700">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                    <polyline points="22,6 12,13 2,6"></polyline>
-                  </svg>
-                  {company.email}
-                </p>
+                <div className="flex items-start">
+                  <div className="text-primary mr-4 mt-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-700">Email</div>
+                    <div className="text-gray-600">
+                      <a href={`mailto:${company.email}`} className="hover:text-primary">{company.email}</a>
+                    </div>
+                  </div>
+                </div>
               )}
               
-              {company.hours && (
-                <div className="flex items-start mt-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-clock mr-3 text-slate-700 mt-1">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
+              {company.hours && Object.keys(company.hours).length > 0 && (
+                <div className="flex items-start">
+                  <div className="text-primary mr-4 mt-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
                   <div>
-                    <p className="font-medium mb-1">Business Hours</p>
-                    <ul className="space-y-1">
+                    <div className="font-semibold text-gray-700">Business Hours</div>
+                    <div className="text-gray-600 text-sm">
                       {Object.entries(company.hours).map(([day, hours]) => (
-                        <li key={day}>
-                          <span className="font-medium">{day}:</span> {hours}
-                        </li>
+                        <div key={day} className="flex justify-between w-full">
+                          <span className="mr-4">{day}:</span>
+                          <span>{hours}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
+          </div>
+          
+          {/* Map */}
+          <div className="h-96 bg-gray-200 rounded-lg overflow-hidden">
+            {company.place_id ? (
+              <iframe
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                style={{ border: 0 }}
+                src={mapUrl}
+                allowFullScreen
+                title={`${company.name} location`}
+              ></iframe>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                Map placeholder - Google Maps API key required
+              </div>
+            )}
           </div>
         </div>
       </div>

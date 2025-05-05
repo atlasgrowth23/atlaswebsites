@@ -1,17 +1,15 @@
-import { GetStaticPaths, GetStaticProps, NextPage } from 'next';
+import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import { createClient } from '@/lib/supabase/client';
 import Layout from '@/components/shared/Layout';
+import Header from '@/components/templates/TemplateHVAC1/Header';
+import Hero from '@/components/templates/TemplateHVAC1/Hero';
+import Services from '@/components/templates/TemplateHVAC1/Services';
+import About from '@/components/templates/TemplateHVAC1/About';
+import ReviewsSection from '@/components/templates/TemplateHVAC1/ReviewsSection';
+import LocationMap from '@/components/templates/TemplateHVAC1/LocationMap';
+import ContactFooter from '@/components/templates/TemplateHVAC1/ContactFooter';
 import { Company, Review } from '@/types';
-
-// These will be used later for the complete implementation
-// import Header from '@/components/templates/TemplateHVAC1/Header';
-// import Hero from '@/components/templates/TemplateHVAC1/Hero';
-// import About from '@/components/templates/TemplateHVAC1/About';
-// import Services from '@/components/templates/TemplateHVAC1/Services';
-// import ReviewsSection from '@/components/templates/TemplateHVAC1/ReviewsSection';
-// import LocationMap from '@/components/templates/TemplateHVAC1/LocationMap';
-// import ContactFooter from '@/components/templates/TemplateHVAC1/ContactFooter';
 
 interface CompanyPageProps {
   company: Company;
@@ -19,140 +17,107 @@ interface CompanyPageProps {
   logoUrl: string | null;
 }
 
-const CompanyPage: NextPage<CompanyPageProps> = ({ company, reviews, logoUrl }) => {
+export default function CompanyPage({ company, reviews, logoUrl }: CompanyPageProps) {
   if (!company) {
-    return (
-      <Layout>
-        <div className="container mx-auto py-12 px-4 text-center">
-          <h1 className="text-3xl font-bold">Company not found</h1>
-        </div>
-      </Layout>
-    );
+    return <div>Company not found</div>;
   }
+
+  const title = `${company.name} | HVAC Services in ${company.city}, ${company.state}`;
+  const description = company.description || 
+    `${company.name} provides professional HVAC services in ${company.city}, ${company.state}. 
+    Contact us today for heating, cooling, and ventilation solutions.`;
 
   return (
-    <Layout>
-      <Head>
-        <title>{company.name} | HVAC Services</title>
-        <meta 
-          name="description" 
-          content={`${company.name} provides professional HVAC services in ${company.city}, ${company.state}.`} 
-        />
-      </Head>
-
-      <div className="container mx-auto">
-        <h1 className="text-4xl font-bold text-center py-12">{company.name}</h1>
-        
-        {/* This is a placeholder. The actual implementation will use the component imports */}
-        <div className="space-y-8 p-4">
-          <section className="bg-slate-100 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold mb-4">About {company.name}</h2>
-            <p>Serving {company.city}, {company.state} with professional HVAC services.</p>
-          </section>
-          
-          <section className="bg-slate-100 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
-            {reviews.length > 0 ? (
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <div key={review.review_id} className="border-b pb-4">
-                    <div className="flex items-center mb-2">
-                      <span className="font-medium">{review.reviewer_name}</span>
-                      <span className="ml-2 text-yellow-500">{'★'.repeat(review.stars)}</span>
-                    </div>
-                    <p>{review.text}</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p>No reviews available.</p>
-            )}
-          </section>
-          
-          <section className="bg-slate-100 p-6 rounded-lg">
-            <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
-            <p>Business ID: {company.biz_id}</p>
-            <p>Location: {company.city}, {company.state}</p>
-          </section>
-        </div>
-      </div>
+    <Layout title={title} description={description}>
+      <Header company={company} logoUrl={logoUrl} />
+      <Hero company={company} />
+      <Services company={company} />
+      <About company={company} />
+      <ReviewsSection reviews={reviews} companyName={company.name} />
+      <LocationMap company={company} />
+      <ContactFooter company={company} />
     </Layout>
   );
-};
+}
 
 export const getStaticPaths: GetStaticPaths = async () => {
+  // Connect to Supabase and fetch all company slugs
   const supabase = createClient();
-  
-  // Fetch company slugs from Supabase
-  const { data, error } = await supabase
+  const { data: companies, error } = await supabase
     .from('companies')
-    .select('slug::text as slug')
-    .limit(10); // Limit during development
-  
+    .select('slug');
+
   if (error) {
-    console.error('Error fetching company slugs:', error);
+    console.error('Error fetching companies:', error);
     return {
       paths: [],
-      fallback: 'blocking'
+      fallback: false,
     };
   }
-  
-  // Generate paths from slugs
-  const paths = data.map((company) => ({
-    params: { slug: company.slug }
-  }));
-  
+
+  // Create paths for each company slug
+  const paths = companies?.map((company) => ({
+    params: { slug: company.slug },
+  })) || [];
+
   return {
     paths,
-    fallback: 'blocking' // Allows for generation of new pages on-demand
+    fallback: 'blocking', // Show a loading state until the page is generated
   };
 };
 
 export const getStaticProps: GetStaticProps<CompanyPageProps> = async ({ params }) => {
   const slug = params?.slug as string;
+  
+  // Connect to Supabase
   const supabase = createClient();
   
-  // Fetch company data
-  const { data: companyData, error: companyError } = await supabase
+  // Fetch company data by slug
+  const { data: company, error: companyError } = await supabase
     .from('companies')
     .select('*')
     .eq('slug', slug)
     .single();
-  
-  if (companyError || !companyData) {
-    console.error('Error fetching company data:', companyError);
+
+  if (companyError || !company) {
+    console.error('Error fetching company:', companyError);
     return {
-      notFound: true
+      notFound: true,
     };
   }
-  
-  // Fetch reviews for the company
-  const { data: reviewsData, error: reviewsError } = await supabase
+
+  // Fetch reviews for this company
+  const { data: reviews, error: reviewsError } = await supabase
     .from('reviews')
     .select('*')
-    .eq('biz_id', companyData.biz_id)
-    .eq('stars', 5) // Only 5-star reviews
-    .limit(5)
+    .eq('biz_id', company.biz_id)
     .order('published_at_date', { ascending: false });
-  
+
   if (reviewsError) {
     console.error('Error fetching reviews:', reviewsError);
-    return {
-      notFound: true
-    };
+    // Continue without reviews
   }
-  
-  // Determine logo URL
-  const logoUrl = companyData.logo_override || companyData.logo || null;
-  
+
+  // Get company logo from Supabase Storage if it exists
+  let logoUrl = null;
+  if (company.logo_override) {
+    logoUrl = company.logo_override;
+  } else if (company.logo) {
+    const { data: logoData } = await supabase
+      .storage
+      .from('company-logos')
+      .getPublicUrl(company.logo);
+    
+    logoUrl = logoData?.publicUrl || null;
+  }
+
   return {
     props: {
-      company: companyData,
-      reviews: reviewsData || [],
-      logoUrl
+      company,
+      reviews: reviews || [],
+      logoUrl,
     },
-    revalidate: 3600 // Revalidate once per hour
+    // Revalidate the page every hour (3600 seconds)
+    revalidate: 3600,
   };
 };
-
-export default CompanyPage;

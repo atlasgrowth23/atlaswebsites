@@ -7,66 +7,54 @@ interface AboutProps {
 
 const About: React.FC<AboutProps> = ({ company }) => {
   return (
-    <section id="about" className="py-16">
+    <section className="py-16" id="about">
       <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold mb-6 text-center">About {company.name}</h2>
-          
-          <div className="bg-white shadow-md rounded-lg p-8">
-            {company.description ? (
-              <div dangerouslySetInnerHTML={{ __html: company.description }} />
-            ) : (
-              <div className="space-y-4">
-                <p>
-                  {company.name} is a trusted HVAC contractor serving {company.city}, {company.state} and surrounding areas. 
-                  We specialize in providing high-quality heating, ventilation, and air conditioning services to ensure 
-                  your comfort year-round.
-                </p>
-                <p>
-                  With years of experience in the industry, our team of certified technicians is dedicated to delivering 
-                  exceptional service, whether you need installation, maintenance, or repair for your HVAC systems.
-                </p>
-                <p>
-                  We pride ourselves on our commitment to customer satisfaction, affordable pricing, and reliable solutions 
-                  that keep your home or business comfortable in all seasons.
-                </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div>
+            <h2 className="text-3xl font-bold mb-6">About {company.name}</h2>
+            <p className="text-gray-600 mb-4">
+              {company.description || 
+                `We are a trusted HVAC service provider serving ${company.city}, ${company.state} and surrounding areas. 
+                With years of experience in the industry, we've built our reputation on quality workmanship, 
+                reliable service, and customer satisfaction.`
+              }
+            </p>
+            <p className="text-gray-600 mb-4">
+              Our team of certified HVAC technicians are dedicated to providing prompt, professional service 
+              for all your heating, cooling, and ventilation needs. Whether you need a new system installation, 
+              emergency repairs, or regular maintenance, we have the skills and experience to get the job done right.
+            </p>
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold mb-3">Why Choose Us?</h3>
+              <ul className="space-y-2">
+                <li className="flex items-start">
+                  <span className="text-primary mr-2">✓</span>
+                  <span>Licensed and insured professionals</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary mr-2">✓</span>
+                  <span>Upfront pricing with no hidden fees</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary mr-2">✓</span>
+                  <span>Prompt, reliable service</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="text-primary mr-2">✓</span>
+                  <span>Satisfaction guaranteed</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="bg-gray-200 rounded-lg h-96 overflow-hidden">
+              <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                <span>Company Image</span>
               </div>
-            )}
-            
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-award">
-                    <circle cx="12" cy="8" r="7"></circle>
-                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
-                  </svg>
-                </div>
-                <h3 className="font-bold mb-2">Experience</h3>
-                <p className="text-sm text-gray-600">Years of industry expertise</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-users">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                  </svg>
-                </div>
-                <h3 className="font-bold mb-2">Certified Team</h3>
-                <p className="text-sm text-gray-600">Professional technicians</p>
-              </div>
-              
-              <div className="text-center">
-                <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="feather feather-thumbs-up">
-                    <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
-                  </svg>
-                </div>
-                <h3 className="font-bold mb-2">Customer Satisfaction</h3>
-                <p className="text-sm text-gray-600">Quality service guaranteed</p>
-              </div>
+            </div>
+            <div className="absolute -bottom-6 -left-6 bg-primary text-white p-6 rounded-lg shadow-lg">
+              <div className="text-2xl font-bold mb-1">15+</div>
+              <div className="text-sm">Years of Experience</div>
             </div>
           </div>
         </div>
