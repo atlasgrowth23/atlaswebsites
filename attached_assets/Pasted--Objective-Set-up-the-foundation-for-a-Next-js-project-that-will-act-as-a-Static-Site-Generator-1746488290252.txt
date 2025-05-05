@@ -1,0 +1,56 @@
+**Objective:**
+Set up the foundation for a Next.js project that will act as a Static Site Generator (SSG) for HVAC contractor websites. Data will come from an external Supabase database.
+
+**IMPORTANT Constraints:**
+* Use **Next.js with the Pages Router**. DO NOT use the App Router.
+* Use TypeScript.
+* Use Tailwind CSS for styling.
+* DO NOT include any backend server boilerplate (like Express, Drizzle ORM, separate /server folders). This project's only backend aspect will be Next.js API routes if needed later (like for tracking) and the build-time data fetching functions.
+* DO NOT use Vite.
+
+**Step-by-Step Instructions:**
+
+1.  **Initialize Project:**
+    * Run `npx create-next-app@latest . --ts --tailwind --eslint --app-router no --src-dir no --import-alias "@/*"` to set up the basic Next.js Pages Router project in the current directory.
+2.  **Install Core Dependencies:**
+    * Run `npm install @supabase/supabase-js @supabase/ssr @supabase/auth-ui-react @supabase/auth-ui-shared`.
+    * Run `npm install --save-dev prettier eslint-config-prettier`.
+3.  **Initialize shadcn/ui:**
+    * Run `npx shadcn@latest init`.
+    * When prompted: Choose **Style:** New York, **Base Color:** Slate. Confirm default paths/aliases. Answer **NO** if asked about React Server Components (RSC), as we are using Pages Router.
+    * Run `npx shadcn@latest add table button card input textarea label` to add some basic UI components.
+4.  **Set up Environment Variables File:**
+    * Create a `.env.local` file.
+    * Add placeholder variables:
+        ```
+        NEXT_PUBLIC_SUPABASE_URL=YOUR_SUPABASE_URL_HERE
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY_HERE
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=YOUR_MAPS_KEY_HERE
+        ```
+    * Add `.env.local` to the `.gitignore` file.
+5.  **Create Supabase Client Utility:**
+    * Create directory `lib/supabase/`.
+    * Create file `lib/supabase/client.ts`.
+    * Add code to export a function `createClient` that initializes and returns a Supabase client using `createBrowserClient` from `@supabase/ssr`, reading the `NEXT_PUBLIC_` variables from `process.env`.
+6.  **Create Types File:**
+    * Create directory `types/` if it doesn't exist.
+    * Create file `types/index.ts`.
+    * Add basic exported interfaces for `Company` and `Review`, including common fields like `id`, `biz_id`, `slug`, `name`, `city`, `state`, `place_id`, `review_id`, `reviewer_name`, `text`, `stars`, `published_at_date`.
+7.  **Create Dynamic Page Structure:**
+    * Create file `pages/[slug].tsx`. (Using `slug` now instead of `biz_id`).
+    * Inside `pages/[slug].tsx`, add the basic React component structure (`export default function CompanyPage(...)`), importing React, Head, Layout (placeholder), types, and Supabase client. Include basic prop definitions (`PageProps`). Add a simple `<h1>{company.name}</h1>` in the return for now.
+8.  **Implement Data Fetching (`pages/[slug].tsx`):**
+    * Implement `getStaticPaths`: Fetch `slug` values (use alias `slug::text as slug`) from the `companies` table in Supabase. Return paths array. Include `fallback: 'blocking'`. Limit to 10 during dev.
+    * Implement `getStaticProps`: Fetch `company` data by `slug` (select all necessary fields from the `Company` interface). Fetch corresponding `reviews` (5-star, limit 5) by `place_id` or `biz_id`. Determine `logoUrl` based on `logo_override` and `logo` fields. Return `company`, `reviews`, `logoUrl` in props. Add `revalidate: 3600`.
+9.  **Create Basic Layout & Component Structure:**
+    * Create directory `components/shared/`.
+    * Create file `components/shared/Layout.tsx`. Add basic layout code (imports React, renders `{children}`).
+    * Create directory `components/templates/TemplateHVAC1/`.
+    * Create *empty* files inside `TemplateHVAC1` for: `Header.tsx`, `Hero.tsx`, `About.tsx`, `Services.tsx`, `ReviewsSection.tsx`, `LocationMap.tsx`, `ContactFooter.tsx`.
+    * Update `pages/[slug].tsx` to import and use the `<Layout>` component to wrap its content. Add commented-out imports for the section components.
+10. **Ensure Global Styles:**
+    * Verify `styles/globals.css` contains the `@tailwind` directives and the `shadcn/ui` theme variables (from `init`).
+    * Verify `pages/_app.tsx` exists and imports `../styles/globals.css`. Create `_app.tsx` with basic structure if it doesn't exist.
+
+**Instruction:**
+Execute these steps sequentially. Focus on creating the correct file structure and implementing the data fetching logic (`getStaticPaths`, `getStaticProps`) accurately. Basic component content is sufficient for now. Stop and show the final structure and the code for `pages/[slug].tsx` and `lib/supabase/client.ts`.
