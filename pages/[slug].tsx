@@ -107,21 +107,30 @@ export const getStaticProps: GetStaticProps<CompanyPageProps> = async ({ params 
   // For debugging
   console.log('Company data:', JSON.stringify(company));
   
-  if (company.logo_override) {
-    // Make sure it's a valid URL or path
-    if (company.logo_override === "Yes" || company.logo_override === "No") {
-      // Handle invalid values
-      console.log(`Invalid logo_override value "${company.logo_override}" detected`);
-      logoUrl = null;
-    } else {
-      logoUrl = company.logo_override;
+  // For logo handling, first check if logo_override is a URL
+  if (company.logo_override && company.logo_override !== "Yes" && company.logo_override !== "No") {
+    // If logo_override is a URL, use it directly
+    logoUrl = company.logo_override;
+    
+    // Clean up Google image URL parameters if present (remove /s44-p-k-no-ns-nd/ or similar parts)
+    if (logoUrl.includes('googleusercontent.com')) {
+      // Replace segments like /s44-p-k-no-ns-nd/ with a single /
+      logoUrl = logoUrl.replace(/\/[a-zA-Z0-9-]+-[a-zA-Z0-9-]+-[a-zA-Z0-9-]+-[a-zA-Z0-9-]+-[a-zA-Z0-9-]+\//g, '/');
     }
-  } else if (company.logo) {
-    // Make sure it's a string, not "Yes" or "No"
-    if (company.logo === "Yes" || company.logo === "No") {
-      console.log(`Invalid logo value "${company.logo}" detected`);
-      logoUrl = null;
+  } else if (company.logo && company.logo !== "Yes" && company.logo !== "No") {
+    // If no valid logo_override but we have a logo
+    
+    // Check if logo is already a complete URL (like Google URLs)
+    if (company.logo.startsWith('http')) {
+      logoUrl = company.logo;
+      
+      // Clean up Google image URL parameters if present
+      if (logoUrl.includes('googleusercontent.com')) {
+        // Remove parameters like s44-p-k-no-ns-nd
+        logoUrl = logoUrl.replace(/\/[a-zA-Z0-9-]+-[a-zA-Z0-9-]+-[a-zA-Z0-9-]+-[a-zA-Z0-9-]+-[a-zA-Z0-9-]+\//g, '/');
+      }
     } else {
+      // Get from Supabase storage if it's not a URL
       const { data: logoData } = await supabase
         .storage
         .from('company-logos')
@@ -129,6 +138,9 @@ export const getStaticProps: GetStaticProps<CompanyPageProps> = async ({ params 
       
       logoUrl = logoData?.publicUrl || null;
     }
+  } else {
+    // If we don't have a valid logo URL, set to null
+    logoUrl = null;
   }
 
   return {
