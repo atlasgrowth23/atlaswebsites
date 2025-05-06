@@ -27,9 +27,12 @@ export default function CompanyPage({ company, reviews, logoUrl }: CompanyPagePr
     `${company.name} provides professional HVAC services${company.city ? ` in ${company.city}` : ''}${company.state ? `, ${company.state}` : ''}. 
     Contact us today for heating, cooling, and ventilation solutions.`;
 
+  // Fix for "Yes" as an invalid image source
+  const safeLogoUrl = logoUrl === "Yes" ? null : logoUrl;
+
   return (
     <Layout title={title} description={description} company={company}>
-      <Header company={company} logoUrl={logoUrl || '/images/default-logo.svg'} />
+      <Header company={company} logoUrl={safeLogoUrl || '/images/default-logo.svg'} />
       <Hero company={company} heroImageUrl={'/images/default-hero.jpg'} />
       <Services company={company} />
       <About company={company} />
@@ -100,15 +103,32 @@ export const getStaticProps: GetStaticProps<CompanyPageProps> = async ({ params 
 
   // Get company logo from Supabase Storage if it exists
   let logoUrl = null;
+  
+  // For debugging
+  console.log('Company data:', JSON.stringify(company));
+  
   if (company.logo_override) {
-    logoUrl = company.logo_override;
+    // Make sure it's a valid URL or path
+    if (company.logo_override === "Yes") {
+      // This is the bug - we're getting "Yes" as a value
+      console.log('Invalid logo_override value "Yes" detected');
+      logoUrl = null;
+    } else {
+      logoUrl = company.logo_override;
+    }
   } else if (company.logo) {
-    const { data: logoData } = await supabase
-      .storage
-      .from('company-logos')
-      .getPublicUrl(company.logo);
-    
-    logoUrl = logoData?.publicUrl || null;
+    // Make sure it's a string, not "Yes"
+    if (company.logo === "Yes") {
+      console.log('Invalid logo value "Yes" detected');
+      logoUrl = null;
+    } else {
+      const { data: logoData } = await supabase
+        .storage
+        .from('company-logos')
+        .getPublicUrl(company.logo);
+      
+      logoUrl = logoData?.publicUrl || null;
+    }
   }
 
   return {
