@@ -10,10 +10,6 @@ const nextConfig = {
       },
     ],
   },
-  allowedDevOrigins: [
-    /\.replit\.dev$/,
-    /\.riker\.replit\.dev$/,
-  ],
 }
 
 module.exports = nextConfig
