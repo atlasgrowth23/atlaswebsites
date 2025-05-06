@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Review } from '@/types';
+import { Button } from '@/components/ui/button';
 
 interface ReviewsSectionProps {
   reviews: Review[];
@@ -12,7 +13,7 @@ const StarRating = ({ rating }: { rating: number }) => {
   return (
     <div className="flex">
       {[...Array(5)].map((_, i) => (
-        <span key={i} className={`text-lg ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+        <span key={i} className={`text-xl ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}>
           ★
         </span>
       ))}
@@ -40,62 +41,220 @@ const formatDate = (dateString: string) => {
   }
 };
 
+// Review Card Component
+const ReviewCard = ({ review, companyName }: { review: Review, companyName: string }) => (
+  <Card className="h-full flex flex-col bg-white shadow-lg rounded-xl transform transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <CardContent className="pt-6 flex flex-col flex-grow">
+      <div className="flex items-center mb-4">
+        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden mr-4 border-2 border-primary/20">
+          {review.reviewer_image ? (
+            <img 
+              src={review.reviewer_image} 
+              alt={review.reviewer_name || 'Reviewer'} 
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-2xl font-bold text-primary">
+              {review.reviewer_name && review.reviewer_name.length > 0 
+                ? review.reviewer_name.charAt(0).toUpperCase()
+                : 'A'}
+            </span>
+          )}
+        </div>
+        <div>
+          <h4 className="font-semibold">{review.reviewer_name}</h4>
+          <p className="text-sm text-gray-500">{formatDate(review.published_at_date)}</p>
+        </div>
+      </div>
+      
+      <StarRating rating={review.stars} />
+      
+      <div className="my-4 text-gray-700 flex-grow">
+        <p className="line-clamp-4">{review.text}</p>
+      </div>
+      
+      {review.response_text && (
+        <div className="mt-auto bg-gray-50 p-4 rounded-md border-l-4 border-primary">
+          <p className="text-sm font-semibold">Response from {companyName}:</p>
+          <p className="text-sm text-gray-600 mt-1 line-clamp-3">{review.response_text}</p>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+);
+
 const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName }) => {
-  // Use up to 6 reviews
-  const displayReviews = reviews.slice(0, 6);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const reviewsPerPage = 3; // Show 3 reviews at a time in the carousel
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+  const autoplayRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Create batches of reviews for the carousel
+  const reviewBatches = [];
+  for (let i = 0; i < reviews.length; i += reviewsPerPage) {
+    reviewBatches.push(reviews.slice(i, i + reviewsPerPage));
+  }
+  
+  // Navigation functions
+  const goToNextSlide = useCallback(() => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % totalPages);
+      setTimeout(() => setIsAnimating(false), 500); // Match transition duration
+    }
+  }, [totalPages, isAnimating]);
+  
+  const goToPrevSlide = () => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setCurrentIndex((prevIndex) => (prevIndex - 1 + totalPages) % totalPages);
+      setTimeout(() => setIsAnimating(false), 500); // Match transition duration
+    }
+  };
+  
+  // Set up autoplay
+  useEffect(() => {
+    if (reviews.length > reviewsPerPage) {
+      autoplayRef.current = setInterval(goToNextSlide, 5000);
+      return () => {
+        if (autoplayRef.current) clearInterval(autoplayRef.current);
+      };
+    }
+  }, [goToNextSlide, reviews.length, reviewsPerPage]);
+  
+  // Pause autoplay on hover
+  const pauseAutoplay = () => {
+    if (autoplayRef.current) clearInterval(autoplayRef.current);
+  };
+  
+  // Resume autoplay on mouse leave
+  const resumeAutoplay = () => {
+    if (reviews.length > reviewsPerPage) {
+      if (autoplayRef.current) clearInterval(autoplayRef.current);
+      autoplayRef.current = setInterval(goToNextSlide, 5000);
+    }
+  };
 
   return (
-    <section className="py-16 bg-gray-50" id="reviews">
+    <section className="py-20 bg-gradient-to-b from-gray-50 to-white" id="reviews">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Customer Reviews</h2>
-          <p className="text-gray-600 max-w-3xl mx-auto">
-            See what our customers are saying about {companyName} and our HVAC services.
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Customer Reviews</h2>
+          <div className="w-20 h-1 bg-primary mx-auto mb-6 rounded-full"></div>
+          <p className="text-gray-600 max-w-3xl mx-auto text-lg">
+            Don't just take our word for it. See what our valued customers have to say about working with {companyName}.
           </p>
+          
+          {reviews.length > 0 && (
+            <div className="flex items-center justify-center mt-6 gap-2">
+              <div className="text-lg font-bold text-primary">{reviews.length}</div>
+              <div className="flex">
+                <StarRating rating={
+                  reviews.reduce((sum, review) => sum + review.stars, 0) / reviews.length
+                } />
+              </div>
+              <div className="text-lg text-gray-600">Average Rating</div>
+            </div>
+          )}
         </div>
 
-        {displayReviews.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {displayReviews.map((review) => (
-              <Card key={review.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="pt-6">
-                  <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-4">
-                      {review.reviewer_image ? (
-                        <img 
-                          src={review.reviewer_image} 
-                          alt={review.reviewer_name || 'Reviewer'} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xl text-gray-400">
-                          {review.reviewer_name && review.reviewer_name.length > 0 
-                            ? review.reviewer_name.charAt(0).toUpperCase()
-                            : 'A'}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">{review.reviewer_name}</h4>
-                      <p className="text-sm text-gray-500">{formatDate(review.published_at_date)}</p>
-                    </div>
+        {reviews.length > 0 ? (
+          <>
+            {/* If we have more than 3 reviews, show carousel */}
+            {reviews.length > reviewsPerPage ? (
+              <div 
+                className="relative px-4" 
+                onMouseEnter={pauseAutoplay}
+                onMouseLeave={resumeAutoplay}
+              >
+                <div className="overflow-hidden">
+                  <div 
+                    className="flex transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                  >
+                    {reviewBatches.map((batch, batchIndex) => (
+                      <div 
+                        key={batchIndex} 
+                        className="min-w-full grid grid-cols-1 md:grid-cols-3 gap-6"
+                      >
+                        {batch.map((review) => (
+                          <ReviewCard key={review.id} review={review} companyName={companyName} />
+                        ))}
+                        
+                        {/* Fill in empty slots if needed */}
+                        {batch.length < reviewsPerPage && 
+                          Array(reviewsPerPage - batch.length).fill(0).map((_, i) => (
+                            <div key={`empty-${i}`} className="hidden md:block"></div>
+                          ))
+                        }
+                      </div>
+                    ))}
                   </div>
-                  <StarRating rating={review.stars} />
-                  <p className="my-4 text-gray-600 line-clamp-3">{review.text}</p>
-                  
-                  {review.response_text && (
-                    <div className="mt-4 bg-gray-100 p-3 rounded-md">
-                      <p className="text-sm font-semibold">Response from {companyName}:</p>
-                      <p className="text-sm text-gray-600 mt-1 line-clamp-2">{review.response_text}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
+                
+                {/* Navigation buttons */}
+                <button 
+                  onClick={goToPrevSlide}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md z-10 focus:outline-none hover:bg-gray-100"
+                  aria-label="Previous reviews"
+                >
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <button 
+                  onClick={goToNextSlide}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md z-10 focus:outline-none hover:bg-gray-100"
+                  aria-label="Next reviews"
+                >
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                
+                {/* Indicators */}
+                <div className="flex justify-center mt-8 space-x-2">
+                  {reviewBatches.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setCurrentIndex(i);
+                        pauseAutoplay();
+                      }}
+                      className={`w-3 h-3 rounded-full ${
+                        i === currentIndex ? 'bg-primary' : 'bg-gray-300'
+                      }`}
+                      aria-label={`Go to review set ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // If we have 3 or fewer reviews, show them in a grid without carousel
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {reviews.map((review) => (
+                  <ReviewCard key={review.id} review={review} companyName={companyName} />
+                ))}
+              </div>
+            )}
+            
+            {/* Call to action */}
+            {reviews.length > 0 && (
+              <div className="text-center mt-12">
+                <Button 
+                  className="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-8 rounded-lg shadow transition-all"
+                  onClick={() => window.open(reviews[0].reviews_link || 'https://www.google.com/maps', '_blank')}
+                >
+                  Leave a Review
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center p-8 bg-white rounded-lg shadow-sm">
-            <p>No reviews available yet. Be the first to leave a review!</p>
+            <p className="text-lg">No reviews available yet. Be the first to leave a review!</p>
           </div>
         )}
       </div>
