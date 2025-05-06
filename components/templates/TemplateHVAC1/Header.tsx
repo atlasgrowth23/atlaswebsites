@@ -6,6 +6,63 @@ import { Company } from '@/types';
 
 interface HeaderProps {
   company: Company;
+  logoUrl: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ company, logoUrl }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  return (
+    <header className="bg-white shadow-md">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex justify-between items-center">
+          <Link href="/" className="flex items-center">
+            <Image 
+              src={logoUrl} 
+              alt={`${company.name} logo`} 
+              width={180} 
+              height={60} 
+              priority
+            />
+          </Link>
+          
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+          
+          <nav className={`md:flex ${isMenuOpen ? 'block absolute top-20 left-0 right-0 bg-white shadow-md z-50 p-4' : 'hidden'} md:relative md:top-0 md:p-0 md:shadow-none`}>
+            <ul className="flex flex-col md:flex-row md:space-x-8">
+              <li className="py-2 md:py-0"><Link href="#services" className="hover:text-primary">Services</Link></li>
+              <li className="py-2 md:py-0"><Link href="#about" className="hover:text-primary">About</Link></li>
+              <li className="py-2 md:py-0"><Link href="#reviews" className="hover:text-primary">Reviews</Link></li>
+              <li className="py-2 md:py-0"><Link href="#contact" className="hover:text-primary">Contact</Link></li>
+            </ul>
+          </nav>
+          
+          {company.phone && (
+            <div className="hidden md:block">
+              <Button className="bg-primary">
+                Call {company.phone}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
+
+interface HeaderProps {
+  company: Company;
   logoUrl: string | null;
 }
 
