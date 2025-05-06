@@ -11,7 +11,7 @@ interface HeroProps {
 const Hero: React.FC<HeroProps> = ({ company, heroImageUrl }) => {
   return (
     <div className="relative py-20 md:py-32 bg-primary text-on-primary">
-      {heroImageUrl && heroImageUrl !== "Yes" && (
+      {heroImageUrl && heroImageUrl !== "Yes" && heroImageUrl !== "No" && (
         <Image
           src={heroImageUrl}
           alt="Hero background"
