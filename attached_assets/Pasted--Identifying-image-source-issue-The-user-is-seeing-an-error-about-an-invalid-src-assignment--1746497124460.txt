@@ -1,0 +1,120 @@
+**Identifying image source issue**
+
+The user is seeing an error about an invalid `src` assignment ("Yes") in their code related to `<Image>`. I suspect it's from a conditional rendering inside a component like `Header.tsx` or `Hero.tsx`, where `logo_url` is being replaced with "Yes." It looks like they might have mistakenly replaced a default path with a string instead of leaving a proper image URL. I’ll need to point them to the specific file and code snippet where this occurs so they can correct it.
+
+
+**Identifying source of error**
+
+The error appears because the code is assigning "Yes" as the `src` in the `<Image>` component. This is likely happening in either `Header.tsx` or `Hero.tsx`, where the code might be using a fallback like this:
+
+```jsx
+<Image src={logoUrl ?? "Yes"} ... />
+```
+
+The problem is that "Yes" is being passed as a string instead of a valid image source. The user should check these files to fix the issue. We won’t need to inspect the entire repo directly, just the specific snippets.
+
+
+**Identifying incorrect fallback in image path**
+
+In the code, `Hero.tsx` seems to have a typo for the image `src`. It’s using `"Yes"` as the fallback instead of a valid image URL:
+
+```jsx
+<Image
+  src={logoUrl ? logoUrl : "Yes"} // wrong fallback
+  alt={`${companyName} logo`}
+  width={150}
+  height={100}
+/>
+```
+
+This is causing Next.js to try to load the string "Yes" instead of an image. The issue may be in the `Header.tsx` or `Hero.tsx` files, where the fallback is misconfigured, leading to the error. Check these files for the faulty code.
+
+
+Thought for 29 seconds
+
+
+This particular error—
+
+```
+Error: Failed to parse src "Yes" on `next/image`…
+```
+
+is coming from the **`<Image>`** component in your HVAC template that’s using the literal string `"Yes"` as the fallback `src`. Next.js interprets `"Yes"` as a relative path (which doesn’t start with `/`) and not a valid URL, so it throws.
+
+---
+
+## Which file and snippet to look at
+
+You’ll find it in your **Header** (or possibly your **Hero**) component under:
+
+```
+components/templates/TemplateHVAC1/Header.tsx
+```
+
+*(or if you added a similar fallback in Hero, then in Hero.tsx)*
+
+Look for a line that looks like this:
+
+```tsx
+// ❌ Wrong: passing "Yes" as the image source
+<Image
+  src={logoUrl ?? "Yes"}
+  alt={`${companyName} logo`}
+  width={150}
+  height={50}
+/>
+```
+
+Or in Hero:
+
+```tsx
+// ❌ Wrong: passing "Yes" as the background image
+<Image
+  src={heroImageUrl || "Yes"}
+  alt="Hero background"
+  fill
+  className="object-cover"
+/>
+```
+
+---
+
+## The fix
+
+Replace that `"Yes"` fallback with a real path (either a local `/public` file or a full URL). For example, in **Header.tsx**:
+
+```diff
+- <Image
+-   src={logoUrl ?? "Yes"}
++ <Image
++   src={logoUrl ?? "/images/default-logo.png"}
+    alt={`${companyName} logo`}
+    width={150}
+    height={50}
+  />
+```
+
+And in **Hero.tsx** (if you did the same there):
+
+```diff
+- <Image
+-   src={heroImageUrl || "Yes"}
++ <Image
++   src={heroImageUrl || "/images/default-hero.jpg"}
+    alt="Hero background"
+    fill
+    className="object-cover"
+  />
+```
+
+### How to find it in your code
+
+You can grep for the literal string `"Yes"`:
+
+```bash
+grep -R '["'\'']Yes["'\'']' components/templates/TemplateHVAC1
+```
+
+That will point you directly to the file and line number.
+
+Once you’ve changed those fallbacks to valid paths, the **`next/image`** errors will disappear.
