@@ -50,12 +50,14 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
                       {review.reviewer_image ? (
                         <img 
                           src={review.reviewer_image} 
-                          alt={review.reviewer_name} 
+                          alt={review.reviewer_name || 'Reviewer'} 
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <span className="text-xl text-gray-400">
-                          {review.reviewer_name.charAt(0).toUpperCase()}
+                          {review.reviewer_name && review.reviewer_name.length > 0 
+                            ? review.reviewer_name.charAt(0).toUpperCase()
+                            : 'A'}
                         </span>
                       )}
                     </div>

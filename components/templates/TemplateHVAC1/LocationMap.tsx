@@ -8,9 +8,9 @@ interface LocationMapProps {
 const LocationMap: React.FC<LocationMapProps> = ({ company }) => {
   // The place_id is used to embed a Google Map
   // Note: This requires a Google Maps API key to be set in the environment variables
-  const mapUrl = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 
+  const mapUrl = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && company.place_id
     ? `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=place_id:${company.place_id}`
-    : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(`${company.address || ''} ${company.city}, ${company.state} ${company.zip_code || ''}`)}`;
+    : `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodeURIComponent(`${company.full_address || ''} ${company.city || ''}, ${company.state || ''}`)}`;
 
   return (
     <section className="py-16" id="contact">
@@ -18,7 +18,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ company }) => {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Our Location</h2>
           <p className="text-gray-600 max-w-3xl mx-auto">
-            {company.name} proudly serves {company.city}, {company.state} and surrounding areas.
+            {company.name} proudly serves{company.city ? ` ${company.city}` : ''}{company.state ? `, ${company.state}` : ''} and surrounding areas.
           </p>
         </div>
 
@@ -37,8 +37,8 @@ const LocationMap: React.FC<LocationMapProps> = ({ company }) => {
                 <div>
                   <div className="font-semibold text-gray-700">Address</div>
                   <address className="not-italic text-gray-600">
-                    {company.address}<br />
-                    {company.city}, {company.state} {company.zip_code}
+                    {company.full_address || ''}<br />
+                    {company.city ? `${company.city}` : ''}{company.state ? `, ${company.state}` : ''}
                   </address>
                 </div>
               </div>
@@ -59,7 +59,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ company }) => {
                 </div>
               )}
               
-              {company.email && (
+              {company.facebook && (
                 <div className="flex items-start">
                   <div className="text-primary mr-4 mt-1">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -68,15 +68,15 @@ const LocationMap: React.FC<LocationMapProps> = ({ company }) => {
                     </svg>
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-700">Email</div>
+                    <div className="font-semibold text-gray-700">Social Media</div>
                     <div className="text-gray-600">
-                      <a href={`mailto:${company.email}`} className="hover:text-primary">{company.email}</a>
+                      <a href={company.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-primary">Facebook Page</a>
                     </div>
                   </div>
                 </div>
               )}
               
-              {company.hours && Object.keys(company.hours).length > 0 && (
+              {company.working_hours && (
                 <div className="flex items-start">
                   <div className="text-primary mr-4 mt-1">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -86,12 +86,7 @@ const LocationMap: React.FC<LocationMapProps> = ({ company }) => {
                   <div>
                     <div className="font-semibold text-gray-700">Business Hours</div>
                     <div className="text-gray-600 text-sm">
-                      {Object.entries(company.hours).map(([day, hours]) => (
-                        <div key={day} className="flex justify-between w-full">
-                          <span className="mr-4">{day}:</span>
-                          <span>{hours}</span>
-                        </div>
-                      ))}
+                      {company.working_hours}
                     </div>
                   </div>
                 </div>

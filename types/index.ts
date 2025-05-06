@@ -1,29 +1,31 @@
 export interface CompanyColors {
-  primary?: string;
-  secondary?: string;
-  text?: string;
-  background?: string;
+  primary: string;
+  secondary: string;
 }
 
 export interface Company {
-  id: number;
-  biz_id: string;
-  slug: string;
   name: string;
-  city: string;
-  state: string;
-  place_id: string;
-  logo?: string;
-  logo_override?: string;
-  description?: string;
-  services?: string[];
-  phone?: string;
-  email?: string;
-  website?: string;
-  hours?: Record<string, string>;
-  address?: string;
-  zip_code?: string;
-  colors?: CompanyColors;
+  slug?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  full_address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  rating?: number | null;
+  reviews?: number | null; // Count
+  working_hours?: string | null;
+  logo?: string | null;
+  logo_override?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  reviews_link?: string | null;
+  site_company_insights_founded_year?: number | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  place_id?: string | null;
+  biz_id?: string | number | null;
+  site_company_insights_description?: string | null;
 }
 
 export interface Review {

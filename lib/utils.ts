@@ -11,6 +11,8 @@ export function cn(...inputs: ClassValue[]) {
  * @returns The HSL values as a string (e.g., "221.2 83.2% 53.3%")
  */
 export function hexToHsl(hex: string): string {
+  if (!hex) return "221.2 83.2% 53.3%"; // Default blue if no color provided
+  
   // Remove the hash if it exists
   hex = hex.replace(/^#/, '');
 

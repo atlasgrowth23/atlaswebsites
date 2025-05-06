@@ -13,8 +13,8 @@ const About: React.FC<AboutProps> = ({ company }) => {
           <div>
             <h2 className="text-3xl font-bold mb-6">About {company.name}</h2>
             <p className="text-gray-600 mb-4">
-              {company.description || 
-                `We are a trusted HVAC service provider serving ${company.city}, ${company.state} and surrounding areas. 
+              {company.site_company_insights_description || 
+                `We are a trusted HVAC service provider${company.city ? ` serving ${company.city}` : ''}${company.state ? `, ${company.state}` : ''} and surrounding areas. 
                 With years of experience in the industry, we've built our reputation on quality workmanship, 
                 reliable service, and customer satisfaction.`
               }

@@ -26,8 +26,8 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
     
     const filtered = companies.filter(company => 
       company.name.toLowerCase().includes(term) || 
-      company.city.toLowerCase().includes(term) || 
-      company.state.toLowerCase().includes(term)
+      (company.city && company.city.toLowerCase().includes(term)) || 
+      (company.state && company.state.toLowerCase().includes(term))
     );
     
     setFilteredCompanies(filtered);
@@ -76,10 +76,14 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
           {filteredCompanies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCompanies.map((company) => (
-                <div key={company.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <div key={company.biz_id || company.name} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="p-6">
                     <h3 className="text-xl font-bold mb-2">{company.name}</h3>
-                    <p className="text-gray-600 mb-4">{company.city}, {company.state}</p>
+                    <p className="text-gray-600 mb-4">
+                      {company.city ? company.city : ''}
+                      {company.city && company.state ? ', ' : ''}
+                      {company.state ? company.state : ''}
+                    </p>
                     <div className="flex justify-between items-center">
                       <div className="text-sm text-gray-500">
                         HVAC Services

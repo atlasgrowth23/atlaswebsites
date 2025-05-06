@@ -40,13 +40,8 @@ const defaultServices = [
 ];
 
 const Services: React.FC<ServicesProps> = ({ company }) => {
-  const displayServices = company.services && company.services.length > 0 
-    ? company.services.map((service, index) => ({
-        title: service,
-        description: defaultServices[index % defaultServices.length].description,
-        icon: defaultServices[index % defaultServices.length].icon
-      }))
-    : defaultServices;
+  // Since we don't have services in the new database schema, we'll use the default services
+  const displayServices = defaultServices;
 
   return (
     <section className="py-16 bg-gray-50" id="services">

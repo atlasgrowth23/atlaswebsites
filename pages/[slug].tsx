@@ -22,15 +22,15 @@ export default function CompanyPage({ company, reviews, logoUrl }: CompanyPagePr
     return <div>Company not found</div>;
   }
 
-  const title = `${company.name} | HVAC Services in ${company.city}, ${company.state}`;
-  const description = company.description || 
-    `${company.name} provides professional HVAC services in ${company.city}, ${company.state}. 
+  const title = `${company.name} | HVAC Services${company.city ? ` in ${company.city}` : ''}${company.state ? `, ${company.state}` : ''}`;
+  const description = company.site_company_insights_description || 
+    `${company.name} provides professional HVAC services${company.city ? ` in ${company.city}` : ''}${company.state ? `, ${company.state}` : ''}. 
     Contact us today for heating, cooling, and ventilation solutions.`;
 
   return (
     <Layout title={title} description={description} company={company}>
       <Header company={company} logoUrl={logoUrl || '/images/default-logo.svg'} />
-      <Hero company={company} />
+      <Hero company={company} heroImageUrl={'/images/default-hero.jpg'} />
       <Services company={company} />
       <About company={company} />
       <ReviewsSection reviews={reviews} companyName={company.name} />

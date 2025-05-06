@@ -48,6 +48,8 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        'on-primary': "var(--on-primary)",
+        'on-secondary': "var(--on-secondary)",
       },
       borderRadius: {
         lg: "var(--radius)",

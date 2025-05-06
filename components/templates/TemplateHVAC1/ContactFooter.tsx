@@ -6,21 +6,14 @@ interface ContactFooterProps {
   company: Company;
 }
 
-// Function to format business hours
-const formatHours = (hours: Record<string, string> | undefined) => {
-  if (!hours) return null;
-
-  const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+// Function to display business hours
+const displayHours = (workingHours: string | null | undefined) => {
+  if (!workingHours) return null;
   
   return (
-    <ul className="space-y-1">
-      {daysOrder.map(day => (
-        <li key={day} className="flex justify-between">
-          <span className="font-medium">{day}:</span>
-          <span>{hours[day] || 'Closed'}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="text-gray-400">
+      {workingHours}
+    </div>
   );
 };
 
@@ -32,16 +25,23 @@ const ContactFooter: React.FC<ContactFooterProps> = ({ company }) => {
           {/* Company Info */}
           <div>
             <h3 className="text-xl font-bold mb-4">{company.name}</h3>
-            <p className="mb-2">{company.address}</p>
-            <p className="mb-2">{company.city}, {company.state} {company.zip_code}</p>
+            {company.full_address && <p className="mb-2">{company.full_address}</p>}
+            {(company.city || company.state) && (
+              <p className="mb-2">
+                {company.city ? `${company.city}` : ''}
+                {company.state ? `, ${company.state}` : ''}
+              </p>
+            )}
             {company.phone && <p className="mb-2">Phone: {company.phone}</p>}
-            {company.email && <p className="mb-2">Email: {company.email}</p>}
+            {company.facebook && <p className="mb-2">
+              <a href={company.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-primary">Facebook Page</a>
+            </p>}
           </div>
 
           {/* Business Hours */}
           <div>
             <h3 className="text-xl font-bold mb-4">Business Hours</h3>
-            {company.hours ? formatHours(company.hours) : (
+            {company.working_hours ? displayHours(company.working_hours) : (
               <ul className="space-y-1">
                 <li className="flex justify-between">
                   <span className="font-medium">Monday - Friday:</span>

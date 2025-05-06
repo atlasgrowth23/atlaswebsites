@@ -2,6 +2,8 @@ import React, { ReactNode } from 'react';
 import Head from 'next/head';
 import { Company } from '@/types';
 import { hexToHsl } from '@/lib/utils';
+import { contrastColor } from '@/lib/colors';
+import { getCompanyColors } from '@/lib/palettes';
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,20 +18,22 @@ const Layout: React.FC<LayoutProps> = ({
   description = 'Professional HVAC services including installation, maintenance, and repair for residential and commercial properties.',
   company,
 }) => {
-  // Create CSS variables for company colors if available
+  // Create CSS variables for company colors with fallbacks
   const style: Record<string, string> = {};
   
-  if (company?.colors) {
-    const { primary, secondary } = company.colors;
-    if (primary) {
-      const primaryHsl = hexToHsl(primary);
-      style['--primary'] = primaryHsl;
-    }
-    if (secondary) {
-      const secondaryHsl = hexToHsl(secondary);
-      style['--secondary'] = secondaryHsl;
-    }
-  }
+  const companyColors = getCompanyColors(company);
+  const primaryHsl = hexToHsl(companyColors.primary);
+  const secondaryHsl = hexToHsl(companyColors.secondary);
+  
+  // Calculate contrast colors for text on primary/secondary backgrounds
+  const onPrimary = contrastColor(companyColors.primary);
+  const onSecondary = contrastColor(companyColors.secondary);
+  
+  // Set CSS variables
+  style['--primary'] = primaryHsl;
+  style['--secondary'] = secondaryHsl;
+  style['--on-primary'] = onPrimary;
+  style['--on-secondary'] = onSecondary;
 
   return (
     <>

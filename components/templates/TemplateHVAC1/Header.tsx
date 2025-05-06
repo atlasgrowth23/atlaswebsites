@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({ company, logoUrl }) => {
                 <div className="font-bold text-primary">{company.phone}</div>
               </div>
             )}
-            <Button className="bg-secondary hover:bg-secondary/90">Free Quote</Button>
+            <Button className="bg-secondary text-on-secondary hover:bg-secondary/90">Free Quote</Button>
           </div>
 
           {/* Mobile menu button */}
@@ -118,7 +118,7 @@ const Header: React.FC<HeaderProps> = ({ company, logoUrl }) => {
               </div>
             )}
             <div className="px-3 py-2">
-              <Button className="w-full bg-secondary hover:bg-secondary/90">Free Quote</Button>
+              <Button className="w-full bg-secondary text-on-secondary hover:bg-secondary/90">Free Quote</Button>
             </div>
           </div>
         </div>
