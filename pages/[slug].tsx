@@ -27,14 +27,26 @@ export default function CompanyPage({ company, reviews, logoUrl }: CompanyPagePr
     `${company.name} provides professional HVAC services${company.city ? ` in ${company.city}` : ''}${company.state ? `, ${company.state}` : ''}. 
     Contact us today for heating, cooling, and ventilation solutions.`;
 
-  // Fix for invalid logo sources - check for common placeholder or invalid values
-  const isValidLogoUrl = logoUrl && 
-    logoUrl !== "Yes" && 
-    logoUrl !== "No" && 
-    !logoUrl.includes('googleusercontent.com/s/0');  // Filter out generic Google profile images
-  
-  // Only use logoUrl if it's valid, otherwise pass null to show text
-  const safeLogoUrl = isValidLogoUrl ? logoUrl : null;
+  // Never show logo if primary_color or secondary_color is null or "N/A"
+  const hasValidColors = 
+    company.primary_color && 
+    company.secondary_color && 
+    company.primary_color !== "N/A - Null from API" && 
+    company.secondary_color !== "N/A - Null from API" &&
+    company.primary_color !== "null" &&
+    company.secondary_color !== "null";
+
+  // Only proceed to logo check if we have valid colors
+  let safeLogoUrl = null;
+  if (hasValidColors) {
+    // Then check if logo URL is valid
+    const isValidLogoUrl = logoUrl && 
+      logoUrl !== "Yes" && 
+      logoUrl !== "No" && 
+      !logoUrl.includes('googleusercontent.com/s/0');  // Filter out generic Google profile images
+    
+    safeLogoUrl = isValidLogoUrl ? logoUrl : null;
+  }
 
   return (
     <Layout title={title} description={description} company={company}>

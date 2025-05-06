@@ -31,7 +31,7 @@ const Header: React.FC<HeaderProps> = ({ company, logoUrl }) => {
                 className="object-contain h-12 w-auto"
               />
             ) : (
-              <div className="text-xl md:text-2xl font-bold text-primary tracking-tight">
+              <div className="text-xl md:text-2xl lg:text-3xl font-bold text-primary tracking-tight">
                 {company.name}
               </div>
             )}
