@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ company, logoUrl }) => {
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
+          {/* Logo or Company Name */}
           <div className="flex items-center">
             {logoUrl ? (
               <Image
@@ -31,7 +31,9 @@ const Header: React.FC<HeaderProps> = ({ company, logoUrl }) => {
                 className="object-contain h-12 w-auto"
               />
             ) : (
-              <div className="text-xl font-bold text-primary">{company.name}</div>
+              <div className="text-xl md:text-2xl font-bold text-primary tracking-tight">
+                {company.name}
+              </div>
             )}
           </div>
 

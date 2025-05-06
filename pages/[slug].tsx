@@ -27,12 +27,18 @@ export default function CompanyPage({ company, reviews, logoUrl }: CompanyPagePr
     `${company.name} provides professional HVAC services${company.city ? ` in ${company.city}` : ''}${company.state ? `, ${company.state}` : ''}. 
     Contact us today for heating, cooling, and ventilation solutions.`;
 
-  // Fix for "Yes" as an invalid image source
-  const safeLogoUrl = logoUrl === "Yes" ? null : logoUrl;
+  // Fix for invalid logo sources - check for common placeholder or invalid values
+  const isValidLogoUrl = logoUrl && 
+    logoUrl !== "Yes" && 
+    logoUrl !== "No" && 
+    !logoUrl.includes('googleusercontent.com/s/0');  // Filter out generic Google profile images
+  
+  // Only use logoUrl if it's valid, otherwise pass null to show text
+  const safeLogoUrl = isValidLogoUrl ? logoUrl : null;
 
   return (
     <Layout title={title} description={description} company={company}>
-      <Header company={company} logoUrl={safeLogoUrl || '/images/default-logo.svg'} />
+      <Header company={company} logoUrl={safeLogoUrl} />
       <Hero company={company} heroImageUrl={'/images/default-hero.jpg'} />
       <Services company={company} />
       <About company={company} />
