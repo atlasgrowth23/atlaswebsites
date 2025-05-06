@@ -10,27 +10,32 @@ export interface Company {
   biz_id: string;
   slug: string;
   name: string;
-  description?: string;
-  address?: string;
   city: string;
   state: string;
-  zip?: string;
+  place_id: string;
+  logo?: string;
+  logo_override?: string;
+  description?: string;
+  services?: string[];
   phone?: string;
   email?: string;
   website?: string;
-  services?: string[];
-  logo?: string;
-  logo_override?: string;
-  primary_color?: string;
-  secondary_color?: string;
+  hours?: Record<string, string>;
+  address?: string;
+  zip_code?: string;
+  colors?: CompanyColors;
 }
 
 export interface Review {
   id: number;
+  review_id: string;
   biz_id: string;
-  author_name: string;
-  rating: number;
+  place_id: string;
+  reviewer_name: string;
   text: string;
+  stars: number;
   published_at_date: string;
-  source?: string;
+  reviewer_image?: string;
+  response_text?: string;
+  response_date?: string;
 }
