@@ -109,17 +109,17 @@ export const getStaticProps: GetStaticProps<CompanyPageProps> = async ({ params 
   
   if (company.logo_override) {
     // Make sure it's a valid URL or path
-    if (company.logo_override === "Yes") {
-      // This is the bug - we're getting "Yes" as a value
-      console.log('Invalid logo_override value "Yes" detected');
+    if (company.logo_override === "Yes" || company.logo_override === "No") {
+      // Handle invalid values
+      console.log(`Invalid logo_override value "${company.logo_override}" detected`);
       logoUrl = null;
     } else {
       logoUrl = company.logo_override;
     }
   } else if (company.logo) {
-    // Make sure it's a string, not "Yes"
-    if (company.logo === "Yes") {
-      console.log('Invalid logo value "Yes" detected');
+    // Make sure it's a string, not "Yes" or "No"
+    if (company.logo === "Yes" || company.logo === "No") {
+      console.log(`Invalid logo value "${company.logo}" detected`);
       logoUrl = null;
     } else {
       const { data: logoData } = await supabase

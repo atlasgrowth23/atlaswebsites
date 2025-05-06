@@ -22,7 +22,7 @@ const Header: React.FC<HeaderProps> = ({ company, logoUrl }) => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <div className="flex items-center">
-            {logoUrl && logoUrl !== "Yes" ? (
+            {logoUrl && logoUrl !== "Yes" && logoUrl !== "No" ? (
               <Image
                 src={logoUrl}
                 alt={`${company.name} logo`}
