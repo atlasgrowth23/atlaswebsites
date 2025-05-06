@@ -1,17 +1,36 @@
 import React, { ReactNode } from 'react';
 import Head from 'next/head';
+import { Company } from '@/types';
+import { hexToHsl } from '@/lib/utils';
 
 interface LayoutProps {
   children: ReactNode;
   title?: string;
   description?: string;
+  company?: Company;
 }
 
 const Layout: React.FC<LayoutProps> = ({
   children,
   title = 'HVAC Services | Professional Heating and Cooling',
   description = 'Professional HVAC services including installation, maintenance, and repair for residential and commercial properties.',
+  company,
 }) => {
+  // Create CSS variables for company colors if available
+  const style: Record<string, string> = {};
+  
+  if (company?.colors) {
+    const { primary, secondary } = company.colors;
+    if (primary) {
+      const primaryHsl = hexToHsl(primary);
+      style['--primary'] = primaryHsl;
+    }
+    if (secondary) {
+      const secondaryHsl = hexToHsl(secondary);
+      style['--secondary'] = secondaryHsl;
+    }
+  }
+
   return (
     <>
       <Head>
@@ -29,7 +48,7 @@ const Layout: React.FC<LayoutProps> = ({
         <meta name="twitter:description" content={description} />
       </Head>
       
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col" style={style}>
         {children}
       </div>
     </>

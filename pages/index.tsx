@@ -82,9 +82,7 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
                     <p className="text-gray-600 mb-4">{company.city}, {company.state}</p>
                     <div className="flex justify-between items-center">
                       <div className="text-sm text-gray-500">
-                        {company.services && company.services.length > 0 
-                          ? `${company.services.slice(0, 2).join(', ')}${company.services.length > 2 ? '...' : ''}`
-                          : 'HVAC Services'}
+                        HVAC Services
                       </div>
                       <Link href={`/${company.slug}`} passHref>
                         <Button size="sm">View Site</Button>
@@ -135,7 +133,7 @@ export async function getStaticProps() {
   // Fetch all companies
   const { data: companies, error } = await supabase
     .from('companies')
-    .select('id, biz_id, slug, name, city, state, services')
+    .select('id, biz_id, slug, name, city, state')
     .order('name');
 
   if (error) {

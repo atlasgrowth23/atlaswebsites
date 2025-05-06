@@ -28,8 +28,8 @@ export default function CompanyPage({ company, reviews, logoUrl }: CompanyPagePr
     Contact us today for heating, cooling, and ventilation solutions.`;
 
   return (
-    <Layout title={title} description={description}>
-      <Header company={company} logoUrl={logoUrl} />
+    <Layout title={title} description={description} company={company}>
+      <Header company={company} logoUrl={logoUrl || '/images/default-logo.svg'} />
       <Hero company={company} />
       <Services company={company} />
       <About company={company} />

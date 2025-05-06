@@ -1,3 +1,10 @@
+export interface CompanyColors {
+  primary?: string;
+  secondary?: string;
+  text?: string;
+  background?: string;
+}
+
 export interface Company {
   id: number;
   biz_id: string;
@@ -16,6 +23,7 @@ export interface Company {
   hours?: Record<string, string>;
   address?: string;
   zip_code?: string;
+  colors?: CompanyColors;
 }
 
 export interface Review {
