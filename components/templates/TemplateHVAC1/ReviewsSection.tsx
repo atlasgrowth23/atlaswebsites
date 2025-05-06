@@ -20,10 +20,24 @@ const StarRating = ({ rating }: { rating: number }) => {
   );
 };
 
-// Format date to be more readable
+// Format date to be more readable with fixed locale for consistent server/client rendering
 const formatDate = (dateString: string) => {
-  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-  return new Date(dateString).toLocaleDateString(undefined, options);
+  // Use a fixed locale and timezone to ensure consistent rendering between server and client
+  const options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    timeZone: 'UTC' // Use UTC to ensure consistency
+  };
+  
+  try {
+    // Use 'en-US' locale explicitly to prevent locale differences between server/client
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', options);
+  } catch (e) {
+    // Fallback in case of invalid date
+    return 'Unknown date';
+  }
 };
 
 const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName }) => {
