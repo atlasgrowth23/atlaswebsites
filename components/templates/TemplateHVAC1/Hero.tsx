@@ -11,6 +11,7 @@ interface HeroProps {
 const Hero: React.FC<HeroProps> = ({ company, heroImageUrl }) => {
   return (
     <div className="relative py-20 md:py-32 bg-primary text-on-primary">
+      {/* Background image - only shown if valid URL is provided */}
       {heroImageUrl && (
         <Image
           src={heroImageUrl}
@@ -20,6 +21,8 @@ const Hero: React.FC<HeroProps> = ({ company, heroImageUrl }) => {
           priority
         />
       )}
+      
+      {/* Content overlay - always visible */}
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -42,7 +45,9 @@ const Hero: React.FC<HeroProps> = ({ company, heroImageUrl }) => {
                 variant="outline" 
                 className="border-white/30 hover:bg-white/20 px-8 py-3 text-lg"
               >
-                Call {company.phone}
+                <a href={`tel:${company.phone}`} className="block w-full text-inherit">
+                  Call {company.phone}
+                </a>
               </Button>
             )}
           </div>

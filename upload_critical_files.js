@@ -21,7 +21,8 @@ const CRITICAL_FILES = [
   'pages/index.tsx',
   'postcss.config.js',
   'tailwind.config.js',
-  'package.json'
+  'package.json',
+  'lib/palettes.ts'
 ];
 
 // Function to create a GitHub API request
