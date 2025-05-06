@@ -47,14 +47,18 @@ const About: React.FC<AboutProps> = ({ company }) => {
             </div>
           </div>
           <div className="relative">
-            <div className="bg-gray-200 rounded-lg h-96 overflow-hidden">
+            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg h-96 overflow-hidden shadow-lg">
               <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                <span>Company Image</span>
+                <span className="text-xl font-medium">Company Image</span>
               </div>
+              <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent"></div>
             </div>
-            <div className="absolute -bottom-6 -left-6 bg-primary text-white p-6 rounded-lg shadow-lg">
-              <div className="text-2xl font-bold mb-1">15+</div>
-              <div className="text-sm">Years of Experience</div>
+            <div className="absolute -bottom-6 -left-6 bg-gradient-to-r from-primary to-primary/90 text-white p-6 rounded-lg shadow-xl">
+              <div className="text-3xl font-bold mb-1">{company.site_company_insights_founded_year ? new Date().getFullYear() - company.site_company_insights_founded_year : '15'}+</div>
+              <div className="text-sm font-medium">Years of Excellence</div>
+            </div>
+            <div className="absolute -top-4 -right-4 bg-secondary/90 text-white py-2 px-4 rounded-full shadow-lg">
+              <div className="text-sm font-bold">Certified Professionals</div>
             </div>
           </div>
         </div>

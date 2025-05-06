@@ -56,13 +56,21 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayServices.map((service, index) => (
-            <Card key={index} className="service-card border-t-4 border-t-primary hover:border-t-secondary">
+            <Card key={index} className="service-card border-t-4 border-t-primary hover:border-t-secondary hover:shadow-xl transition-all duration-300">
               <CardHeader>
-                <div className="text-3xl mb-4">{service.icon}</div>
-                <CardTitle>{service.title}</CardTitle>
+                <div className="text-4xl mb-4 text-primary hover:text-secondary transition-colors duration-300">{service.icon}</div>
+                <CardTitle className="text-xl font-bold">{service.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-600">{service.description}</p>
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <span className="text-primary hover:text-secondary transition-colors cursor-pointer inline-flex items-center text-sm font-medium">
+                    Learn more 
+                    <svg xmlns="http://www.w3.org/2000/svg" className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </span>
+                </div>
               </CardContent>
             </Card>
           ))}
