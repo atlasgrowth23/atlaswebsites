@@ -62,7 +62,7 @@ function githubRequest(method, endpoint, data = null) {
       method: method,
       headers: {
         'User-Agent': 'Node.js',
-        'Authorization': `token ${GITHUB_TOKEN}`,
+        'Authorization': `Bearer ${GITHUB_TOKEN}`,
         'Accept': 'application/vnd.github.v3+json',
         'Content-Type': 'application/json'
       }
