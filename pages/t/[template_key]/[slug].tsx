@@ -4,9 +4,10 @@ import { Company, Review } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
 // Import templates using barrel files
-
-import * as ModernTrust from '@/components/templates/ModernTrust';
+import * as ModernTrust from '@/components/templates/BigBalls';
 import * as BoldEnergy from '@/components/templates/BoldEnergy';
+// Try relative import instead
+import * as AirStream from '../../../components/templates/AirStream';
 
 interface TemplatePageProps {
   company: Company;
@@ -17,9 +18,9 @@ interface TemplatePageProps {
 
 // Template registry - maps template keys to component sets
 const templateRegistry = {
-
   'moderntrust': ModernTrust,
-  'boldenergy': BoldEnergy
+  'boldenergy': BoldEnergy,
+  'airstream': AirStream
 };
 
 export default function TemplatePage({ company, reviews, logoUrl, templateKey }: TemplatePageProps) {
@@ -33,7 +34,7 @@ export default function TemplatePage({ company, reviews, logoUrl, templateKey }:
   }
 
   const { Layout, Hero, About } = template;
-  
+
   const pageTitle = `${company.name} | HVAC Services`;
   const pageDescription = company.site_company_insights_description || 
     `${company.name} provides professional heating, cooling, and air quality services for residential and commercial clients.`;
@@ -54,10 +55,10 @@ export default function TemplatePage({ company, reviews, logoUrl, templateKey }:
 export const getStaticPaths: GetStaticPaths = async () => {
   const supabase = createClient();
   const { data: companies } = await supabase.from('companies').select('slug');
-  
+
   // Get templates to generate paths for
   const templateKeys = Object.keys(templateRegistry);
-  
+
   // Generate paths for each company with each template
   const paths = companies?.flatMap(company => 
     templateKeys.map(templateKey => ({
@@ -77,29 +78,29 @@ export const getStaticPaths: GetStaticPaths = async () => {
 export const getStaticProps: GetStaticProps<TemplatePageProps> = async ({ params }) => {
   const slug = params?.slug as string;
   const templateKey = params?.template_key as string;
-  
+
   // Check if template key exists in registry
   if (!templateRegistry[templateKey as keyof typeof templateRegistry]) {
     return {
       notFound: true
     };
   }
-  
+
   const supabase = createClient();
-  
+
   // Get company data
   const { data: company } = await supabase
     .from('companies')
     .select('*')
     .eq('slug', slug)
     .single();
-  
+
   if (!company) {
     return {
       notFound: true
     };
   }
-  
+
   // Get reviews
   const { data: reviews } = await supabase
     .from('reviews')
@@ -107,15 +108,44 @@ export const getStaticProps: GetStaticProps<TemplatePageProps> = async ({ params
     .eq('biz_id', company.biz_id)
     .order('published_at_date', { ascending: false })
     .limit(10);
-  
+
+  // Get company-specific frames
+  const { data: companyFrames } = await supabase
+    .from('company_frames')
+    .select('*')
+    .eq('company_id', company.id)
+    .eq('template_key', templateKey);
+
+  // Add frames to company object
+  if (companyFrames && companyFrames.length > 0) {
+    company.frames = {};
+    companyFrames.forEach(frame => {
+      company.frames[frame.frame_name] = frame.image_url;
+    });
+  }
+
+  // Get template frames
+  const { data: templateFrames } = await supabase
+    .from('template_frames')
+    .select('*')
+    .eq('template_key', templateKey);
+
+  // Add template frames to company object
+  if (templateFrames && templateFrames.length > 0) {
+    company.template_frames = {};
+    templateFrames.forEach(frame => {
+      company.template_frames[frame.frame_name] = frame.stock_url;
+    });
+  }
+
   // Get logo URL
   let logoUrl = company.logo || null;
-  
+
   // If logo_override is set, use that instead
   if (company.logo_override) {
     logoUrl = company.logo_override;
   }
-  
+
   return {
     props: {
       company,
