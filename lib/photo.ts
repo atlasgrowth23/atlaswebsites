@@ -17,5 +17,5 @@ export function getPhotoUrl(company: any, frameName: string, templateKey: string
   }
   
   // Fall back to stock images
-  return `/public/stock/${templateKey}/${frameName}.jpg`;
+  return `/stock/${templateKey}/${frameName}.jpg`;
 }
