@@ -2,7 +2,6 @@ import React, { ReactNode } from 'react';
 import Head from 'next/head';
 import { Company } from '@/types';
 import { hexToHsl } from '@/lib/utils';
-import { getContrastColor, generatePalette } from '@/lib/colors';
 
 interface LayoutProps {
   children: ReactNode;
@@ -29,8 +28,8 @@ const Layout: React.FC<LayoutProps> = ({
   const secondaryHsl = hexToHsl(secondaryColor);
 
   // Calculate contrast colors for text on primary/secondary backgrounds
-  const onPrimary = getContrastColor(primaryColor);
-  const onSecondary = getContrastColor(secondaryColor);
+  const onPrimary = "#FFFFFF"; // Default to white text on primary
+  const onSecondary = "#FFFFFF"; // Default to white text on secondary
 
   // Set CSS variables
   style['--primary'] = primaryHsl;
