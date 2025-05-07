@@ -114,12 +114,6 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
                   </a>
                 </li>
               )}
-              <li className="flex items-start">
-                <Mail size={18} className="mr-2 mt-1 flex-shrink-0" />
-                <a href="mailto:info@example.com" className="hover:text-white transition-colors">
-                  {company?.email_1 || 'info@example.com'}
-                </a>
-              </li>
               {company?.full_address && (
                 <li className="flex items-start">
                   <MapPin size={18} className="mr-2 mt-1 flex-shrink-0" />
