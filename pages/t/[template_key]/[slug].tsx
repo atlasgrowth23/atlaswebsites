@@ -3,18 +3,10 @@ import { GetStaticProps, GetStaticPaths } from 'next';
 import { Company, Review } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
-// Import templates
-import TemplateHVAC1Layout from '@/components/templates/TemplateHVAC1/Layout';
-import TemplateHVAC1Hero from '@/components/templates/TemplateHVAC1/Hero';
-import TemplateHVAC1About from '@/components/templates/TemplateHVAC1/About';
-
-import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
-import ModernTrustHero from '@/components/templates/ModernTrust/Hero';
-import ModernTrustAbout from '@/components/templates/ModernTrust/About';
-
-import BoldEnergyLayout from '@/components/templates/BoldEnergy/Layout';
-import BoldEnergyHero from '@/components/templates/BoldEnergy/Hero';
-import BoldEnergyAbout from '@/components/templates/BoldEnergy/About';
+// Import templates using barrel files
+import * as TemplateHVAC1 from '@/components/templates/TemplateHVAC1';
+import * as ModernTrust from '@/components/templates/ModernTrust';
+import * as BoldEnergy from '@/components/templates/BoldEnergy';
 
 interface TemplatePageProps {
   company: Company;
@@ -25,21 +17,9 @@ interface TemplatePageProps {
 
 // Template registry - maps template keys to component sets
 const templateRegistry = {
-  'hvac1': {
-    Layout: TemplateHVAC1Layout,
-    Hero: TemplateHVAC1Hero,
-    About: TemplateHVAC1About,
-  },
-  'moderntrust': {
-    Layout: ModernTrustLayout,
-    Hero: ModernTrustHero,
-    About: ModernTrustAbout,
-  },
-  'boldenergy': {
-    Layout: BoldEnergyLayout,
-    Hero: BoldEnergyHero,
-    About: BoldEnergyAbout,
-  }
+  'hvac1': TemplateHVAC1,
+  'moderntrust': ModernTrust,
+  'boldenergy': BoldEnergy
 };
 
 export default function TemplatePage({ company, reviews, logoUrl, templateKey }: TemplatePageProps) {
