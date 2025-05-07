@@ -28,16 +28,23 @@ export interface Company {
   site_company_insights_description?: string | null;
 }
 
-export interface Reviews {
-  id: number;
+export interface Review {
+  id?: number;
   review_id: string;
   biz_id: string;
   place_id: string;
-  reviewer_name: string;
+  reviewer_name?: string;
+  name?: string; // Matching your actual DB column
   text: string;
   stars: number;
+  rating?: number; // Matching your actual DB column
   published_at_date: string;
   reviewer_image?: string;
+  reviewer_photo_url?: string; // Matching your actual DB column
   response_text?: string;
+  response_from_owner_text?: string; // Matching your actual DB column
   response_date?: string;
+  response_from_owner_date?: string; // Matching your actual DB column
+  reviews_link?: string;
+  review_url?: string; // Matching your actual DB column
 }

@@ -2,6 +2,28 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+// Explicitly define Review interface right here to avoid any import issues
+interface Review {
+  id?: number;
+  review_id: string;
+  biz_id: string;
+  place_id: string;
+  reviewer_name?: string;
+  name?: string; // Alternative field
+  text: string;
+  stars: number;
+  rating?: number; // Alternative field
+  published_at_date: string;
+  reviewer_image?: string;
+  reviewer_photo_url?: string; // Alternative field
+  response_text?: string;
+  response_from_owner_text?: string; // Alternative field
+  response_date?: string;
+  response_from_owner_date?: string; // Alternative field
+  reviews_link?: string;
+  review_url?: string; // Alternative field
+}
+
 interface ReviewsSectionProps {
   reviews: Review[];
   companyName: string;
@@ -29,7 +51,7 @@ const formatDate = (dateString: string) => {
     day: 'numeric',
     timeZone: 'UTC' // Use UTC to ensure consistency
   };
-  
+
   try {
     // Use 'en-US' locale explicitly to prevent locale differences between server/client
     const date = new Date(dateString);
@@ -41,46 +63,55 @@ const formatDate = (dateString: string) => {
 };
 
 // Review Card Component
-const ReviewCard = ({ review, companyName }: { review: Review, companyName: string }) => (
-  <Card className="h-full flex flex-col bg-white shadow-lg rounded-xl transform transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
-    <CardContent className="pt-6 flex flex-col flex-grow">
-      <div className="flex items-center mb-4">
-        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden mr-4 border-2 border-primary/20">
-          {review.reviewer_image ? (
-            <img 
-              src={review.reviewer_image} 
-              alt={review.reviewer_name || 'Reviewer'} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span className="text-2xl font-bold text-primary">
-              {review.reviewer_name && review.reviewer_name.length > 0 
-                ? review.reviewer_name.charAt(0).toUpperCase()
-                : 'A'}
-            </span>
-          )}
+const ReviewCard = ({ review, companyName }: { review: Review, companyName: string }) => {
+  // Get the appropriate fields based on what's available
+  const reviewerName = review.reviewer_name || review.name || 'Anonymous';
+  const reviewerImage = review.reviewer_image || review.reviewer_photo_url;
+  const starRating = review.stars || review.rating || 5;
+  const responseText = review.response_text || review.response_from_owner_text;
+  const reviewLink = review.reviews_link || review.review_url;
+
+  return (
+    <Card className="h-full flex flex-col bg-white shadow-lg rounded-xl transform transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <CardContent className="pt-6 flex flex-col flex-grow">
+        <div className="flex items-center mb-4">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden mr-4 border-2 border-primary/20">
+            {reviewerImage ? (
+              <img 
+                src={reviewerImage} 
+                alt={reviewerName} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-2xl font-bold text-primary">
+                {reviewerName && reviewerName.length > 0 
+                  ? reviewerName.charAt(0).toUpperCase()
+                  : 'A'}
+              </span>
+            )}
+          </div>
+          <div>
+            <h4 className="font-semibold">{reviewerName}</h4>
+            <p className="text-sm text-gray-500">{formatDate(review.published_at_date)}</p>
+          </div>
         </div>
-        <div>
-          <h4 className="font-semibold">{review.reviewer_name}</h4>
-          <p className="text-sm text-gray-500">{formatDate(review.published_at_date)}</p>
+
+        <StarRating rating={starRating} />
+
+        <div className="my-4 text-gray-700 flex-grow">
+          <p className="line-clamp-4">{review.text}</p>
         </div>
-      </div>
-      
-      <StarRating rating={review.stars} />
-      
-      <div className="my-4 text-gray-700 flex-grow">
-        <p className="line-clamp-4">{review.text}</p>
-      </div>
-      
-      {review.response_text && (
-        <div className="mt-auto bg-gray-50 p-4 rounded-md border-l-4 border-primary">
-          <p className="text-sm font-semibold">Response from {companyName}:</p>
-          <p className="text-sm text-gray-600 mt-1 line-clamp-3">{review.response_text}</p>
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
+
+        {responseText && (
+          <div className="mt-auto bg-gray-50 p-4 rounded-md border-l-4 border-primary">
+            <p className="text-sm font-semibold">Response from {companyName}:</p>
+            <p className="text-sm text-gray-600 mt-1 line-clamp-3">{responseText}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -88,13 +119,13 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
   const reviewsPerPage = 3; // Show 3 reviews at a time in the carousel
   const totalPages = Math.ceil(reviews.length / reviewsPerPage);
   const autoplayRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Create batches of reviews for the carousel
   const reviewBatches = [];
   for (let i = 0; i < reviews.length; i += reviewsPerPage) {
     reviewBatches.push(reviews.slice(i, i + reviewsPerPage));
   }
-  
+
   // Navigation functions
   const goToNextSlide = useCallback(() => {
     if (!isAnimating) {
@@ -103,7 +134,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
       setTimeout(() => setIsAnimating(false), 500); // Match transition duration
     }
   }, [totalPages, isAnimating]);
-  
+
   const goToPrevSlide = () => {
     if (!isAnimating) {
       setIsAnimating(true);
@@ -111,7 +142,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
       setTimeout(() => setIsAnimating(false), 500); // Match transition duration
     }
   };
-  
+
   // Set up autoplay
   useEffect(() => {
     if (reviews.length > reviewsPerPage) {
@@ -121,18 +152,30 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
       };
     }
   }, [goToNextSlide, reviews.length, reviewsPerPage]);
-  
+
   // Pause autoplay on hover
   const pauseAutoplay = () => {
     if (autoplayRef.current) clearInterval(autoplayRef.current);
   };
-  
+
   // Resume autoplay on mouse leave
   const resumeAutoplay = () => {
     if (reviews.length > reviewsPerPage) {
       if (autoplayRef.current) clearInterval(autoplayRef.current);
       autoplayRef.current = setInterval(goToNextSlide, 5000);
     }
+  };
+
+  // Calculate average rating
+  const calculateAverageRating = () => {
+    if (reviews.length === 0) return 0;
+
+    let sum = 0;
+    reviews.forEach(review => {
+      sum += review.stars || review.rating || 0;
+    });
+
+    return sum / reviews.length;
   };
 
   return (
@@ -144,14 +187,12 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
           <p className="text-gray-600 max-w-3xl mx-auto text-lg">
             Don't just take our word for it. See what our valued customers have to say about working with {companyName}.
           </p>
-          
+
           {reviews.length > 0 && (
             <div className="flex items-center justify-center mt-6 gap-2">
               <div className="text-lg font-bold text-primary">{reviews.length}</div>
               <div className="flex">
-                <StarRating rating={
-                  reviews.reduce((sum, review) => sum + review.stars, 0) / reviews.length
-                } />
+                <StarRating rating={calculateAverageRating()} />
               </div>
               <div className="text-lg text-gray-600">Average Rating</div>
             </div>
@@ -177,10 +218,14 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
                         key={batchIndex} 
                         className="min-w-full grid grid-cols-1 md:grid-cols-3 gap-6"
                       >
-                        {batch.map((review) => (
-                          <ReviewCard key={review.id} review={review} companyName={companyName} />
+                        {batch.map((review, index) => (
+                          <ReviewCard 
+                            key={review.id || review.review_id || index} 
+                            review={review} 
+                            companyName={companyName} 
+                          />
                         ))}
-                        
+
                         {/* Fill in empty slots if needed */}
                         {batch.length < reviewsPerPage && 
                           Array(reviewsPerPage - batch.length).fill(0).map((_, i) => (
@@ -191,7 +236,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
                     ))}
                   </div>
                 </div>
-                
+
                 {/* Navigation buttons */}
                 <button 
                   onClick={goToPrevSlide}
@@ -202,7 +247,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
-                
+
                 <button 
                   onClick={goToNextSlide}
                   className="absolute right-0 top-1/2 -translate-y-1/2 bg-white p-3 rounded-full shadow-md z-10 focus:outline-none hover:bg-gray-100"
@@ -212,7 +257,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
-                
+
                 {/* Indicators */}
                 <div className="flex justify-center mt-8 space-x-2">
                   {reviewBatches.map((_, i) => (
@@ -233,18 +278,27 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ reviews, companyName })
             ) : (
               // If we have 3 or fewer reviews, show them in a grid without carousel
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {reviews.map((review) => (
-                  <ReviewCard key={review.id} review={review} companyName={companyName} />
+                {reviews.map((review, index) => (
+                  <ReviewCard 
+                    key={review.id || review.review_id || index} 
+                    review={review} 
+                    companyName={companyName} 
+                  />
                 ))}
               </div>
             )}
-            
+
             {/* Call to action */}
             {reviews.length > 0 && (
               <div className="text-center mt-12">
                 <Button 
                   className="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-8 rounded-lg shadow transition-all"
-                  onClick={() => window.open(reviews[0].reviews_link || 'https://www.google.com/maps', '_blank')}
+                  onClick={() => window.open(
+                    reviews[0].reviews_link || 
+                    reviews[0].review_url || 
+                    'https://www.google.com/maps', 
+                    '_blank'
+                  )}
                 >
                   Leave a Review
                 </Button>
