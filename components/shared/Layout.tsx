@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import Head from 'next/head';
 import { Company } from '@/types';
 import { hexToHsl } from '@/lib/utils';
-
+// Remove the import for contrastColor from '@/lib/colors'
 
 interface LayoutProps {
   children: ReactNode;
