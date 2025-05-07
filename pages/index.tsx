@@ -2,7 +2,6 @@ import type { NextPage } from 'next';
 import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import Head from 'next/head';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
 import { createClient } from '@/lib/supabase/client';
