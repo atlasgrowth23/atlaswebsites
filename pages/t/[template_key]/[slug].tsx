@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import * as ModernTrust from '@/components/templates/BigBalls';
 import * as BoldEnergy from '@/components/templates/BoldEnergy';
 import * as AirStream from '@/components/templates/Airstream';
+import * as BrownNeck from '@/components/templates/BrownNeck';
 
 interface TemplatePageProps {
   company: Company;
@@ -19,7 +20,8 @@ interface TemplatePageProps {
 const templateRegistry = {
   'moderntrust': ModernTrust,
   'boldenergy': BoldEnergy,
-  'airstream': AirStream
+  'airstream': AirStream,
+  'brownneck': BrownNeck
 };
 
 export default function TemplatePage({ company, reviews, logoUrl, templateKey }: TemplatePageProps) {
