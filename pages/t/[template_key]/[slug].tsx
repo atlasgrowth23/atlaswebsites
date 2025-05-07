@@ -6,8 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 // Import templates using barrel files
 import * as ModernTrust from '@/components/templates/BigBalls';
 import * as BoldEnergy from '@/components/templates/BoldEnergy';
-// Try relative import instead
-import * as AirStream from '../../../components/templates/AirStream';
+import * as AirStream from '@/components/templates/Airstream';
 
 interface TemplatePageProps {
   company: Company;
