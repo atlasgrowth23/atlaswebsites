@@ -1,0 +1,26 @@
+ModuleParseError: Module parse failed: Identifier 'Head' has already been declared (6:7)
+File was processed with these loaders:
+ * ./node_modules/next/dist/compiled/@next/react-refresh-utils/dist/loader.js
+ * ./node_modules/next/dist/build/webpack/loaders/next-swc-loader.js
+You may need an additional loader to handle the result of these loaders.
+| import Head from 'next/head';
+| import Link from 'next/link';
+> import Head from 'next/head';
+| import { Button } from '@/components/ui/button';
+| const Home = (param)=>{
+    at <unknown> (File was processed with these loaders:)
+    at handleParseError (file:///home/runner/workspace/node_modules/next/dist/compiled/webpack/bundle5.js:29:410403)
+    at <unknown> (file:///home/runner/workspace/node_modules/next/dist/compiled/webpack/bundle5.js:29:412019)
+    at processResult (file:///home/runner/workspace/node_modules/next/dist/compiled/webpack/bundle5.js:29:407884)
+    at <unknown> (file:///home/runner/workspace/node_modules/next/dist/compiled/webpack/bundle5.js:29:408906)
+    at <unknown> (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:8727)
+    at iterateNormalLoaders (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5565)
+    at iterateNormalLoaders (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5650)
+    at <unknown> (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5879)
+    at r.callback (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
+    at Object.ReactRefreshLoader (file:///home/runner/workspace/node_modules/next/dist/compiled/@next/react-refresh-utils/dist/loader.js:14:10)
+    at LOADER_EXECUTION (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4134)
+    at runSyncOrAsync (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4145)
+    at iterateNormalLoaders (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5782)
+    at <unknown> (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:5142)
+    at r.callback (file:///home/runner/workspace/node_modules/next/dist/compiled/loader-runner/LoaderRunner.js:1:4039)
