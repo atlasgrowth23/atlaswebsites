@@ -2,7 +2,7 @@ import type { NextPage } from 'next';
 import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import Layout from '@/components/shared/Layout';
+import Head from 'next/head';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
 import { createClient } from '@/lib/supabase/client';
@@ -34,10 +34,13 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
   };
 
   return (
-    <Layout 
-      title="HVAC Company Websites | Static Site Generator"
-      description="Generate static websites for HVAC contractors with our Next.js-based static site generator."
-    >
+    <>
+      <Head>
+        <title>HVAC Company Websites | Static Site Generator</title>
+        <meta name="description" content="Generate static websites for HVAC contractors with our Next.js-based static site generator." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
       <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16 md:py-24">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
@@ -126,7 +129,7 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
           <p>© {new Date().getFullYear()} HVAC Static Site Generator. All rights reserved.</p>
         </div>
       </footer>
-    </Layout>
+    </>
   );
 };
 
