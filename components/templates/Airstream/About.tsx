@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { Shield, Clock, Users, Tool } from 'lucide-react';
+import { Shield, Clock, Users, Wrench } from 'lucide-react';
 import { Company } from '@/types';
 import { getCompanyColors } from '@/lib/palettes';
 import { getPhotoUrl } from '@/lib/photo';
@@ -34,7 +34,7 @@ const About: React.FC<AboutProps> = ({ company }) => {
       description: "Our top priority is ensuring our customers are completely satisfied with our work."
     },
     {
-      icon: <Tool size={36} className="text-primary" />,
+      icon: <Wrench size={36} className="text-primary" />,
       title: "Modern Equipment",
       description: "We use the latest technology and equipment to deliver superior HVAC solutions."
     }
