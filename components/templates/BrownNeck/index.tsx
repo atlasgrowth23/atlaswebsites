@@ -1,11 +1,10 @@
 import Hero from './Hero';
 import Layout from './Layout';
+import About from './About';
 
 // Export components for use in template registry
 export { 
   Hero,
-  Layout
+  Layout,
+  About
 };
-
-// Add more components as they are created
-// export { default as About } from './About';
