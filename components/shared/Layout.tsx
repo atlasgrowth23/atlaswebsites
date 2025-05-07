@@ -1,8 +1,6 @@
 import React, { ReactNode } from 'react';
 import Head from 'next/head';
 import { Company } from '@/types';
-import { hexToHsl } from '@/lib/utils';
-// Remove the import for contrastColor from '@/lib/colors'
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,28 +15,6 @@ const Layout: React.FC<LayoutProps> = ({
   description = 'Professional HVAC services including installation, maintenance, and repair for residential and commercial properties.',
   company,
 }) => {
-  // Create CSS variables for company colors with fallbacks
-  const style: Record<string, string> = {};
-
-  // Set default colors
-  const primaryColor = company?.primary_color || "#2563EB";
-  const secondaryColor = company?.secondary_color || "#DC2626";
-
-  // Calculate HSL values for CSS variables
-  const primaryHsl = hexToHsl(primaryColor);
-  const secondaryHsl = hexToHsl(secondaryColor);
-
-  // Calculate contrast colors for text on primary/secondary backgrounds
-  // Instead of using the contrastColor function, we'll use fixed values
-  const onPrimary = "#FFFFFF"; // Default to white text on primary
-  const onSecondary = "#FFFFFF"; // Default to white text on secondary
-
-  // Set CSS variables
-  style['--primary'] = primaryHsl;
-  style['--secondary'] = secondaryHsl;
-  style['--on-primary'] = onPrimary;
-  style['--on-secondary'] = onSecondary;
-
   return (
     <>
       <Head>
@@ -61,7 +37,7 @@ const Layout: React.FC<LayoutProps> = ({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
 
-      <div className="min-h-screen flex flex-col" style={style}>
+      <div className="min-h-screen flex flex-col">
         {children}
       </div>
     </>
