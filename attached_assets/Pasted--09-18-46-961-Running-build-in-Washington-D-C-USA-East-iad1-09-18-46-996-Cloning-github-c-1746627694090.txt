@@ -1,0 +1,42 @@
+[09:18:46.961] Running build in Washington, D.C., USA (East) – iad1
+[09:18:46.996] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: 3bac6a3)
+[09:18:47.157] Previous build caches not available
+[09:18:47.947] Cloning completed: 951.000ms
+[09:18:48.241] Running "vercel build"
+[09:18:48.630] Vercel CLI 41.7.2
+[09:18:49.111] Installing dependencies...
+[09:18:59.940] 
+[09:18:59.940] added 347 packages in 11s
+[09:18:59.940] 
+[09:18:59.941] 83 packages are looking for funding
+[09:18:59.941]   run `npm fund` for details
+[09:18:59.988] Detected Next.js version: 15.3.1
+[09:18:59.991] Running "npm run build"
+[09:19:00.108] 
+[09:19:00.108] > workspace@1.0.0 build
+[09:19:00.109] > next build
+[09:19:00.109] 
+[09:19:00.667] Attention: Next.js now collects completely anonymous telemetry regarding usage.
+[09:19:00.668] This information is used to shape Next.js' roadmap and prioritize features.
+[09:19:00.668] You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+[09:19:00.668] https://nextjs.org/telemetry
+[09:19:00.668] 
+[09:19:00.724]    ▲ Next.js 15.3.1
+[09:19:00.724] 
+[09:19:00.763]    Linting and checking validity of types ...
+[09:19:04.772] Failed to compile.
+[09:19:04.772] 
+[09:19:04.773] ./upload_tmp/components/shared/Layout.tsx:5:31
+[09:19:04.773] Type error: Cannot find module '@/lib/colors' or its corresponding type declarations.
+[09:19:04.773] 
+[09:19:04.773] [0m [90m 3 |[39m [36mimport[39m { [33mCompany[39m } [36mfrom[39m [32m'@/types'[39m[33m;[39m[0m
+[09:19:04.773] [0m [90m 4 |[39m [36mimport[39m { hexToHsl } [36mfrom[39m [32m'@/lib/utils'[39m[33m;[39m[0m
+[09:19:04.773] [0m[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m { contrastColor } [36mfrom[39m [32m'@/lib/colors'[39m[33m;[39m[0m
+[09:19:04.773] [0m [90m   |[39m                               [31m[1m^[22m[39m[0m
+[09:19:04.773] [0m [90m 6 |[39m [36mimport[39m { getCompanyColors } [36mfrom[39m [32m'@/lib/palettes'[39m[33m;[39m[0m
+[09:19:04.774] [0m [90m 7 |[39m[0m
+[09:19:04.774] [0m [90m 8 |[39m [36minterface[39m [33mLayoutProps[39m {[0m
+[09:19:04.789] Next.js build worker exited with code: 1 and signal: null
+[09:19:04.805] Error: Command "npm run build" exited with 1
+[09:19:04.983] 
+[09:19:07.889] Exiting build container
