@@ -28,7 +28,7 @@ export interface Company {
   site_company_insights_description?: string | null;
 }
 
-export interface Review {
+export interface Reviews {
   id: number;
   review_id: string;
   biz_id: string;
