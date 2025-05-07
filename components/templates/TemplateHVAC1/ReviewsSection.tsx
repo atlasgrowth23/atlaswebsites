@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Review } from '@/types';
 import { Button } from '@/components/ui/button';
 
 interface ReviewsSectionProps {
