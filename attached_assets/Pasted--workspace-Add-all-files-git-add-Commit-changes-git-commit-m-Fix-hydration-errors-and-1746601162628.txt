@@ -1,0 +1,60 @@
+~/workspace$ # Add all files
+git add .
+
+# Commit changes
+git commit -m "Fix hydration errors and styling issues"
+
+# Set remote with token
+git remote set-url origin "https://$GITHUB_TOKEN@github.com/atlasgrowth23/atlaswebsites.git"
+# Push to GitHub
+git push -f origin main
+fatal: Unable to create '/home/runner/workspace/.git/index.lock': File exists.
+
+Another git process seems to be running in this repository, e.g.
+an editor opened by 'git commit'. Please make sure all processes
+are terminated then try again. If it still fails, a git process
+may have crashed in this repository earlier:
+remove the file manually to continue.
+fatal: Unable to create '/home/runner/workspace/.git/index.lock': File exists.
+
+Another git process seems to be running in this repository, e.g.
+an editor opened by 'git commit'. Please make sure all processes
+are terminated then try again. If it still fails, a git process
+may have crashed in this repository earlier:
+remove the file manually to continue.
+Enumerating objects: 171, done.
+Counting objects: 100% (171/171), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (134/134), done.
+Writing objects: 100% (147/147), 268.95 KiB | 11.21 MiB/s, done.
+Total 147 (delta 76), reused 12 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (76/76), completed with 13 local objects.
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: 
+remote: - GITHUB PUSH PROTECTION
+remote:   —————————————————————————————————————————
+remote:     Resolve the following violations before pushing again
+remote: 
+remote:     - Push cannot contain secrets
+remote: 
+remote:     
+remote:      (?) Learn how to resolve a blocked push
+remote:      https://docs.github.com/code-security/secret-scanning/working-with-secret-scanning-and-push-protection/working-with-push-protection-from-the-command-line#resolving-a-blocked-push
+remote:     
+remote:     
+remote:       —— GitHub Personal Access Token ——————————————————————
+remote:        locations:
+remote:          - commit: cda50ca789c0248433f0e8498810b3465f824407
+remote:            path: push.sh:15
+remote:          - commit: cda50ca789c0248433f0e8498810b3465f824407
+remote:            path: setup_git_and_push.js:4
+remote:     
+remote:        (?) To push, remove secret from commit(s) or follow this URL to allow the secret.
+remote:        https://github.com/atlasgrowth23/atlaswebsites/security/secret-scanning/unblock-secret/2wkvmSh2ImtGc7PGVAhrKZKvGIz
+remote:     
+remote: 
+remote: 
+To https://github.com/atlasgrowth23/atlaswebsites.git
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+error: failed to push some refs to 'https://github.com/atlasgrowth23/atlaswebsites.git'
+~/workspace$ 
