@@ -4,7 +4,7 @@ import { Company, Review } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
 // Import templates using barrel files
-import * as TemplateHVAC1 from '@/components/templates/TemplateHVAC1';
+
 import * as ModernTrust from '@/components/templates/ModernTrust';
 import * as BoldEnergy from '@/components/templates/BoldEnergy';
 
@@ -17,15 +17,21 @@ interface TemplatePageProps {
 
 // Template registry - maps template keys to component sets
 const templateRegistry = {
-  'hvac1': TemplateHVAC1,
+
   'moderntrust': ModernTrust,
   'boldenergy': BoldEnergy
 };
 
 export default function TemplatePage({ company, reviews, logoUrl, templateKey }: TemplatePageProps) {
   // Get the appropriate template components based on the template key
-  const template = templateRegistry[templateKey as keyof typeof templateRegistry] || templateRegistry.hvac1;
-  
+  const template = templateRegistry[templateKey as keyof typeof templateRegistry];
+
+  if (!template) {
+    // Handle the case where template is undefined, e.g., by returning or using a default template
+    // return some default rendering or throw an error
+    throw new Error(`Template with key "${templateKey}" not found.`);
+  }
+
   const { Layout, Hero, About } = template;
   
   const pageTitle = `${company.name} | HVAC Services`;
