@@ -29,26 +29,38 @@ export default function TemplatePage({ company, reviews, logoUrl, templateKey }:
   const template = templateRegistry[templateKey as keyof typeof templateRegistry];
 
   if (!template) {
-    // Handle the case where template is undefined, e.g., by returning or using a default template
-    // return some default rendering or throw an error
     throw new Error(`Template with key "${templateKey}" not found.`);
   }
 
-  const { Layout, Hero, About } = template;
-
+  const { Layout } = template;
+  
+  // Define page metadata
   const pageTitle = `${company.name} | HVAC Services`;
   const pageDescription = company.site_company_insights_description || 
     `${company.name} provides professional heating, cooling, and air quality services for residential and commercial clients.`;
 
+  // Create a mapping of section types to section components
+  // This allows different templates to have different sections
   return (
     <Layout 
       title={pageTitle}
       description={pageDescription}
       company={company}
     >
-      <Hero company={company} />
-      <About company={company} />
-      {/* Other components can be added here */}
+      {/* Render all available template sections dynamically */}
+      {Object.entries(template).map(([key, Component]) => {
+        // Skip the Layout component as we're already using it
+        if (key === 'Layout') return null;
+        
+        // Render other components with needed props
+        return (
+          <Component 
+            key={key} 
+            company={company} 
+            reviews={key === 'Reviews' ? reviews : undefined}
+          />
+        );
+      })}
     </Layout>
   );
 }
