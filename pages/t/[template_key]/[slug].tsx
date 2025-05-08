@@ -8,6 +8,7 @@ import * as ModernTrust from '@/components/templates/BigBalls';
 import * as BoldEnergy from '@/components/templates/BoldEnergy';
 import * as AirStream from '@/components/templates/Airstream';
 import * as BrownNeck from '@/components/templates/BrownNeck';
+import * as Test from '@/components/templates/Test';
 
 interface TemplatePageProps {
   company: Company;
@@ -21,7 +22,8 @@ const templateRegistry = {
   'moderntrust': ModernTrust,
   'boldenergy': BoldEnergy,
   'airstream': AirStream,
-  'brownneck': BrownNeck
+  'brownneck': BrownNeck,
+  'test': Test
 };
 
 export default function TemplatePage({ company, reviews, logoUrl, templateKey }: TemplatePageProps) {
