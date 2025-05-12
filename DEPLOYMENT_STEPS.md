@@ -14,10 +14,12 @@
    - Removed `components/admin` directory
    - Removed unnecessary API endpoints related to admin functionality
 
-3. **Removed Supabase References**:
-   - Removed old API endpoints still using Supabase
+3. **Removed Unnecessary Files and Supabase References**:
+   - Removed old API endpoints related to Supabase and schema info
+   - Removed db-test and create-table endpoints
+   - Removed schema.tsx page entirely
    - Changed `biz_id` to `company_id` in the Review interface
-   - Kept migration scripts in `/scripts` directory but they won't affect production build
+   - Moved old migration scripts to `/scripts/old` directory
 
 4. **Custom Domain and Subdomain Support**:
    - Added NextJS middleware for domain handling

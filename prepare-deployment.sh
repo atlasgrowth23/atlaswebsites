@@ -16,7 +16,12 @@ rm -rf node_modules/.cache
 # Remove unnecessary admin and supabase files
 echo -e "\n${YELLOW}Removing admin & deprecated files...${NC}"
 rm -rf pages/admin components/admin
-rm -f pages/api/setup-frames.js pages/api/insert-frame.js pages/api/setup-database.js pages/api/schema-info.js
+rm -f pages/api/setup-frames.js pages/api/insert-frame.js pages/api/setup-database.js 
+rm -f pages/api/schema-info.js pages/api/replit-schema-info.ts pages/schema.tsx
+rm -f pages/api/db-test.ts pages/api/create-table.js pages/api/default-credentials.ts
+rm -f pages/api/company-id.ts pages/api/jobs.ts
+mkdir -p scripts/old
+mv scripts/migrate-from-supabase.ts scripts/simple-migration.ts scripts/create-frames-*.js scripts/old/ 2>/dev/null || true
 
 # Run next build to check for TypeScript errors
 echo -e "\n${YELLOW}Running TypeScript check...${NC}"
