@@ -17,7 +17,7 @@ const Reviews: React.FC<ReviewsProps> = ({ company }) => {
     {
       id: 2,
       name: 'Sarah Williams',
-      text: 'We've been using their maintenance service for years. Always reliable, always on time, and they keep our system running perfectly.',
+      text: "We've been using their maintenance service for years. Always reliable, always on time, and they keep our system running perfectly.",
       rating: 5,
     },
     {
