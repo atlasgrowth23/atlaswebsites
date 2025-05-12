@@ -9,10 +9,22 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Tables we know exist in Supabase
 const knownTables = ['companies', 'reviews', 'frames', 'companies_frames'];
 
-async function getSupabaseSchema() {
+// Define types
+interface ColumnInfo {
+  column_name: string;
+  data_type: string;
+  is_nullable: string;
+  column_default: string | null;
+}
+
+interface TableSchemas {
+  [tableName: string]: ColumnInfo[];
+}
+
+async function getSupabaseSchema(): Promise<TableSchemas> {
   console.log('Getting schema information from Supabase...');
   
-  const tableSchemas = {};
+  const tableSchemas: TableSchemas = {};
   
   for (const tableName of knownTables) {
     try {
@@ -31,12 +43,35 @@ async function getSupabaseSchema() {
       }
       
       if (!columns || columns.length === 0) {
-        console.warn(`No columns found for table ${tableName}`);
+        console.log(`Trying direct query for table ${tableName}...`);
+        
+        // Try an alternative approach - directly query a row and extract column names
+        const { data: sampleData, error: sampleError } = await supabase
+          .from(tableName)
+          .select('*')
+          .limit(1);
+          
+        if (sampleError || !sampleData || sampleData.length === 0) {
+          console.warn(`No data or schema found for table ${tableName}`);
+          continue;
+        }
+        
+        // Create basic column definitions from the sample data
+        const basicColumns: ColumnInfo[] = Object.keys(sampleData[0]).map(colName => ({
+          column_name: colName,
+          data_type: typeof sampleData[0][colName] === 'number' ? 'numeric' : 
+                     typeof sampleData[0][colName] === 'boolean' ? 'boolean' : 'text',
+          is_nullable: 'YES',
+          column_default: null
+        }));
+        
+        console.log(`Inferred ${basicColumns.length} columns for ${tableName} from sample data`);
+        tableSchemas[tableName] = basicColumns;
         continue;
       }
       
       console.log(`Found ${columns.length} columns for ${tableName}`);
-      tableSchemas[tableName] = columns;
+      tableSchemas[tableName] = columns as ColumnInfo[];
       
     } catch (err) {
       console.error(`Error processing table ${tableName}:`, err);
@@ -46,20 +81,16 @@ async function getSupabaseSchema() {
   return tableSchemas;
 }
 
-async function createTablesInReplitDb(schemas) {
+async function createTablesInReplitDb(schemas: TableSchemas): Promise<void> {
   console.log('\nCreating tables in Replit database...');
   
   for (const [tableName, columns] of Object.entries(schemas)) {
     try {
       console.log(`\nCreating table ${tableName}...`);
       
-      // Generate CREATE TABLE statement
-      let createTableSQL = `CREATE TABLE IF NOT EXISTS ${tableName} (\n`;
-      
       // Generate column definitions
-      for (let i = 0; i < columns.length; i++) {
-        const column = columns[i];
-        let columnDef = `  "${column.column_name}" ${column.data_type}`;
+      const columnDefs = columns.map((column, i) => {
+        let columnDef = `"${column.column_name}" ${column.data_type}`;
         
         // Add NOT NULL constraint if applicable
         if (column.is_nullable === 'NO') {
@@ -71,21 +102,16 @@ async function createTablesInReplitDb(schemas) {
           columnDef += ` DEFAULT ${column.column_default}`;
         }
         
-        // Add comma if not the last column
-        if (i < columns.length - 1) {
-          columnDef += ',';
-        }
-        
-        createTableSQL += columnDef + '\n';
-      }
+        return columnDef;
+      }).join(',\n  ');
       
-      createTableSQL += ');';
+      // Using template literals for the SQL query
+      await sql`
+        CREATE TABLE IF NOT EXISTS ${sql(tableName)} (
+          ${sql(columnDefs)}
+        );
+      `;
       
-      console.log('Executing SQL:');
-      console.log(createTableSQL);
-      
-      // Execute CREATE TABLE statement
-      await sql.query(createTableSQL);
       console.log(`Table ${tableName} created successfully!`);
       
     } catch (err) {
@@ -94,7 +120,7 @@ async function createTablesInReplitDb(schemas) {
   }
 }
 
-async function migrateTableData(schemas) {
+async function migrateTableData(schemas: TableSchemas): Promise<void> {
   console.log('\nMigrating data from Supabase to Replit database...');
   
   for (const tableName of Object.keys(schemas)) {
@@ -118,25 +144,56 @@ async function migrateTableData(schemas) {
       
       console.log(`Found ${rows.length} rows for ${tableName}`);
       
-      // Insert data into Replit database
-      for (const row of rows) {
-        const columns = Object.keys(row);
-        const values = Object.values(row);
+      // We'll process in batches of 50 records
+      const batchSize = 50;
+      let processed = 0;
+      
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
         
-        // Generate placeholders for prepared statement
-        const placeholders = columns.map((_, i) => `$${i + 1}`).join(', ');
+        for (const row of batch) {
+          try {
+            // Get column names and values
+            const columns = Object.keys(row);
+            const values = Object.values(row);
+            
+            // Build dynamic SQL insert
+            const columnsSQL = columns.join(', ');
+            const placeholders = columns.map(() => '?').join(', ');
+            
+            // Build the SQL query dynamically (this is more complex with neon)
+            // Instead of using parameterized queries for column names (which isn't possible)
+            // we'll build a custom query per row
+            
+            // For demonstration, we'll do this differently...
+            // Convert the row to a string representation for logging
+            const rowStr = JSON.stringify(row);
+            console.log(`Inserting row: ${rowStr.substring(0, 100)}${rowStr.length > 100 ? '...' : ''}`);
+            
+            // Build a dynamic SQL query with proper escaping
+            const columnPlaceholders = columns.map(col => `"${col}"`).join(', ');
+            const valuePlaceholders = values.map(val => {
+              if (val === null) return 'NULL';
+              if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+              return val;
+            }).join(', ');
+            
+            await sql`
+              INSERT INTO ${sql(tableName)} (${sql(columns.join(', '))})
+              VALUES (${sql(valuePlaceholders)})
+              ON CONFLICT DO NOTHING
+            `;
+            
+            processed++;
+          } catch (insertErr) {
+            console.error(`Error inserting row into ${tableName}:`, insertErr);
+          }
+        }
         
-        const insertSQL = `
-          INSERT INTO ${tableName} (${columns.join(', ')})
-          VALUES (${placeholders})
-          ON CONFLICT DO NOTHING;
-        `;
-        
-        await sql.query(insertSQL, values);
+        console.log(`Processed ${Math.min(i + batchSize, rows.length)} of ${rows.length} rows`);
       }
       
-      console.log(`Successfully migrated ${rows.length} rows to ${tableName}`);
-      
+      console.log(`Successfully migrated ${processed} rows to ${tableName}`);
     } catch (err) {
       console.error(`Error migrating data for ${tableName}:`, err);
     }
@@ -145,8 +202,18 @@ async function migrateTableData(schemas) {
 
 async function main() {
   try {
+    console.log('Starting migration from Supabase to Replit PostgreSQL...');
+    console.log('Supabase URL:', supabaseUrl);
+    
+    // First, check if the Replit database is properly connected
+    console.log('\nChecking Replit database connection...');
+    const dbInfo = await sql`SELECT current_database() as db_name, version()`;
+    console.log('Connected to database:', dbInfo[0].db_name);
+    console.log('PostgreSQL version:', dbInfo[0].version);
+    
     // Get schema information from Supabase
     const schemas = await getSupabaseSchema();
+    console.log('\nSchema information retrieved:', Object.keys(schemas).join(', '));
     
     // Create tables in Replit database
     await createTablesInReplitDb(schemas);
@@ -154,12 +221,25 @@ async function main() {
     // Migrate data from Supabase to Replit database
     await migrateTableData(schemas);
     
+    // Verify the migration by checking record counts
+    console.log('\nVerifying migration...');
+    for (const tableName of Object.keys(schemas)) {
+      try {
+        const countResult = await sql`SELECT COUNT(*) as count FROM ${sql(tableName)}`;
+        console.log(`Table ${tableName} contains ${countResult[0].count} rows in Replit database`);
+      } catch (err) {
+        console.error(`Error counting rows in ${tableName}:`, err);
+      }
+    }
+    
     console.log('\nMigration completed successfully!');
   } catch (err) {
     console.error('Migration failed:', err);
   } finally {
-    process.exit(0);
+    // We'll exit with a slight delay to ensure logs are flushed
+    setTimeout(() => process.exit(0), 500);
   }
 }
 
+// Run the migration
 main();
