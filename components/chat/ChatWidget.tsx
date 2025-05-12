@@ -30,21 +30,41 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     setError(null);
 
     try {
+      // Determine what company identifier we have
+      let payload = {
+        ...formData
+      };
+
+      // If we have an ID that's a number
+      if (company.id && typeof company.id === 'number') {
+        payload.companyId = company.id;
+      } 
+      // If we have a slug, use that
+      else if (company.slug) {
+        payload.companySlug = company.slug;
+      } 
+      // If ID is a string (likely a slug)
+      else if (company.id) {
+        payload.companyId = company.id;
+      }
+
+      console.log('Sending message with payload:', payload);
+
       const response = await fetch('/api/send-message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          companyId: company.id,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to send message');
       }
+
+      const data = await response.json();
+      console.log('Message sent successfully:', data);
 
       setSubmitSuccess(true);
       setFormData({
