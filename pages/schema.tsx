@@ -80,30 +80,52 @@ export default function SchemaPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {schema.tables.map((table) => (
-                <Card key={table.table_name} className="shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="bg-blue-50">
-                    <CardTitle className="text-blue-700">{table.table_name}</CardTitle>
+                <Card key={table.table_name} className={`shadow-md hover:shadow-lg transition-shadow ${!table.exists ? 'border-2 border-dashed border-yellow-300' : ''}`}>
+                  <CardHeader className={table.exists ? "bg-blue-50" : "bg-yellow-50"}>
+                    <CardTitle className={table.exists ? "text-blue-700" : "text-yellow-700"}>
+                      {table.table_name}
+                      {table.exists ? 
+                        <span className="ml-2 text-xs inline-block bg-green-100 text-green-800 px-2 py-1 rounded">Exists</span> :
+                        <span className="ml-2 text-xs inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Needs Creation</span>
+                      }
+                    </CardTitle>
+                    {table.message && (
+                      <p className="text-sm mt-1 text-gray-600">{table.message}</p>
+                    )}
+                    {table.empty && (
+                      <p className="text-sm mt-1 text-gray-600">This table exists but has no data yet.</p>
+                    )}
                   </CardHeader>
                   <CardContent className="p-0">
-                    <table className="w-full">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Column</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {table.columns.map((column, i) => {
-                          const { name, type } = parseColumnInfo(column);
-                          return (
-                            <tr key={i} className="hover:bg-gray-50">
-                              <td className="px-4 py-2 text-sm font-medium">{name}</td>
-                              <td className="px-4 py-2 text-sm text-gray-500">{type}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    {table.columns.length > 0 ? (
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Column</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {table.columns.map((column, i) => {
+                            const { name, type } = parseColumnInfo(column);
+                            return (
+                              <tr key={i} className="hover:bg-gray-50">
+                                <td className="px-4 py-2 text-sm font-medium">{name}</td>
+                                <td className="px-4 py-2 text-sm text-gray-500">{type}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        {table.exists && table.empty ? (
+                          "This table is empty. Data structure will be shown when rows are added."
+                        ) : (
+                          "Table structure will be available after creation."
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

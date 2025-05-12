@@ -29,97 +29,63 @@ export default async function handler(req, res) {
       if (countError && countError.code !== 'PGRST116') {
         // Only consider it an error if it's not a "table doesn't exist" error
         console.error('Error checking user_profiles table:', countError);
-        results.push({ table: 'user_profiles', success: false, error: countError.message });
-      } else if (countError && countError.code === 'PGRST116') {
-        // Table doesn't exist, attempt to create it through a simplified approach
-        console.log('User profiles table does not exist, marking as pending creation');
         results.push({ 
           table: 'user_profiles', 
           success: false, 
-          status: 'pending_creation',
-          message: 'Table needs to be created manually or through migration tool' 
+          error: countError.message 
+        });
+      } else if (countError && countError.code === 'PGRST116') {
+        // Table doesn't exist, we should create it
+        console.log('User profiles table does not exist, will provide SQL to create it');
+        results.push({ 
+          table: 'user_profiles', 
+          success: false, 
+          status: 'not_exists',
+          message: 'Table needs to be created in the Supabase SQL editor' 
         });
       } else {
         console.log('User profiles table already exists');
-        results.push({ table: 'user_profiles', success: true, status: 'exists' });
-      }
-      
-      // Repeat for chat_messages table
-      console.log('Checking chat_messages table');
-      const { count: msgCount, error: msgCountError } = await supabase
-        .from('chat_messages')
-        .select('*', { count: 'exact', head: true });
-      
-      if (msgCountError && msgCountError.code !== 'PGRST116') {
-        console.error('Error checking chat_messages table:', msgCountError);
-        results.push({ table: 'chat_messages', success: false, error: msgCountError.message });
-      } else if (msgCountError && msgCountError.code === 'PGRST116') {
-        console.log('Chat messages table does not exist, marking as pending creation');
         results.push({ 
-          table: 'chat_messages', 
-          success: false, 
-          status: 'pending_creation',
-          message: 'Table needs to be created manually or through migration tool'
+          table: 'user_profiles', 
+          success: true, 
+          status: 'exists' 
         });
-      } else {
-        console.log('Chat messages table already exists');
-        results.push({ table: 'chat_messages', success: true, status: 'exists' });
-      }
-      
-      // Repeat for chat_configurations table
-      console.log('Checking chat_configurations table');
-      const { count: configCount, error: configCountError } = await supabase
-        .from('chat_configurations')
-        .select('*', { count: 'exact', head: true });
-      
-      if (configCountError && configCountError.code !== 'PGRST116') {
-        console.error('Error checking chat_configurations table:', configCountError);
-        results.push({ table: 'chat_configurations', success: false, error: configCountError.message });
-      } else if (configCountError && configCountError.code === 'PGRST116') {
-        console.log('Chat configurations table does not exist, marking as pending creation');
-        results.push({ 
-          table: 'chat_configurations', 
-          success: false,
-          status: 'pending_creation',
-          message: 'Table needs to be created manually or through migration tool'
-        });
-      } else {
-        console.log('Chat configurations table already exists');
-        results.push({ table: 'chat_configurations', success: true, status: 'exists' });
       }
       
       // Create a special message to guide the user
       const setupInstructions = `
-To complete database setup, please create the following tables in Supabase:
+# Supabase Database Setup Instructions
 
-1. user_profiles:
-   - id: serial primary key
-   - user_id: uuid, references auth.users(id)
-   - role: text (values: 'super_admin', 'admin', 'staff', 'business', 'demo')
-   - permissions: jsonb
-   - business_slug: text
-   - created_at: timestamptz
+To complete setting up your HVAC Portal, you'll need to create the user_profiles table in your Supabase database.
 
-2. chat_messages:
-   - id: serial primary key
-   - business_slug: text
-   - sender_name: text
-   - sender_email: text
-   - message: text
-   - timestamp: timestamptz
-   - read: boolean
-   - responded: boolean
-   - response_text: text
-   - response_timestamp: timestamptz
+## How to Create the Table:
 
-3. chat_configurations:
-   - business_slug: text primary key
-   - greeting_message: text
-   - primary_color: text
-   - auto_responses: jsonb
-   - active_hours: jsonb
-   - created_at: timestamptz
-   - updated_at: timestamptz
+1. Go to your Supabase dashboard: https://supabase.com/dashboard
+2. Select your project
+3. Go to the "SQL Editor" section
+4. Create a new query
+5. Paste the following SQL:
+
+\`\`\`sql
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id),
+  role TEXT NOT NULL CHECK (role IN ('super_admin', 'admin', 'staff', 'business', 'demo')),
+  permissions JSONB DEFAULT '{}',
+  business_slug TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create an initial admin user (optional)
+-- You will need to create a user in Auth first, then use its UUID here
+-- INSERT INTO user_profiles (user_id, role, business_slug) 
+-- VALUES ('replace-with-actual-uuid', 'admin', 'your-business-name');
+\`\`\`
+
+6. Run the SQL query
+7. Refresh your schema page to see the new table
+
+After creating the table, you can log in to the HVAC Portal with a Supabase Auth account.
 `;
 
       console.log('Database check complete. Results:', results);
