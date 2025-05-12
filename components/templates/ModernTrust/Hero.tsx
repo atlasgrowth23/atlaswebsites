@@ -12,6 +12,7 @@ interface HeroProps {
 const Hero: React.FC<HeroProps> = ({ company }) => {
   // Get hero image URL using the photo helper
   const heroImage = getPhotoUrl(company, 'hero_img', 'moderntrust');
+  console.log('Hero image URL:', heroImage); // For debugging
   
   return (
     <div className="relative bg-gray-50 py-20 md:py-32">

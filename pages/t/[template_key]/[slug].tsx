@@ -67,10 +67,11 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const { slug } = params as Params;
+  const { slug, template_key } = params as Params;
 
   const supabase = createClient();
 
+  // Fetch company data
   const { data: company, error } = await supabase
     .from('companies')
     .select('*')
@@ -88,6 +89,28 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     return {
       notFound: true,
     };
+  }
+  
+  // Fetch template frames from frames table
+  const { data: templateFrames, error: framesError } = await supabase
+    .from('frames')
+    .select('frame_name, image_url')
+    .eq('template_key', template_key);
+    
+  if (framesError) {
+    console.error('Error fetching template frames:', framesError);
+  }
+  
+  // Convert frames array to object format for easy lookup
+  if (templateFrames && templateFrames.length > 0) {
+    const frameObj = templateFrames.reduce((acc, frame) => {
+      acc[frame.frame_name] = frame.image_url;
+      return acc;
+    }, {});
+    
+    // Add template frames to company object
+    company.template_frames = frameObj;
+    console.log('Added template frames:', frameObj);
   }
 
   return {
