@@ -12,9 +12,9 @@ async function main() {
     
     // First, check if the Replit database is properly connected
     console.log('\nChecking Replit database connection...');
-    const dbInfo = await sql`SELECT current_database() as db_name, version()`;
-    console.log('Connected to database:', dbInfo[0].db_name);
-    console.log('PostgreSQL version:', dbInfo[0].version);
+    const dbInfo = await sql.query('SELECT current_database() as db_name, version()');
+    console.log('Connected to database:', dbInfo.rows[0].db_name);
+    console.log('PostgreSQL version:', dbInfo.rows[0].version);
     
     // Read the CSV file
     console.log('\nReading companies CSV file...');
@@ -65,7 +65,7 @@ async function main() {
     
     // Execute CREATE TABLE statement directly
     const createTableQuery = `CREATE TABLE IF NOT EXISTS "companies" (${columnsDef})`;
-    await sql(createTableQuery);
+    await sql.query(createTableQuery);
     console.log('Companies table created or already exists');
     
     // Insert data
@@ -81,19 +81,33 @@ async function main() {
           }
         }
         
-        const columnNames = Object.keys(record).map(col => `"${col}"`).join(', ');
-        const placeholders = Object.keys(record).map((_, i) => `$${i + 1}`).join(', ');
+        // For Neon serverless, we need to handle inserts differently
+        // We'll construct a complete SQL query string with values and execute it directly
+        
+        const columns = Object.keys(record);
         const values = Object.values(record);
+        const columnString = columns.map(col => `"${col}"`).join(', ');
+        
+        // Create a values string with proper SQL escaping for each value type
+        const valueString = values.map(val => {
+          if (val === null) return 'NULL';
+          if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`; // Escape single quotes
+          if (typeof val === 'number') return val;
+          if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+          return `'${val}'`; // Default case
+        }).join(', ');
         
         // Log a short preview of each row
         console.log(`Inserting company: ${record.name || 'Unknown'} (${record.slug || 'no-slug'})`);
         
-        await sql`
-          INSERT INTO "companies" (${sql.raw(columnNames)})
-          VALUES (${sql.raw(placeholders)})
+        // Construct and execute the complete INSERT query
+        const insertQuery = `
+          INSERT INTO "companies" (${columnString})
+          VALUES (${valueString})
           ON CONFLICT DO NOTHING
-        `.set(...values);
+        `;
         
+        await sql.query(insertQuery);
         insertedCount++;
       } catch (insertErr: any) {
         console.error(`Error inserting company:`, insertErr.message);
@@ -103,8 +117,9 @@ async function main() {
     console.log(`\nSuccessfully inserted ${insertedCount} of ${records.length} companies`);
     
     // Verify the insert
-    const count = await sql`SELECT COUNT(*) as count FROM "companies"`;
-    console.log(`Companies table now contains ${count[0].count} rows`);
+    const countQuery = `SELECT COUNT(*) as count FROM "companies"`;
+    const countResult = await sql.query(countQuery);
+    console.log(`Companies table now contains ${countResult.rows[0].count} rows`);
     
     console.log('\nImport completed!');
     
