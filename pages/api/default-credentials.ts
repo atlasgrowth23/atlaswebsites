@@ -5,6 +5,7 @@ type ResponseData = {
   success: boolean;
   message?: string;
   username?: string;
+  password?: string;
 };
 
 export default async function handler(
@@ -42,10 +43,11 @@ export default async function handler(
       });
     }
 
-    // Return just the username, not the password for security
+    // Return both username and password since this is a demo system
     return res.status(200).json({
       success: true,
-      username: result.rows[0].username
+      username: result.rows[0].username,
+      password: result.rows[0].password
     });
   } catch (error: any) {
     console.error('Error fetching default credentials:', error);

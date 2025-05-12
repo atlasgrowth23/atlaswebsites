@@ -60,9 +60,11 @@ export default function Login() {
       console.log('Credentials response:', data);
       
       if (data.success) {
-        // Pre-populate the username field but not the password
+        // Pre-populate both username and password
         console.log('Setting username to:', data.username);
+        console.log('Setting password to:', data.password);
         setUsername(data.username || '');
+        setPassword(data.password || '');
         setDefaultCredentialsLoaded(true);
       } else {
         console.log('Failed to load credentials:', data.message);
@@ -153,12 +155,12 @@ export default function Login() {
                 {businessSlug && (
                   <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
                     <p className="text-blue-700 text-sm mb-2">
-                      <strong>Login to {businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</strong>
+                      <strong>Auto-Login for {businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</strong>
                     </p>
                     <p className="text-blue-700 text-sm">
                       {defaultCredentialsLoaded ? 
-                        `Default username has been pre-filled. Use password format: hvac#### (e.g., hvac1234)` : 
-                        `Loading default credentials... If not loaded, try refreshing the page.`
+                        `Username and password have been auto-filled. Just click "Sign In" to continue.` : 
+                        `Loading login credentials... If not loaded, try refreshing the page.`
                       }
                     </p>
                   </div>
