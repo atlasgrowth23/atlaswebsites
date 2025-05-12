@@ -1,6 +1,7 @@
 import React, { ReactNode, useEffect } from 'react';
 import Head from 'next/head';
 import { Company } from '@/types';
+import ChatWidget from '@/components/chat/ChatWidget';
 
 interface LayoutProps {
   children: ReactNode;
@@ -44,6 +45,9 @@ const Layout: React.FC<LayoutProps> = ({
           <p>© {new Date().getFullYear()} {company?.name || 'HVAC Company'}. All rights reserved.</p>
         </div>
       </footer>
+      
+      {/* Add Chat Widget only if company data is available */}
+      {company && <ChatWidget company={company} />}
     </div>
   );
 };

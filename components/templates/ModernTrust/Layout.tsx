@@ -5,6 +5,7 @@ import Hero from './Hero';
 import About from './About';
 import Services from './Services';
 import Footer from './Footer';
+import ChatWidget from '@/components/chat/ChatWidget';
 
 interface LayoutProps {
   company: Company;
@@ -20,6 +21,8 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <Services company={company} />
       </main>
       <Footer company={company} />
+      {/* Add Chat Widget */}
+      <ChatWidget company={company} />
     </div>
   );
 };
