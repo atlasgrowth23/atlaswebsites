@@ -7,25 +7,35 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function Login() {
   const router = useRouter();
-  const { business } = router.query;
-  const [businessSlug, setBusinessSlug] = useState<string | null>(null);
   const supabase = createClient();
+  
+  // Only use useState and useEffect on the client side
+  const [businessSlug, setBusinessSlug] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Get business from query parameter
+    const { business } = router.query;
     if (business && typeof business === 'string') {
       setBusinessSlug(business);
     }
 
     // Check if the user is already logged in
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session) {
-        router.push('/hvacportal/dashboard');
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          router.push('/hvacportal/dashboard');
+        }
+      } catch (error) {
+        console.error('Auth session check failed:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkSession();
-  }, [business, router, supabase.auth]);
+  }, [router, supabase.auth]);
 
   return (
     <>
@@ -41,15 +51,23 @@ export default function Login() {
               HVAC Portal {businessSlug && `| ${businessSlug}`}
             </h1>
             
-            <div className="mb-6">
-              <Auth
-                supabaseClient={supabase}
-                appearance={{ theme: ThemeSupa }}
-                theme="light"
-                providers={[]}
-                redirectTo={`${typeof window !== 'undefined' ? window.location.origin : ''}/hvacportal/dashboard`}
-              />
-            </div>
+            {!isLoading && (
+              <div className="mb-6">
+                <Auth
+                  supabaseClient={supabase}
+                  appearance={{ theme: ThemeSupa }}
+                  theme="light"
+                  providers={[]}
+                  redirectTo={`${typeof window !== 'undefined' ? window.location.origin : ''}/hvacportal/dashboard`}
+                />
+              </div>
+            )}
+            
+            {isLoading && (
+              <div className="flex justify-center p-4">
+                <p>Loading...</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

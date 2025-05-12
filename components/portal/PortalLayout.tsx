@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,40 @@ interface PortalLayoutProps {
 export default function PortalLayout({ children, businessSlug }: PortalLayoutProps) {
   const router = useRouter();
   const supabase = createClient();
+  const [isClient, setIsClient] = useState(false);
+
+  // Use useEffect to check if we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session) {
+        router.push('/hvacportal/login');
+      }
+    };
+    
+    checkAuth();
+  }, [router, supabase.auth]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/hvacportal/login');
+    try {
+      await supabase.auth.signOut();
+      router.push('/hvacportal/login');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
+
+  // If not on client side yet, show minimal layout
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex justify-center items-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
