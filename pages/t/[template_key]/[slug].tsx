@@ -1,173 +1,167 @@
-import React from 'react';
-import { GetStaticProps, GetStaticPaths } from 'next';
-import { Company, Review } from '@/types';
+import type { NextPage } from 'next';
+import { useState } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Company } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
-// Import templates using barrel files
-import * as ModernTrust from '@/components/templates/BigBalls';
-import * as BoldEnergy from '@/components/templates/BoldEnergy';
-import * as AirStream from '@/components/templates/Airstream';
-import * as BrownNeck from '@/components/templates/BrownNeck';
-import * as Test from '@/components/templates/Test';
-
-interface TemplatePageProps {
-  company: Company;
-  reviews: Review[];
-  logoUrl: string | null;
-  templateKey: string;
+interface HomeProps {
+  companies: Company[];
 }
 
-// Template registry - maps template keys to component sets
-const templateRegistry = {
-  'moderntrust': ModernTrust,
-  'boldenergy': BoldEnergy,
-  'airstream': AirStream,
-  'brownneck': BrownNeck,
-  'test': Test
-};
+const Home: NextPage<HomeProps> = ({ companies }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredCompanies, setFilteredCompanies] = useState(companies);
 
-export default function TemplatePage({ company, reviews, logoUrl, templateKey }: TemplatePageProps) {
-  // Get the appropriate template components based on the template key
-  const template = templateRegistry[templateKey as keyof typeof templateRegistry];
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
 
-  if (!template) {
-    throw new Error(`Template with key "${templateKey}" not found.`);
-  }
+    if (!term) {
+      setFilteredCompanies(companies);
+      return;
+    }
 
-  const { Layout } = template;
-  
-  // Define page metadata
-  const pageTitle = `${company.name} | HVAC Services`;
-  const pageDescription = company.site_company_insights_description || 
-    `${company.name} provides professional heating, cooling, and air quality services for residential and commercial clients.`;
+    const filtered = companies.filter(company => 
+      company.name.toLowerCase().includes(term) || 
+      (company.city && company.city.toLowerCase().includes(term)) || 
+      (company.state && company.state.toLowerCase().includes(term))
+    );
 
-  // Create a mapping of section types to section components
-  // This allows different templates to have different sections
-  return (
-    <Layout 
-      title={pageTitle}
-      description={pageDescription}
-      company={company}
-    >
-      {/* Render all available template sections dynamically */}
-      {Object.entries(template).map(([key, Component]) => {
-        // Skip the Layout component as we're already using it
-        if (key === 'Layout') return null;
-        
-        // Render other components with needed props
-        return (
-          <Component 
-            key={key} 
-            company={company} 
-            reviews={key === 'Reviews' ? reviews : undefined}
-          />
-        );
-      })}
-    </Layout>
-  );
-}
-
-export const getStaticPaths: GetStaticPaths = async () => {
-  const supabase = createClient();
-  const { data: companies } = await supabase.from('companies').select('slug');
-
-  // Get templates to generate paths for
-  const templateKeys = Object.keys(templateRegistry);
-
-  // Generate paths for each company with each template
-  const paths = companies?.flatMap(company => 
-    templateKeys.map(templateKey => ({
-      params: { 
-        slug: company.slug || '',
-        template_key: templateKey 
-      }
-    }))
-  ) || [];
-
-  return {
-    paths,
-    fallback: 'blocking'
+    setFilteredCompanies(filtered);
   };
+
+  return (
+    <>
+      <Head>
+        <title>HVAC Company Websites | Static Site Generator</title>
+        <meta name="description" content="Generate static websites for HVAC contractors with our Next.js-based static site generator." />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6">
+              Static Websites for HVAC Contractors
+            </h1>
+            <p className="text-xl mb-8">
+              Generate professional, high-performance websites for HVAC businesses with our static site generator.
+            </p>
+            <div className="max-w-md mx-auto">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search companies by name or location..."
+                  className="w-full px-5 py-3 rounded-full text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchTerm}
+                  onChange={handleSearch}
+                />
+                <div className="absolute right-3 top-3 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="py-16">
+        <div className="container mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-8 text-center">
+            {searchTerm ? 'Search Results' : 'Featured HVAC Companies'}
+          </h2>
+
+          {filteredCompanies.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCompanies.map((company) => (
+                <div key={company.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{company.name}</h3>
+                    <p className="text-gray-600 mb-4">
+                      {company.city ? company.city : ''}
+                      {company.city && company.state ? ', ' : ''}
+                      {company.state ? company.state : ''}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-gray-500">
+                        HVAC Services
+                      </div>
+                      {company.slug ? (
+                        <Link href={`/${company.slug}`} passHref>
+                          <Button size="sm">View Site</Button>
+                        </Link>
+                      ) : (
+                        <Button size="sm" disabled>No Slug</Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center p-8 bg-gray-50 rounded-lg">
+              <p className="text-gray-600">No companies found matching your search criteria.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-gray-50 py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl font-bold mb-6">About This Project</h2>
+            <p className="text-lg mb-8">
+              This is a Static Site Generator built with Next.js that creates optimized, 
+              high-performance websites for HVAC contractors. Each site is statically 
+              generated at build time and deployed as standalone HTML, CSS, and JavaScript.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Button className="bg-primary">Learn More</Button>
+              <Button variant="outline">View Documentation</Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="container mx-auto px-4 text-center">
+          <p>© {new Date().getFullYear()} HVAC Static Site Generator. All rights reserved.</p>
+        </div>
+      </footer>
+    </>
+  );
 };
 
-export const getStaticProps: GetStaticProps<TemplatePageProps> = async ({ params }) => {
-  const slug = params?.slug as string;
-  const templateKey = params?.template_key as string;
-
-  // Check if template key exists in registry
-  if (!templateRegistry[templateKey as keyof typeof templateRegistry]) {
-    return {
-      notFound: true
-    };
-  }
-
+export async function getStaticProps() {
+  // Connect to Supabase
   const supabase = createClient();
 
-  // Get company data
-  const { data: company } = await supabase
+  // Fetch all companies - using field names from your new database
+  const { data: companies, error } = await supabase
     .from('companies')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+    .select('id, slug, name, city, state, phone')
+    .order('name');
 
-  if (!company) {
+  if (error) {
+    console.error('Error fetching companies:', error);
     return {
-      notFound: true
+      props: {
+        companies: [],
+      },
     };
-  }
-
-  // Get reviews
-  const { data: reviews } = await supabase
-    .from('reviews')
-    .select('*')
-    .eq('biz_id', company.biz_id)
-    .order('published_at_date', { ascending: false })
-    .limit(10);
-
-  // Get company-specific frames
-  const { data: companyFrames } = await supabase
-    .from('company_frames')
-    .select('*')
-    .eq('company_id', company.id)
-    .eq('template_key', templateKey);
-
-  // Add frames to company object
-  if (companyFrames && companyFrames.length > 0) {
-    company.frames = {};
-    companyFrames.forEach(frame => {
-      company.frames[frame.frame_name] = frame.image_url;
-    });
-  }
-
-  // Get template frames
-  const { data: templateFrames } = await supabase
-    .from('template_frames')
-    .select('*')
-    .eq('template_key', templateKey);
-
-  // Add template frames to company object
-  if (templateFrames && templateFrames.length > 0) {
-    company.template_frames = {};
-    templateFrames.forEach(frame => {
-      company.template_frames[frame.frame_name] = frame.stock_url;
-    });
-  }
-
-  // Get logo URL
-  let logoUrl = company.logo || null;
-
-  // If logo_override is set, use that instead
-  if (company.logo_override) {
-    logoUrl = company.logo_override;
   }
 
   return {
     props: {
-      company,
-      reviews: reviews || [],
-      logoUrl,
-      templateKey
+      companies: companies || [],
     },
-    revalidate: 3600 // Revalidate every hour
+    // Revalidate the page every hour (3600 seconds)
+    revalidate: 3600,
   };
-};
+}
+
+export default Home;
