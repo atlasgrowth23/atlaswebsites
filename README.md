@@ -85,7 +85,23 @@ Routing is handled by Next.js middleware and the domain handler API.
 
 ## Deployment
 
-See the [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) file for detailed instructions on deploying to Vercel and setting up domains.
+We've included a deployment preparation script to make deployment easier:
+
+```bash
+# Make the script executable
+chmod +x prepare-deployment.sh
+
+# Run the preparation script
+./prepare-deployment.sh
+```
+
+This script:
+1. Cleans up build artifacts
+2. Removes unnecessary files that might cause build errors
+3. Runs TypeScript checks
+4. Tests the build process locally
+
+For full deployment instructions, see [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md).
 
 ## License
 
