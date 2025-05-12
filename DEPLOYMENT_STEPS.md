@@ -7,13 +7,24 @@
    - Changed `company.address` to `company.street || company.full_address`
    - Changed `company.zip` to `company.postal_code`
    - Changed `company.email` to `company.email_1`
+   - Fixed Header component to use `company.logo || company.logo_override` instead of `company.logo_url`
 
-2. **Custom Domain and Subdomain Support**:
+2. **Removed Admin Section**:
+   - Completely removed `/pages/admin` directory and related components
+   - Removed `components/admin` directory
+   - Removed unnecessary API endpoints related to admin functionality
+
+3. **Removed Supabase References**:
+   - Removed old API endpoints still using Supabase
+   - Changed `biz_id` to `company_id` in the Review interface
+   - Kept migration scripts in `/scripts` directory but they won't affect production build
+
+4. **Custom Domain and Subdomain Support**:
    - Added NextJS middleware for domain handling
    - Created domain-handler API endpoint for routing
    - Updated config for cross-origin requests
 
-3. **Template Selection**:
+5. **Template Selection**:
    - Added TemplateSelector component
    - Created update-template API endpoint
 
