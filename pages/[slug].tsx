@@ -9,7 +9,7 @@ export default function RedirectPage({ company }: { company: Company }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Default to BoldEnergy template
+    // Only use BoldEnergy template
     const templateKey = 'boldenergy';
 
     if (router.isReady && company?.slug) {
