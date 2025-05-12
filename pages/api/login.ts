@@ -22,59 +22,41 @@ export default async function handler(
 
   const { username, password, businessSlug } = req.body;
   
-  if (!username || !password) {
+  if (!businessSlug) {
     return res.status(400).json({ 
       success: false, 
-      message: 'Username and password are required' 
+      message: 'Business ID is required' 
     });
   }
 
   try {
-    let sql;
-    let params;
-
-    // We can login either with username/password directly
-    // or with a specific business slug and password
-    if (businessSlug) {
-      // Check credentials based on business slug
-      sql = `
-        SELECT username, business_slug
-        FROM user_credentials
-        WHERE business_slug = $1 AND password = $2
-      `;
-      params = [businessSlug, password];
-    } else {
-      // Check credentials based on username
-      sql = `
-        SELECT username, business_slug
-        FROM user_credentials
-        WHERE username = $1 AND password = $2
-      `;
-      params = [username, password];
-    }
-
-    const result = await query(sql, params);
-
-    if (result.rows.length === 0) {
+    // Simple validation: Check if the business exists and password is "demo123"
+    if (password !== 'demo123') {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid password. Please use the standard portal password.'
       });
     }
+    
+    // Verify business exists
+    const businessResult = await query(
+      'SELECT id, slug, name FROM companies WHERE slug = $1',
+      [businessSlug]
+    );
 
-    // Update last login timestamp
-    await query(`
-      UPDATE user_credentials
-      SET last_login = NOW()
-      WHERE username = $1
-    `, [result.rows[0].username]);
+    if (businessResult.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'Business not found. Please check your Business ID.'
+      });
+    }
 
     // Return success with the business slug
     return res.status(200).json({
       success: true,
       message: 'Login successful',
-      businessSlug: result.rows[0].business_slug,
-      username: result.rows[0].username
+      businessSlug: businessSlug,
+      username: businessSlug  // Use businessSlug as username for simplicity
     });
   } catch (error: any) {
     console.error('Login error:', error);
