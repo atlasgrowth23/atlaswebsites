@@ -14,6 +14,8 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     email: '',
     phone: '',
     message: '',
+    companyId: company.id || '',
+    companySlug: company.slug || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
