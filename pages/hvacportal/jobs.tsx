@@ -24,84 +24,53 @@ export default function JobsPage() {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Sample jobs data - would come from an API in production
-  const [jobs, setJobs] = useState<Job[]>([
-    {
-      id: 1001,
-      customer: 'John Smith',
-      address: '123 Main St, Springfield, IL',
-      phoneNumber: '(555) 123-4567',
-      description: 'AC not cooling properly, making strange noise',
-      status: 'scheduled',
-      priority: 'high',
-      scheduledDate: '2025-05-15T10:00:00',
-      technician: 'Mike Johnson',
-      jobType: 'Repair',
-      createdAt: '2025-05-10T14:23:00'
-    },
-    {
-      id: 1002,
-      customer: 'Sarah Williams',
-      address: '456 Oak Dr, Springfield, IL',
-      phoneNumber: '(555) 987-6543',
-      description: 'Annual maintenance for HVAC system',
-      status: 'completed',
-      priority: 'medium',
-      scheduledDate: '2025-05-11T13:30:00',
-      technician: 'Robert Davis',
-      jobType: 'Maintenance',
-      createdAt: '2025-05-08T09:15:00'
-    },
-    {
-      id: 1003,
-      customer: 'Michael Brown',
-      address: '789 Pine Ave, Springfield, IL',
-      phoneNumber: '(555) 555-5555',
-      description: 'New furnace installation',
-      status: 'in-progress',
-      priority: 'medium',
-      scheduledDate: '2025-05-12T09:00:00',
-      technician: 'James Wilson',
-      jobType: 'Installation',
-      createdAt: '2025-05-07T16:45:00'
-    },
-    {
-      id: 1004,
-      customer: 'Emily Johnson',
-      address: '321 Maple Rd, Springfield, IL',
-      phoneNumber: '(555) 333-2222',
-      description: 'Thermostat not working, needs replacement',
-      status: 'scheduled',
-      priority: 'low',
-      scheduledDate: '2025-05-16T15:30:00',
-      technician: 'Mike Johnson',
-      jobType: 'Repair',
-      createdAt: '2025-05-11T11:10:00'
-    },
-    {
-      id: 1005,
-      customer: 'David Miller',
-      address: '567 Cherry Ln, Springfield, IL',
-      phoneNumber: '(555) 777-8888',
-      description: 'Emergency - No heat, possibly broken furnace',
-      status: 'in-progress',
-      priority: 'emergency',
-      scheduledDate: '2025-05-12T08:00:00',
-      technician: 'Robert Davis',
-      jobType: 'Emergency',
-      createdAt: '2025-05-12T07:30:00'
-    }
-  ]);
+  // State for jobs data from the API
+  const [jobs, setJobs] = useState<Job[]>([]);
 
   useEffect(() => {
-    // In production, this would fetch actual data from an API
-    const storedBusinessSlug = localStorage.getItem('businessSlug');
-    setBusinessSlug(storedBusinessSlug);
+    async function fetchJobs() {
+      try {
+        // Get business slug from localStorage
+        const storedBusinessSlug = localStorage.getItem('businessSlug');
+        setBusinessSlug(storedBusinessSlug);
+        
+        if (!storedBusinessSlug) {
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch jobs from the API
+        const response = await fetch(`/api/jobs?businessSlug=${storedBusinessSlug}`);
+        const data = await response.json();
+        
+        if (data.success && data.jobs) {
+          // Transform data to match our Job interface
+          const formattedJobs: Job[] = data.jobs.map((job: any) => ({
+            id: job.id,
+            customer: job.customer_name,
+            address: job.customer_address,
+            phoneNumber: job.customer_phone,
+            description: job.description,
+            status: job.status as 'scheduled' | 'in-progress' | 'completed' | 'cancelled',
+            priority: job.priority as 'low' | 'medium' | 'high' | 'emergency',
+            scheduledDate: job.scheduled_date,
+            technician: job.technician,
+            jobType: job.job_type,
+            createdAt: job.created_at
+          }));
+          
+          setJobs(formattedJobs);
+        } else {
+          console.error('Failed to fetch jobs:', data.message);
+        }
+      } catch (err) {
+        console.error('Error fetching jobs:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    fetchJobs();
   }, []);
 
   // Filter jobs based on active tab and search query
