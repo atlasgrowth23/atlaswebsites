@@ -26,94 +26,55 @@ export default function ContactsPage() {
   const [activeView, setActiveView] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   
-  // Sample contacts data - would come from an API in production
-  const [contacts, setContacts] = useState<Contact[]>([
-    {
-      id: 1,
-      name: 'John Smith',
-      email: 'john.smith@example.com',
-      phone: '(555) 123-4567',
-      address: '123 Main St',
-      city: 'Springfield',
-      state: 'IL',
-      zip: '62701',
-      type: 'residential',
-      notes: 'Prefers afternoon appointments',
-      lastServiceDate: '2025-04-15',
-      equipmentCount: 2,
-      createdAt: '2024-12-10'
-    },
-    {
-      id: 2,
-      name: 'Springfield Elementary School',
-      email: 'facilities@springfieldelementary.edu',
-      phone: '(555) 987-6543',
-      address: '456 School Ave',
-      city: 'Springfield',
-      state: 'IL',
-      zip: '62702',
-      type: 'commercial',
-      notes: 'Regular maintenance contract. Contact Principal Skinner.',
-      lastServiceDate: '2025-05-01',
-      equipmentCount: 8,
-      createdAt: '2024-08-22'
-    },
-    {
-      id: 3,
-      name: 'Sarah Williams',
-      email: 'sarah.williams@example.com',
-      phone: '(555) 555-5555',
-      address: '789 Oak Dr',
-      city: 'Springfield',
-      state: 'IL',
-      zip: '62704',
-      type: 'residential',
-      notes: 'Has dogs in backyard, call before arriving',
-      lastServiceDate: '2025-03-20',
-      equipmentCount: 1,
-      createdAt: '2025-01-15'
-    },
-    {
-      id: 4,
-      name: 'Springfield Mall',
-      email: 'maintenance@springfieldmall.com',
-      phone: '(555) 333-2222',
-      address: '100 Shopping Center Blvd',
-      city: 'Springfield',
-      state: 'IL',
-      zip: '62701',
-      type: 'commercial',
-      notes: 'Annual contract, requires 24hr notice for service visits',
-      lastServiceDate: '2025-04-30',
-      equipmentCount: 15,
-      createdAt: '2024-07-19'
-    },
-    {
-      id: 5,
-      name: 'Michael Brown',
-      email: 'michael.brown@example.com',
-      phone: '(555) 777-8888',
-      address: '321 Pine Ave',
-      city: 'Springfield',
-      state: 'IL',
-      zip: '62703',
-      type: 'residential',
-      notes: 'New customer, referred by John Smith',
-      lastServiceDate: null,
-      equipmentCount: 2,
-      createdAt: '2025-05-05'
-    }
-  ]);
+  // State for contacts data from the API
+  const [contacts, setContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
-    // In production, this would fetch actual data from an API
-    const storedBusinessSlug = localStorage.getItem('businessSlug');
-    setBusinessSlug(storedBusinessSlug);
+    async function fetchContacts() {
+      try {
+        // Get business slug from localStorage
+        const storedBusinessSlug = localStorage.getItem('businessSlug');
+        setBusinessSlug(storedBusinessSlug);
+        
+        if (!storedBusinessSlug) {
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fetch contacts from the API
+        const response = await fetch(`/api/contacts?businessSlug=${storedBusinessSlug}`);
+        const data = await response.json();
+        
+        if (data.success && data.contacts) {
+          // Transform data to match our Contact interface
+          const formattedContacts: Contact[] = data.contacts.map((contact: any) => ({
+            id: contact.id,
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone,
+            address: contact.address,
+            city: contact.city,
+            state: contact.state,
+            zip: contact.zip,
+            type: contact.type as 'residential' | 'commercial',
+            notes: contact.notes,
+            lastServiceDate: contact.last_service_date,
+            equipmentCount: parseInt(contact.equipment_count || '0'),
+            createdAt: contact.created_at
+          }));
+          
+          setContacts(formattedContacts);
+        } else {
+          console.error('Failed to fetch contacts:', data.message);
+        }
+      } catch (err) {
+        console.error('Error fetching contacts:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
     
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
+    fetchContacts();
   }, []);
 
   // Filter contacts based on active view and search query
