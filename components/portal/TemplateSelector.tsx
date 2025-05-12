@@ -16,6 +16,12 @@ const TEMPLATES = [
     thumbnail: '/templates/boldenergy/thumbnail.jpg',
   },
   {
+    key: 'premiumservice',
+    name: 'Premium Service',
+    description: 'A comprehensive template with strong call-to-actions and detailed service sections.',
+    thumbnail: '/templates/premiumservice/thumbnail.jpg',
+  },
+  {
     key: 'classicomfort',
     name: 'Classic Comfort',
     description: 'A timeless, warm design emphasizing comfort and reliability for established businesses.',

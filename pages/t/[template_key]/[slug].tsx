@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { Company } from '@/types';
 import BoldEnergyLayout from '@/components/templates/BoldEnergy/Layout';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
+import PremiumServiceLayout from '@/components/templates/PremiumService/Layout';
 import Hero from '@/components/templates/BoldEnergy/Hero';
 import About from '@/components/templates/BoldEnergy/About';
 import Head from 'next/head';
@@ -25,6 +26,8 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
       );
     case 'moderntrust':
       return <ModernTrustLayout company={company} />;
+    case 'premiumservice':
+      return <PremiumServiceLayout company={company} title={`${company.name} | Professional HVAC Services`} />;
     default:
       return (
         <div className="p-8">
@@ -42,11 +45,12 @@ export const getStaticPaths: GetStaticPaths = async () => {
   // Get all companies
   const result = await query('SELECT slug FROM companies WHERE slug IS NOT NULL LIMIT 100');
   
-  // Create paths for both templates for each company slug
+  // Create paths for all templates for each company slug
   const paths = [];
   for (const company of result.rows) {
     paths.push({ params: { template_key: 'boldenergy', slug: company.slug } });
     paths.push({ params: { template_key: 'moderntrust', slug: company.slug } });
+    paths.push({ params: { template_key: 'premiumservice', slug: company.slug } });
   }
   
   return {
@@ -74,7 +78,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     }
     
     // Check if the template exists
-    if (!['boldenergy', 'moderntrust'].includes(template_key as string)) {
+    if (!['boldenergy', 'moderntrust', 'premiumservice'].includes(template_key as string)) {
       return { notFound: true };
     }
     
