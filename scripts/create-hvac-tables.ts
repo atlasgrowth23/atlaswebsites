@@ -1,4 +1,5 @@
 import { query } from '../lib/db';
+import { createServiceTables } from './create-service-tables';
 
 /**
  * Creates the necessary tables for HVAC business management
@@ -149,6 +150,14 @@ async function createHvacTables() {
 async function main() {
   try {
     await createHvacTables();
+
+    // Also create service tables
+    try {
+      await createServiceTables();
+    } catch (err) {
+      console.error('Error creating service tables:', err);
+    }
+
     console.log('HVAC database setup completed!');
   } catch (error) {
     console.error('Error in main function:', error);

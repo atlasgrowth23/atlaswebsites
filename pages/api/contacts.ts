@@ -46,27 +46,22 @@ async function getContacts(
   try {
     // Get all contacts for this business
     const contactsResult = await query(`
-      SELECT 
-        c.id, 
-        c.name, 
-        c.email, 
-        c.phone, 
-        c.address, 
-        c.city, 
-        c.state, 
-        c.zip, 
-        c.notes, 
+      SELECT
+        c.id,
+        c.name,
+        c.email,
+        c.phone,
+        c.address,
+        c.city,
+        c.state,
+        c.zip,
+        c.notes,
         c.last_service_date,
-        c.created_at,
-        COUNT(e.id) as equipment_count
-      FROM 
+        c.created_at
+      FROM
         hvac_contacts c
-      LEFT JOIN
-        hvac_equipment e ON c.id = e.contact_id
-      WHERE 
+      WHERE
         c.company_id = $1
-      GROUP BY
-        c.id
       ORDER BY
         c.name ASC
     `, [company_id]);
@@ -100,41 +95,39 @@ async function createContact(
     zip,
     notes,
     companyId,
-    companySlug
+    companySlug,
+    businessSlug
   } = req.body;
 
   // Validate required fields
-  if (!name || !email) {
+  if (!name) {
     return res.status(400).json({
       success: false,
-      message: 'Name and email are required'
+      message: 'Name is required'
     });
   }
 
   // Determine company_id - first try direct companyId, then try to look up by slug
   let company_id = companyId;
+  let slug_to_use = companySlug || businessSlug;
 
   // If we have a slug but no ID, look up the company ID from the slug
-  if (!company_id && companySlug) {
+  if (!company_id && slug_to_use) {
     try {
       const companyResult = await query(`
         SELECT id FROM companies WHERE slug = $1
-      `, [companySlug]);
+      `, [slug_to_use]);
 
       if (companyResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'Company not found with the provided slug'
-        });
+        // If not found, just use the slug as the ID
+        company_id = slug_to_use;
+      } else {
+        company_id = companyResult.rows[0].id;
       }
-
-      company_id = companyResult.rows[0].id;
     } catch (error: any) {
       console.error('Error looking up company by slug:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to look up company: ' + error.message
-      });
+      // If there's an error, just use the slug as the ID
+      company_id = slug_to_use;
     }
   }
 

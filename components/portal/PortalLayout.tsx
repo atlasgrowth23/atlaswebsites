@@ -26,6 +26,7 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
   const [loading, setLoading] = useState(true);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Format business name from slug
   useEffect(() => {
@@ -128,10 +129,10 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
   // If not on client side yet or not authenticated, show minimal loading layout
   if (!isClient || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 flex justify-center items-center">
+      <div className="min-h-screen bg-gray-50 flex justify-center items-center">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-          <p className="text-blue-700 font-medium">Loading your dashboard...</p>
+          <div className="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-emerald-500"></div>
+          <p className="mt-3 text-gray-500 font-medium">Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -140,26 +141,43 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top Header Bar */}
-      <header className="bg-gradient-to-r from-blue-700 to-blue-900 text-white shadow-md">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/hvacportal/dashboard">
-            <h1 className="text-2xl font-bold text-white">
-              {businessName || 'HVAC Business'} <span className="text-sm opacity-75">Portal</span>
-            </h1>
-          </Link>
+      <header className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+          <div className="flex items-center">
+            {/* Mobile menu button */}
+            <button 
+              className="md:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <Link href="/hvacportal/dashboard" className="ml-2 md:ml-0">
+              <div className="flex items-center">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center text-white font-medium text-lg">
+                  H
+                </div>
+                <div className="ml-2">
+                  <h1 className="text-lg font-bold text-gray-900">{businessName || 'HVAC Dashboard'}</h1>
+                  <p className="text-xs text-gray-500">Management Portal</p>
+                </div>
+              </div>
+            </Link>
+          </div>
           
           <div className="flex items-center space-x-4">
             {/* Notification Bell */}
             <div className="relative">
               <button 
-                className="p-2 rounded-full hover:bg-blue-600 transition-colors relative"
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                 </svg>
                 {unreadMessages.length > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                  <span className="absolute top-0 right-0 bg-rose-500 text-white text-xs font-medium rounded-full h-5 w-5 flex items-center justify-center">
                     {unreadMessages.length}
                   </span>
                 )}
@@ -167,27 +185,27 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
               
               {/* Notification Dropdown */}
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-1 z-50 max-h-96 overflow-y-auto">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg py-2 z-50 max-h-96 overflow-y-auto border border-gray-200">
                   <div className="px-4 py-2 border-b border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-700">Recent Messages</h3>
+                    <h3 className="font-medium text-gray-900">Recent Messages</h3>
                   </div>
                   
                   {unreadMessages.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                      No new messages
+                    <div className="px-4 py-5 text-sm text-gray-500 text-center">
+                      <p>No new messages</p>
                     </div>
                   ) : (
                     unreadMessages.map((message) => (
                       <div 
                         key={message.id} 
-                        className="px-4 py-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer"
+                        className="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => {
                           handleMarkAsRead(message.id);
                           router.push('/hvacportal/messages');
                         }}
                       >
                         <div className="flex justify-between items-start">
-                          <span className="font-semibold text-sm text-gray-700">{message.sender_name}</span>
+                          <span className="font-medium text-sm text-gray-900">{message.sender_name}</span>
                           <span className="text-xs text-gray-500">
                             {new Date(message.created_at).toLocaleDateString()}
                           </span>
@@ -200,7 +218,7 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
                   )}
                   
                   <div className="px-4 py-2 text-center">
-                    <Link href="/hvacportal/messages" className="text-xs text-blue-600 hover:text-blue-800">
+                    <Link href="/hvacportal/messages" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium">
                       View All Messages
                     </Link>
                   </div>
@@ -210,21 +228,21 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
             
             {/* User Menu */}
             <div className="flex items-center">
-              <div className="hidden md:block mr-2">
-                <div className="text-sm font-medium">{localStorage.getItem('username')}</div>
-                <div className="text-xs opacity-75">Administrator</div>
+              <div className="hidden md:block mr-3">
+                <div className="text-sm font-medium text-gray-900">{localStorage.getItem('username') || 'User'}</div>
+                <div className="text-xs text-gray-500">Administrator</div>
               </div>
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-                <span className="text-white font-semibold">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 border border-gray-300">
+                <span className="font-medium">
                   {localStorage.getItem('username')?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
             </div>
             
             <Button 
-              variant="ghost" 
+              variant="outline"
               onClick={handleSignOut}
-              className="text-white hover:bg-blue-600 hidden md:flex"
+              className="hidden md:flex border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               Sign Out
             </Button>
@@ -232,90 +250,180 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
         </div>
       </header>
 
-      {/* Banner for unread messages - always visible at the top */}
+      {/* Banner for unread messages - conditional */}
       {unreadMessages.length > 0 && (
-        <div className="bg-yellow-50 border-b border-yellow-100 p-3">
-          <div className="container mx-auto px-4 flex justify-between items-center">
+        <div className="bg-amber-50 border-b border-amber-100 py-2">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center">
             <div className="flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
               </svg>
-              <span className="text-sm text-yellow-800">
+              <span className="text-sm text-amber-800">
                 You have <span className="font-bold">{unreadMessages.length}</span> unread {unreadMessages.length === 1 ? 'message' : 'messages'}
               </span>
             </div>
-            <Button 
-              variant="link" 
-              size="sm"
-              className="text-yellow-800 hover:text-yellow-900"
-              onClick={() => router.push('/hvacportal/messages')}
-            >
-              View Messages
-            </Button>
+            <Link href="/hvacportal/messages">
+              <button className="text-sm text-amber-800 hover:text-amber-900 font-medium flex items-center">
+                View Messages
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </Link>
           </div>
         </div>
       )}
 
       <div className="flex flex-1">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white shadow-lg border-r border-gray-100 hidden md:block">
-          <div className="flex flex-col h-full">
-            <nav className="flex-1 py-6 overflow-y-auto">
-              <div className="px-4 mb-4">
-                <h3 className="text-xs uppercase font-semibold text-gray-500 tracking-wider">Main</h3>
+        {/* Sidebar - Desktop (always visible) and Mobile (conditionally visible) */}
+        <aside 
+          className={`
+            ${isSidebarOpen ? 'block' : 'hidden'} 
+            fixed inset-0 z-40 md:static md:block md:z-auto
+            md:w-64 flex-shrink-0 
+            bg-white md:border-r border-gray-200 h-full
+          `}
+        >
+          {/* Mobile close button overlay */}
+          {isSidebarOpen && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-75 md:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+          )}
+          
+          {/* Sidebar content */}
+          <div className="absolute inset-0 bg-white md:static flex flex-col h-full z-10">
+            {/* Mobile header */}
+            <div className="md:hidden border-b border-gray-200 p-4 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{businessName}</h3>
+                <p className="text-xs text-gray-500">Management Portal</p>
               </div>
-              <ul className="space-y-1">
-                <li>
-                  <Link href="/hvacportal/contacts" className={`flex items-center px-4 py-3 text-sm ${router.pathname === '/hvacportal/contacts' ? 'bg-blue-50 text-blue-700 font-medium border-r-4 border-blue-500' : 'text-gray-700 hover:bg-gray-50'}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Contacts
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/hvacportal/messages" className={`flex items-center px-4 py-3 text-sm ${router.pathname === '/hvacportal/messages' ? 'bg-blue-50 text-blue-700 font-medium border-r-4 border-blue-500' : 'text-gray-700 hover:bg-gray-50'}`}>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                    Messages
-                    {unreadMessages.length > 0 && (
-                      <span className="ml-auto bg-red-100 text-red-800 text-xs font-medium rounded-full px-2 py-0.5">
-                        {unreadMessages.length}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              </ul>
-              
-              <div className="px-4 mt-8 mb-4">
-                <h3 className="text-xs uppercase font-semibold text-gray-500 tracking-wider">Website</h3>
-              </div>
-              <ul className="space-y-1">
-                <li>
-                  {activeBusinessSlug && (
-                    <a 
-                      href={`/t/moderntrust/${activeBusinessSlug}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+              <button 
+                className="p-2 rounded-md text-gray-500 hover:text-gray-700"
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Navigation links */}
+            <nav className="flex-1 overflow-y-auto py-6 px-4">
+              <div className="mb-8">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-3">Dashboard</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link 
+                      href="/hvacportal/dashboard" 
+                      className={`
+                        flex items-center px-3 py-2 text-sm rounded-md
+                        ${router.pathname === '/hvacportal/dashboard'
+                          ? 'bg-emerald-50 text-emerald-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
-                      View Website
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/hvacportal/contacts" 
+                      className={`
+                        flex items-center px-3 py-2 text-sm rounded-md
+                        ${router.pathname === '/hvacportal/contacts'
+                          ? 'bg-emerald-50 text-emerald-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                    </a>
-                  )}
-                </li>
-              </ul>
+                      Contacts
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href="/hvacportal/messages" 
+                      className={`
+                        flex items-center px-3 py-2 text-sm rounded-md
+                        ${router.pathname === '/hvacportal/messages'
+                          ? 'bg-emerald-50 text-emerald-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                      </svg>
+                      Messages
+                      {unreadMessages.length > 0 && (
+                        <span className="ml-auto bg-rose-100 text-rose-800 text-xs font-medium rounded-full px-2 py-0.5">
+                          {unreadMessages.length}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+              
+              <div className="mb-8">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-3">Business</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link 
+                      href="/hvacportal/settings" 
+                      className={`
+                        flex items-center px-3 py-2 text-sm rounded-md
+                        ${router.pathname === '/hvacportal/settings'
+                          ? 'bg-emerald-50 text-emerald-700 font-medium'
+                          : 'text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Settings
+                    </Link>
+                  </li>
+                  <li>
+                    {activeBusinessSlug && (
+                      <a 
+                        href={`/t/moderntrust/${activeBusinessSlug}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center px-3 py-2 text-sm rounded-md text-gray-700 hover:bg-gray-100"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        View Website
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    )}
+                  </li>
+                </ul>
+              </div>
             </nav>
             
-            {/* Bottom section with sign out on small screens */}
-            <div className="p-4 border-t border-gray-100 md:hidden">
-              <Button variant="destructive" onClick={handleSignOut} className="w-full">
+            {/* Mobile sign out button */}
+            <div className="p-4 border-t border-gray-200 md:hidden">
+              <Button 
+                variant="outline" 
+                onClick={handleSignOut} 
+                className="w-full flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
                 Sign Out
               </Button>
             </div>
@@ -323,39 +431,10 @@ export default function PortalLayout({ children, businessSlug }: PortalLayoutPro
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-6 bg-white my-4 rounded-lg shadow">
-          {/* Mobile Top Navigation */}
-          <div className="md:hidden mb-6 flex justify-between items-center">
-            <div>
-              <button 
-                className="text-blue-600"
-                onClick={() => {
-                  // This would open a mobile sidebar menu in a full implementation
-                  alert("Mobile sidebar would open here");
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-            </div>
-            <div>
-              <Link href="/hvacportal/messages">
-                <div className="relative">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                  </svg>
-                  {unreadMessages.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                      {unreadMessages.length}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            </div>
+        <main className="flex-1 overflow-x-auto p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">
+            {children}
           </div>
-
-          {children}
         </main>
       </div>
     </div>
