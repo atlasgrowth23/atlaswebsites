@@ -13,17 +13,15 @@ interface Contact {
   city: string;
   state: string;
   zip: string;
-  type: 'residential' | 'commercial';
   notes: string;
   lastServiceDate: string | null;
-  equipmentCount: number;
   createdAt: string;
 }
 
 export default function ContactsPage() {
   const [businessSlug, setBusinessSlug] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeView, setActiveView] = useState<string>('all');
+  // We no longer need the activeView state since we're removing type filtering
   const [searchQuery, setSearchQuery] = useState<string>('');
   
   // State for contacts data from the API
@@ -56,10 +54,8 @@ export default function ContactsPage() {
             city: contact.city,
             state: contact.state,
             zip: contact.zip,
-            type: contact.type as 'residential' | 'commercial',
             notes: contact.notes,
             lastServiceDate: contact.last_service_date,
-            equipmentCount: parseInt(contact.equipment_count || '0'),
             createdAt: contact.created_at
           }));
           
@@ -77,12 +73,8 @@ export default function ContactsPage() {
     fetchContacts();
   }, []);
 
-  // Filter contacts based on active view and search query
+  // Filter contacts based on search query only
   const filteredContacts = contacts.filter(contact => {
-    // First filter by view
-    if (activeView !== 'all' && contact.type !== activeView) return false;
-    
-    // Then filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
@@ -128,42 +120,20 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Filters and Search */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-md">
-            <button 
-              onClick={() => setActiveView('all')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${activeView === 'all' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              All Contacts
-            </button>
-            <button 
-              onClick={() => setActiveView('residential')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${activeView === 'residential' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Residential
-            </button>
-            <button 
-              onClick={() => setActiveView('commercial')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${activeView === 'commercial' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Commercial
-            </button>
-          </div>
-          <div>
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full border rounded-md py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Search contacts by name, email, or phone..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
+        {/* Search */}
+        <div className="w-full max-w-md">
+          <div className="relative">
+            <input
+              type="text"
+              className="w-full border rounded-md py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Search contacts by name, email, or phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
           </div>
         </div>
@@ -201,13 +171,7 @@ export default function ContactsPage() {
                       Address
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Last Service
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Equipment
                     </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -238,18 +202,8 @@ export default function ContactsPage() {
                         <div className="text-sm text-gray-900">{contact.address}</div>
                         <div className="text-sm text-gray-500">{`${contact.city}, ${contact.state} ${contact.zip}`}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          contact.type === 'residential' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                        }`}>
-                          {contact.type.charAt(0).toUpperCase() + contact.type.slice(1)}
-                        </span>
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {getServiceDate(contact.lastServiceDate)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {contact.equipmentCount} {contact.equipmentCount === 1 ? 'unit' : 'units'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
@@ -259,11 +213,9 @@ export default function ContactsPage() {
                           <button className="text-blue-600 hover:text-blue-900">
                             Edit
                           </button>
-                          <Link href="/hvacportal/jobs">
-                            <button className="text-blue-600 hover:text-blue-900">
-                              New Job
-                            </button>
-                          </Link>
+                          <button className="text-blue-600 hover:text-blue-900">
+                            Message
+                          </button>
                         </div>
                       </td>
                     </tr>
