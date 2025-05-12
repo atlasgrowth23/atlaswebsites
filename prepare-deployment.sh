@@ -20,8 +20,9 @@ rm -f pages/api/setup-frames.js pages/api/insert-frame.js pages/api/setup-databa
 rm -f pages/api/schema-info.js pages/api/replit-schema-info.ts pages/schema.tsx
 rm -f pages/api/db-test.ts pages/api/create-table.js pages/api/default-credentials.ts
 rm -f pages/api/company-id.ts pages/api/jobs.ts
+# Move all scripts to old directory except create-hvac-tables.ts and create-message-tables.ts
 mkdir -p scripts/old
-mv scripts/migrate-from-supabase.ts scripts/simple-migration.ts scripts/create-frames-*.js scripts/old/ 2>/dev/null || true
+find scripts -type f -not -name "create-hvac-tables.ts" -not -name "create-message-tables.ts" -exec mv {} scripts/old/ \; 2>/dev/null || true
 
 # Run next build to check for TypeScript errors
 echo -e "\n${YELLOW}Running TypeScript check...${NC}"
