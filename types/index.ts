@@ -51,7 +51,7 @@ export interface Company {
 export interface Review {
   id?: number;
   review_id: string;
-  biz_id: string;
+  company_id: string; // Changed from biz_id
   place_id: string;
   reviewer_name?: string;
   name?: string; // Matching your actual DB column

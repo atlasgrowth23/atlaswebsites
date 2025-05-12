@@ -1,0 +1,39 @@
+[04:45:46.597] Running build in Washington, D.C., USA (East) – iad1
+[04:45:46.672] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: ca824a8)
+[04:45:48.048] Cloning completed: 1.375s
+[04:45:49.677] Restored build cache from previous deployment (2QaXYBtxMAM3sRgN9vDVLzgVhFiK)
+[04:45:50.172] Running "vercel build"
+[04:45:50.574] Vercel CLI 41.7.3
+[04:45:50.897] Installing dependencies...
+[04:45:52.380] npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+[04:45:52.647] 
+[04:45:52.648] added 31 packages in 2s
+[04:45:52.649] 
+[04:45:52.649] 86 packages are looking for funding
+[04:45:52.649]   run `npm fund` for details
+[04:45:52.683] Detected Next.js version: 15.3.1
+[04:45:52.686] Running "npm run build"
+[04:45:52.803] 
+[04:45:52.804] > workspace@1.0.0 build
+[04:45:52.804] > next build
+[04:45:52.804] 
+[04:45:53.550]    ▲ Next.js 15.3.1
+[04:45:53.550]    - Environments: .env.production
+[04:45:53.550] 
+[04:45:53.592]    Linting and checking validity of types ...
+[04:46:00.171] Failed to compile.
+[04:46:00.171] 
+[04:46:00.171] ./pages/admin/leads.tsx:58:30
+[04:46:00.172] Type error: Property 'biz_id' does not exist on type 'Company'.
+[04:46:00.172] 
+[04:46:00.172] [0m [90m 56 |[39m       [33m<[39m[33mdiv[39m className[33m=[39m[32m"grid grid-cols-1 gap-4"[39m[33m>[39m[0m
+[04:46:00.172] [0m [90m 57 |[39m         {filteredCompanies[33m.[39mmap(company [33m=>[39m ([0m
+[04:46:00.172] [0m[31m[1m>[22m[39m[90m 58 |[39m           [33m<[39m[33mCard[39m key[33m=[39m{company[33m.[39mbiz_id [33m||[39m company[33m.[39mname} className[33m=[39m[32m"hover:shadow-md transition-shadow"[39m[33m>[39m[0m
+[04:46:00.172] [0m [90m    |[39m                              [31m[1m^[22m[39m[0m
+[04:46:00.172] [0m [90m 59 |[39m             [33m<[39m[33mCardHeader[39m className[33m=[39m[32m"pb-2"[39m[33m>[39m[0m
+[04:46:00.172] [0m [90m 60 |[39m               [33m<[39m[33mCardTitle[39m className[33m=[39m[32m"flex justify-between items-center"[39m[33m>[39m[0m
+[04:46:00.172] [0m [90m 61 |[39m                 [33m<[39m[33mspan[39m[33m>[39m{company[33m.[39mname}[33m<[39m[33m/[39m[33mspan[39m[33m>[39m[0m
+[04:46:00.191] Next.js build worker exited with code: 1 and signal: null
+[04:46:00.208] Error: Command "npm run build" exited with 1
+[04:46:00.434] 
+[04:46:03.507] Exiting build container
