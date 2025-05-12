@@ -23,5 +23,20 @@ export function getPhotoUrl(company: any, frameName: string, templateKey: string
   
   // Fall back to stock images
   console.log('Using stock image for:', templateKey, frameName);
+  
+  // Default fallback images from Unsplash (free to use)
+  const defaultImages: Record<string, string> = {
+    'hero_img': 'https://images.unsplash.com/photo-1581146783519-13333b79e6c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
+    'about_img': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1169&q=80',
+    'service_img': 'https://images.unsplash.com/photo-1581092919535-bac42a15a46b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
+    'team_img': 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80'
+  };
+  
+  // Return appropriate fallback image
+  if (defaultImages[frameName]) {
+    return defaultImages[frameName];
+  }
+  
+  // Last resort fallback
   return `/stock/${templateKey}/${frameName}.svg`;
 }
