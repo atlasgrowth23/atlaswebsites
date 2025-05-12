@@ -17,6 +17,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.37.0",
     "@neondatabase/serverless": "^1.0.0",
     "@radix-ui/react-slot": "^1.2.1",
     "@supabase/auth-ui-react": "^0.4.7",
