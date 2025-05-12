@@ -1,4 +1,8 @@
-export { default as Layout } from "./Layout";
-export { default as Hero } from "./Hero";
-export { default as About } from "./About";
-// add Services etc. when they exist
+
+import Layout from './Layout';
+import Hero from './Hero';
+import About from './About';
+
+// Export components for use in template registry
+export { Layout, Hero, About };
+export default Layout;
