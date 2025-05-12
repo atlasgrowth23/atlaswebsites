@@ -25,6 +25,14 @@ export default function Login() {
     const { business } = router.query;
     if (business && typeof business === 'string') {
       setBusinessSlug(business);
+      
+      // Pre-populate email based on business slug
+      // Format: business-slug@yourcompany.com 
+      // (You should update this to match your actual email format)
+      setEmail(`${business}@hvacportal.com`);
+      
+      // We don't pre-populate the password for security reasons,
+      // but you could set a hint or placeholder
     }
 
     // Check if the user is already logged in
@@ -99,15 +107,26 @@ export default function Login() {
   return (
     <>
       <Head>
-        <title>Login | HVAC Portal</title>
-        <meta name="description" content="Login to your HVAC Portal" />
+        <title>
+          {businessSlug 
+            ? `${businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} | HVAC Portal Login` 
+            : `Login | HVAC Portal`}
+        </title>
+        <meta 
+          name="description" 
+          content={businessSlug 
+            ? `Login to ${businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} HVAC business dashboard` 
+            : `Login to your HVAC Portal`} 
+        />
       </Head>
 
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
             <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">
-              HVAC Portal {businessSlug && `| ${businessSlug}`}
+              {businessSlug 
+                ? `${businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')} Portal` 
+                : `HVAC Portal Login`}
             </h1>
             
             {isLoading ? (
@@ -141,9 +160,14 @@ export default function Login() {
                     type="password" 
                     value={password} 
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={businessSlug ? "Enter your business password" : "••••••••"}
                     required
                   />
+                  {businessSlug && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Contact support if you need your default password
+                    </p>
+                  )}
                 </div>
                 
                 <div className="pt-2 flex flex-col sm:flex-row gap-2">
@@ -152,7 +176,7 @@ export default function Login() {
                     className="w-full"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? 'Signing in...' : 'Sign In'}
+                    {isSubmitting ? 'Signing in...' : businessSlug ? `Sign In to ${businessSlug} Portal` : 'Sign In'}
                   </Button>
                   
                   <Button 
