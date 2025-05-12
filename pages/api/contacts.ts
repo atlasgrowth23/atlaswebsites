@@ -13,6 +13,21 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
+  // Handle different HTTP methods
+  switch (req.method) {
+    case 'GET':
+      return getContacts(req, res);
+    case 'POST':
+      return createContact(req, res);
+    default:
+      return res.status(405).json({ success: false, message: 'Method not allowed' });
+  }
+}
+
+async function getContacts(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseData>
+) {
   // Normalize the company_id from either businessSlug or company_id parameter
   let company_id = req.query.businessSlug || req.query.company_id || '';
   
@@ -40,7 +55,6 @@ export default async function handler(
         c.city, 
         c.state, 
         c.zip, 
-        c.type, 
         c.notes, 
         c.last_service_date,
         c.created_at,
@@ -67,6 +81,111 @@ export default async function handler(
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch contacts: ' + error.message
+    });
+  }
+}
+
+async function createContact(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseData>
+) {
+  // Get data from request body
+  const {
+    name,
+    email,
+    phone,
+    address,
+    city,
+    state,
+    zip,
+    notes,
+    companyId,
+    companySlug
+  } = req.body;
+
+  // Validate required fields
+  if (!name || !email) {
+    return res.status(400).json({
+      success: false,
+      message: 'Name and email are required'
+    });
+  }
+
+  // Determine company_id - first try direct companyId, then try to look up by slug
+  let company_id = companyId;
+
+  // If we have a slug but no ID, look up the company ID from the slug
+  if (!company_id && companySlug) {
+    try {
+      const companyResult = await query(`
+        SELECT id FROM companies WHERE slug = $1
+      `, [companySlug]);
+
+      if (companyResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Company not found with the provided slug'
+        });
+      }
+
+      company_id = companyResult.rows[0].id;
+    } catch (error: any) {
+      console.error('Error looking up company by slug:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to look up company: ' + error.message
+      });
+    }
+  }
+
+  if (!company_id) {
+    return res.status(400).json({
+      success: false,
+      message: 'Company ID is required'
+    });
+  }
+
+  try {
+    // Create new contact
+    const result = await query(`
+      INSERT INTO hvac_contacts (
+        company_id,
+        name,
+        email,
+        phone,
+        address,
+        city,
+        state,
+        zip,
+        notes,
+        created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      RETURNING id, name, email, phone, address, city, state, zip, notes, created_at
+    `, [
+      company_id,
+      name,
+      email,
+      phone || null,
+      address || null,
+      city || null,
+      state || null,
+      zip || null,
+      notes || null
+    ]);
+
+    const newContact = result.rows[0];
+
+    return res.status(201).json({
+      success: true,
+      message: 'Contact created successfully',
+      contact: newContact
+    });
+  } catch (error: any) {
+    console.error('Error creating contact:', error);
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create contact: ' + error.message
     });
   }
 }

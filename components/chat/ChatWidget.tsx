@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, MessageSquare, Send, Lightbulb, Calendar, Star, AlertTriangle, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, MessageSquare, Send, Lightbulb, Calendar, Star, AlertTriangle, Clock, UserPlus } from 'lucide-react';
 import { Company } from '@/types';
+import GooglePlacesAutocomplete from './GooglePlacesAutocomplete';
 
 interface ChatWidgetProps {
   company: Company;
@@ -52,17 +53,26 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     name: '',
     email: '',
     phone: '',
-    message: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+    notes: '', // Use this for the message content from the form
     companyId: company.id || '',
     companySlug: company.slug || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [messageCount, setMessageCount] = useState(0);
+  const [promptedForContact, setPromptedForContact] = useState(false);
   
   // Company colors
   const primaryColor = company.primary_color || '#2563eb';
   const secondaryColor = company.secondary_color || '#1e40af';
+  
+  // Chat container ref for scrolling
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   
   // Auto-open chat after a delay
   useEffect(() => {
@@ -87,6 +97,29 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     }
   }, [isOpen, company.name, messages.length]);
 
+  // Check message count and prompt for contact info after a few messages
+  useEffect(() => {
+    // After 3 messages from user, prompt for contact info if they haven't already been prompted
+    if (messageCount >= 3 && !promptedForContact) {
+      const promptMessage: Message = {
+        id: `system-prompt-${Date.now()}`,
+        content: "Would you like to leave your contact information so we can follow up with you?",
+        sender: 'system',
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, promptMessage]);
+      setPromptedForContact(true);
+    }
+  }, [messageCount, promptedForContact]);
+
+  // Auto-scroll to bottom of chat when messages change
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   // Format chat timestamp
   const formatTimestamp = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -100,6 +133,17 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle address selection from Google Places
+  const handleAddressSelected = (address: string, city: string, state: string, zip: string) => {
+    setFormData(prev => ({
+      ...prev,
+      address,
+      city,
+      state,
+      zip
+    }));
   };
 
   // Handle service option selection
@@ -140,6 +184,9 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     
     setMessages(prev => [...prev, userMessage]);
     setAiThinking(true);
+    
+    // Increment message count when user sends a message
+    setMessageCount(prev => prev + 1);
     
     try {
       // Get company identifier for API
@@ -200,6 +247,45 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     }
   };
 
+  // Handle contact form submission to create a new contact
+  const createNewContact = async () => {
+    try {
+      // Normalize contact information
+      const contactPayload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip: formData.zip,
+        notes: formData.notes || "Contact created from chat widget", // Default notes if none provided
+        companyId: company.id,
+        companySlug: company.slug,
+      };
+
+      // Create the contact in the database
+      const contactResponse = await fetch('/api/contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactPayload),
+      });
+
+      if (!contactResponse.ok) {
+        const errorData = await contactResponse.json();
+        throw new Error(errorData.message || 'Failed to create contact');
+      }
+
+      // Successfully created the contact
+      return true;
+    } catch (err) {
+      console.error('Error creating contact:', err);
+      return false;
+    }
+  };
+
   // Handle contact form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,30 +293,30 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     setError(null);
 
     try {
-      // Determine what company identifier we have
-      let payload = {
-        ...formData
+      // First, create a new contact in the database
+      const contactCreated = await createNewContact();
+      
+      if (!contactCreated) {
+        throw new Error("Failed to create contact record");
+      }
+      
+      // Prepare message payload (use notes field as message content)
+      const messagePayload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || '',
+        message: formData.notes || "Contact request from website",
+        companyId: company.id || '',
+        companySlug: company.slug || '',
       };
 
-      // If we have an ID that's a number
-      if (company.id && typeof company.id === 'number') {
-        payload.companyId = company.id;
-      } 
-      // If we have a slug, use that
-      else if (company.slug) {
-        payload.companySlug = company.slug;
-      } 
-      // If ID is a string (likely a slug)
-      else if (company.id) {
-        payload.companyId = company.id;
-      }
-
+      // Then send a message notification
       const response = await fetch('/api/send-message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(messagePayload),
       });
 
       if (!response.ok) {
@@ -238,12 +324,10 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
         throw new Error(errorData.message || 'Failed to send message');
       }
 
-      const data = await response.json();
-      
       // Show success message
       const successMessage: Message = {
         id: `system-${Date.now()}`,
-        content: `Thanks, ${formData.name}! Your message has been sent to our team. We'll contact you shortly.`,
+        content: `Thanks, ${formData.name}! We've received your information and will contact you shortly.`,
         sender: 'system',
         timestamp: new Date()
       };
@@ -256,15 +340,22 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
         name: '',
         email: '',
         phone: '',
-        message: '',
+        address: '',
+        city: '',
+        state: '',
+        zip: '',
+        notes: '',
         companyId: company.id || '',
         companySlug: company.slug || '',
       });
       
-      // Hide the contact form
-      setShowContactForm(false);
+      // Hide the contact form and return to chat
+      setTimeout(() => {
+        setShowContactForm(false);
+      }, 2000);
+      
     } catch (err: any) {
-      console.error('Error sending message:', err);
+      console.error('Error processing form:', err);
       setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -314,7 +405,11 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
           </div>
 
           {/* Messages area */}
-          <div className="flex-1 overflow-y-auto p-4" style={{ height: '350px' }}>
+          <div 
+            ref={chatContainerRef}
+            className="flex-1 overflow-y-auto p-4" 
+            style={{ height: '350px' }}
+          >
             {messages.length > 0 ? (
               <div className="space-y-4">
                 {messages.map((msg) => (
@@ -348,6 +443,17 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                         <span className="text-xs text-gray-500 ml-1">Typing...</span>
                       </div>
                     </div>
+                  </div>
+                )}
+                {promptedForContact && !showContactForm && (
+                  <div className="flex justify-center mt-4">
+                    <button
+                      onClick={() => setShowContactForm(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 border border-green-200 rounded-md shadow-sm hover:bg-green-200 transition-colors"
+                    >
+                      <UserPlus size={16} />
+                      <span>Leave your contact info</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -392,7 +498,7 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
             {showContactForm ? (
               submitSuccess ? (
                 <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
-                  <h4 className="text-green-800 font-medium mb-1">Message Sent!</h4>
+                  <h4 className="text-green-800 font-medium mb-1">Information Received!</h4>
                   <p className="text-green-700 text-sm">
                     Thanks for reaching out. {company.name} will contact you shortly.
                   </p>
@@ -401,10 +507,10 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                 <>
                   <div className="pb-2">
                     <h3 className="text-lg font-semibold mb-3" style={{ color: primaryColor }}>
-                      Contact Us Directly
+                      Your Contact Information
                     </h3>
                     <p className="text-gray-600 text-sm mb-4">
-                      Leave your details and we'll get back to you as soon as possible.
+                      Please provide your details so we can follow up with you.
                     </p>
                   </div>
                   
@@ -448,13 +554,61 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                     </div>
 
                     <div className="relative">
-                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Message*</label>
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Address</label>
+                      <GooglePlacesAutocomplete
+                        onAddressSelected={handleAddressSelected}
+                        placeholder="Start typing your address"
+                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    {formData.address && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="relative">
+                          <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">City</label>
+                          <input
+                            type="text"
+                            id="city"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleChange}
+                            className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        </div>
+                        <div className="relative grid grid-cols-2 gap-2">
+                          <div className="relative">
+                            <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">State</label>
+                            <input
+                              type="text"
+                              id="state"
+                              name="state"
+                              value={formData.state}
+                              onChange={handleChange}
+                              className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            />
+                          </div>
+                          <div className="relative">
+                            <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">ZIP</label>
+                            <input
+                              type="text"
+                              id="zip"
+                              name="zip"
+                              value={formData.zip}
+                              onChange={handleChange}
+                              className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="relative">
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Additional Notes</label>
                       <textarea
-                        id="message"
-                        name="message"
-                        value={formData.message}
+                        id="notes"
+                        name="notes"
+                        value={formData.notes}
                         onChange={handleChange}
-                        required
                         rows={3}
                         className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       ></textarea>
@@ -479,10 +633,10 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            Sending...
+                            Submitting...
                           </>
                         ) : (
-                          <>Send Message</>
+                          <>Submit Information</>
                         )}
                       </button>
                       
@@ -520,18 +674,20 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                 </form>
                 
                 {/* Link to contact form */}
-                <div className="mt-4 pt-3 border-t border-gray-200">
-                  <button 
-                    onClick={() => setShowContactForm(true)}
-                    className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-colors duration-200"
-                    style={{ color: primaryColor }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    Contact us directly with your details
-                  </button>
-                </div>
+                {!promptedForContact && (
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <button 
+                      onClick={() => setShowContactForm(true)}
+                      className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-colors duration-200"
+                      style={{ color: primaryColor }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Leave your contact information
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
