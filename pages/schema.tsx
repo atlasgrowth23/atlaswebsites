@@ -29,11 +29,19 @@ export default function SchemaPage() {
   useEffect(() => {
     async function fetchSchema() {
       try {
-        const response = await fetch('/api/schema-info');
+        // Try the Replit PostgreSQL endpoint first
+        const response = await fetch('/api/replit-schema-info');
         const data = await response.json();
         setSchema(data);
       } catch (err: any) {
-        setError(err.message || 'Failed to fetch schema information');
+        // Fall back to Supabase endpoint if Replit fails
+        try {
+          const fallbackResponse = await fetch('/api/schema-info');
+          const fallbackData = await fallbackResponse.json();
+          setSchema(fallbackData);
+        } catch (fallbackErr: any) {
+          setError(err.message || 'Failed to fetch schema information');
+        }
       } finally {
         setLoading(false);
       }
@@ -56,7 +64,7 @@ export default function SchemaPage() {
 
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-8">Database Schema</h1>
-        <p className="mb-4 text-gray-600">Displaying the current database structure from Supabase.</p>
+        <p className="mb-4 text-gray-600">Displaying the current database structure from Replit PostgreSQL.</p>
 
         {loading && <p className="text-gray-600">Loading schema information...</p>}
 
