@@ -16,17 +16,21 @@ export default function Login() {
   const [defaultCredentialsLoaded, setDefaultCredentialsLoaded] = useState(false);
 
   useEffect(() => {
-    // Get business from query parameter
-    const { slug } = router.query;
+    // Get business from query parameter - check both "slug" and "business" parameters
+    const slugParam = router.query.slug;
+    const businessParam = router.query.business;
+    
+    // Use either slug or business parameter
+    const businessSlugValue = businessParam || slugParam;
     
     // Check if we have a business slug in the query
-    const hasSlugParam = slug && typeof slug === 'string';
+    const hasBusinessParam = businessSlugValue && typeof businessSlugValue === 'string';
     
-    if (hasSlugParam) {
-      setBusinessSlug(slug);
+    if (hasBusinessParam) {
+      setBusinessSlug(businessSlugValue);
       
       // Fetch default credentials for this business slug
-      fetchDefaultCredentials(slug);
+      fetchDefaultCredentials(businessSlugValue);
     } else {
       // If no business slug, just show the form
       setIsLoading(false);
@@ -38,21 +42,30 @@ export default function Login() {
     
     // If logged in and we're not trying to log into a different business,
     // redirect to dashboard
-    if (isLoggedIn && (!hasSlugParam || storedBusinessSlug === slug)) {
+    if (isLoggedIn && (!hasBusinessParam || storedBusinessSlug === businessSlugValue)) {
       router.push('/hvacportal/dashboard');
     }
   }, [router.query]);
 
   // Fetch default credentials for a business
   const fetchDefaultCredentials = async (slug: string) => {
+    console.log('Fetching credentials for:', slug);
     try {
-      const response = await fetch(`/api/default-credentials?slug=${slug}`);
+      const url = `/api/default-credentials?slug=${slug}`;
+      console.log('Fetching from URL:', url);
+      
+      const response = await fetch(url);
       const data = await response.json();
+      
+      console.log('Credentials response:', data);
       
       if (data.success) {
         // Pre-populate the username field but not the password
+        console.log('Setting username to:', data.username);
         setUsername(data.username || '');
         setDefaultCredentialsLoaded(true);
+      } else {
+        console.log('Failed to load credentials:', data.message);
       }
     } catch (err) {
       console.error('Error fetching default credentials:', err);
@@ -137,11 +150,16 @@ export default function Login() {
                   </div>
                 )}
                 
-                {defaultCredentialsLoaded && (
+                {businessSlug && (
                   <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <p className="text-blue-700 text-sm mb-2">
+                      <strong>Login to {businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</strong>
+                    </p>
                     <p className="text-blue-700 text-sm">
-                      Default username has been pre-filled for {businessSlug}.
-                      Use your provided password to log in.
+                      {defaultCredentialsLoaded ? 
+                        `Default username has been pre-filled. Use password format: hvac#### (e.g., hvac1234)` : 
+                        `Loading default credentials... If not loaded, try refreshing the page.`
+                      }
                     </p>
                   </div>
                 )}
