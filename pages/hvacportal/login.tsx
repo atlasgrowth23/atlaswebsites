@@ -137,14 +137,23 @@ export default function Login() {
                   </div>
                 )}
                 
+                {defaultCredentialsLoaded && (
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <p className="text-blue-700 text-sm">
+                      Default username has been pre-filled for {businessSlug}.
+                      Use your provided password to log in.
+                    </p>
+                  </div>
+                )}
+                
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input 
-                    id="email"
-                    type="email" 
-                    value={email} 
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
+                    id="username"
+                    type="text" 
+                    value={username} 
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="your username"
                     required
                   />
                 </div>
@@ -161,28 +170,18 @@ export default function Login() {
                   />
                   {businessSlug && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Contact support if you need your default password
+                      Default password format: hvac#### (where #### is a 4-digit number)
                     </p>
                   )}
                 </div>
                 
-                <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                <div className="pt-2">
                   <Button 
                     type="submit" 
                     className="w-full"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Signing in...' : businessSlug ? `Sign In to ${businessSlug} Portal` : 'Sign In'}
-                  </Button>
-                  
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="w-full"
-                    onClick={handleSignUp}
-                    disabled={isSubmitting}
-                  >
-                    Create Account
                   </Button>
                 </div>
               </form>

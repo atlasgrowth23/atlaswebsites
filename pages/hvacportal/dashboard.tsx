@@ -1,53 +1,58 @@
 import React, { useEffect, useState } from 'react';
 import PortalLayout from '@/components/portal/PortalLayout';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/router';
 import { Card, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function Dashboard() {
   const router = useRouter();
-  const supabase = createClient();
-  const [userName, setUserName] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [businessSlug, setBusinessSlug] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [businessName, setBusinessName] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserInfo = async () => {
+    const checkAuth = () => {
       try {
-        // Get the current user
-        const { data: { user } } = await supabase.auth.getUser();
+        // Check if user is logged in using localStorage
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
         
-        if (!user) {
+        if (!isLoggedIn) {
           router.push('/hvacportal/login');
           return;
         }
         
-        // Set email if available, otherwise keep as null
-        setUserName(user.email || null);
+        // Get businessSlug and username from localStorage
+        const storedBusinessSlug = localStorage.getItem('businessSlug');
+        const storedUsername = localStorage.getItem('username');
         
-        // Email format should be business-slug@hvacportal.com
-        // Extract business slug from email
-        if (user.email) {
-          const emailParts = user.email.split('@');
-          if (emailParts.length === 2 && emailParts[1] === 'hvacportal.com') {
-            setBusinessSlug(emailParts[0]);
-          }
+        setBusinessSlug(storedBusinessSlug);
+        setUsername(storedUsername);
+        
+        // Format business name for display from slug
+        if (storedBusinessSlug) {
+          const formattedName = storedBusinessSlug
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          setBusinessName(formattedName);
         }
         
-        // In a real application, you would query user_profiles table
-        // for additional business information using the user's ID
+        // In a production app, you would make an API call here to get 
+        // the latest business data from the database
         
       } catch (err: any) {
-        console.error('Error fetching user info:', err);
+        console.error('Error checking auth:', err);
         setError('Failed to load your business information');
       } finally {
         setIsLoading(false);
       }
     };
     
-    fetchUserInfo();
-  }, [router, supabase]);
+    checkAuth();
+  }, [router]);
   
   if (isLoading) {
     return (
@@ -58,11 +63,6 @@ export default function Dashboard() {
       </PortalLayout>
     );
   }
-  
-  // Format the business name for display
-  const formattedBusinessName = businessSlug ? 
-    businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') :
-    null;
 
   // Convert businessSlug from string|null to string|undefined for prop type compatibility
   const businessSlugProp = businessSlug === null ? undefined : businessSlug;
@@ -70,7 +70,7 @@ export default function Dashboard() {
   return (
     <PortalLayout businessSlug={businessSlugProp}>
       <h1 className="text-2xl font-bold mb-6">
-        {formattedBusinessName ? `${formattedBusinessName} Dashboard` : 'Dashboard'}
+        {businessName ? `${businessName} Dashboard` : 'Dashboard'}
       </h1>
       
       {error && (
@@ -84,18 +84,33 @@ export default function Dashboard() {
           <CardContent className="pt-6">
             <h3 className="text-lg font-medium mb-2">Business Information</h3>
             <p className="text-gray-600">
-              {formattedBusinessName ? `Logged in as ${formattedBusinessName}` : 'No business associated with this account'}
+              {businessName ? `Logged in as ${businessName}` : 'No business associated with this account'}
             </p>
             <p className="text-gray-600 mt-2">
-              Email: {userName}
+              Username: {username}
+            </p>
+            <p className="text-gray-600 mt-2">
+              Business ID: {businessSlug}
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardContent className="pt-6">
-            <h3 className="text-lg font-medium mb-2">Recent Activity</h3>
-            <p className="text-gray-600">No recent activity to display</p>
+            <h3 className="text-lg font-medium mb-2">Customer Messages</h3>
+            {businessSlug ? (
+              <div className="space-y-4">
+                <p className="text-gray-600">View and respond to customer inquiries</p>
+                <Link 
+                  href={`/hvacportal/messages?slug=${businessSlug}`}
+                  className="text-blue-600 hover:underline block"
+                >
+                  Check Messages
+                </Link>
+              </div>
+            ) : (
+              <p className="text-gray-600">No business associated to check messages</p>
+            )}
           </CardContent>
         </Card>
         
@@ -103,9 +118,30 @@ export default function Dashboard() {
           <CardContent className="pt-6">
             <h3 className="text-lg font-medium mb-2">Quick Actions</h3>
             <div className="space-y-2">
-              <button className="text-blue-600 hover:underline block">View Website</button>
-              <button className="text-blue-600 hover:underline block">Check Messages</button>
-              <button className="text-blue-600 hover:underline block">Update Business Info</button>
+              {businessSlug && (
+                <>
+                  <Link 
+                    href={`/t/moderntrust/${businessSlug}`} 
+                    className="text-blue-600 hover:underline block"
+                    target="_blank"
+                  >
+                    View ModernTrust Template
+                  </Link>
+                  <Link 
+                    href={`/t/boldenergy/${businessSlug}`} 
+                    className="text-blue-600 hover:underline block"
+                    target="_blank"
+                  >
+                    View BoldEnergy Template
+                  </Link>
+                </>
+              )}
+              <Link 
+                href="/hvacportal/settings" 
+                className="text-blue-600 hover:underline block"
+              >
+                Update Business Info
+              </Link>
             </div>
           </CardContent>
         </Card>
