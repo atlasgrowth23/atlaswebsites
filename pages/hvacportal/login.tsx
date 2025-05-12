@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,102 +9,92 @@ export default function Login() {
   const router = useRouter();
   const [businessSlug, setBusinessSlug] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Create client only on client-side to avoid SSR issues
-  const supabase = typeof window !== 'undefined' ? createClient() : null;
+  const [defaultCredentialsLoaded, setDefaultCredentialsLoaded] = useState(false);
 
   useEffect(() => {
-    if (!supabase) return;
-    
     // Get business from query parameter
-    const { business } = router.query;
+    const { slug } = router.query;
     
-    // Important: We need to stop the auto-redirect behavior when the user 
-    // comes with a business parameter, as they need to complete the login manually
-    const hasBusinessParam = business && typeof business === 'string';
+    // Check if we have a business slug in the query
+    const hasSlugParam = slug && typeof slug === 'string';
     
-    if (hasBusinessParam) {
-      setBusinessSlug(business);
+    if (hasSlugParam) {
+      setBusinessSlug(slug);
       
-      // Pre-populate email based on business slug
-      // Format: business-slug@yourcompany.com 
-      // (You should update this to match your actual email format)
-      setEmail(`${business}@hvacportal.com`);
-      
-      // Just show the form right away without checking session when business param exists
+      // Fetch default credentials for this business slug
+      fetchDefaultCredentials(slug);
+    } else {
+      // If no business slug, just show the form
       setIsLoading(false);
-      return; // Skip the session check when we have a business param
     }
 
     // Check if the user is already logged in
-    // ONLY do this when there's no business parameter
-    const checkSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data?.session) {
-          router.push('/hvacportal/dashboard');
-        }
-      } catch (error) {
-        console.error('Auth session check failed:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const storedBusinessSlug = localStorage.getItem('businessSlug');
+    
+    // If logged in and we're not trying to log into a different business,
+    // redirect to dashboard
+    if (isLoggedIn && (!hasSlugParam || storedBusinessSlug === slug)) {
+      router.push('/hvacportal/dashboard');
+    }
+  }, [router.query]);
 
-    checkSession();
-  }, [router, supabase]);
+  // Fetch default credentials for a business
+  const fetchDefaultCredentials = async (slug: string) => {
+    try {
+      const response = await fetch(`/api/default-credentials?slug=${slug}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Pre-populate the username field but not the password
+        setUsername(data.username || '');
+        setDefaultCredentialsLoaded(true);
+      }
+    } catch (err) {
+      console.error('Error fetching default credentials:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) return;
     
     setError(null);
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          businessSlug
+        }),
       });
       
-      if (error) {
-        setError(error.message);
+      const data = await response.json();
+      
+      if (!data.success) {
+        setError(data.message || 'Invalid credentials');
       } else {
+        // Store login state in localStorage
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('businessSlug', data.businessSlug);
+        localStorage.setItem('username', data.username);
+        
+        // Redirect to dashboard
         router.push('/hvacportal/dashboard');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during sign in');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSignUp = async () => {
-    if (!supabase) return;
-    
-    setError(null);
-    setIsSubmitting(true);
-    
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/hvacportal/dashboard`
-        }
-      });
-      
-      if (error) {
-        setError(error.message);
-      } else {
-        setError('Check your email for the confirmation link');
-      }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during sign up');
     } finally {
       setIsSubmitting(false);
     }

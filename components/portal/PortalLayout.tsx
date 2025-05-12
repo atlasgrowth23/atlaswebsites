@@ -2,7 +2,6 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/client';
 
 interface PortalLayoutProps {
   children: ReactNode;
@@ -11,35 +10,46 @@ interface PortalLayoutProps {
 
 export default function PortalLayout({ children, businessSlug }: PortalLayoutProps) {
   const router = useRouter();
-  const supabase = createClient();
   const [isClient, setIsClient] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Use useEffect to check if we're on the client side
+  // Use useEffect to check if we're on the client side and if user is authenticated
   useEffect(() => {
     setIsClient(true);
     
-    // Check if user is authenticated
-    const checkAuth = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data?.session) {
-        router.push('/hvacportal/login');
+    // Check if user is authenticated by looking for session cookie
+    const checkAuth = () => {
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const currentBusinessSlug = localStorage.getItem('businessSlug');
+      
+      // If not logged in or businessSlug doesn't match the current one
+      if (!isLoggedIn || (businessSlug && currentBusinessSlug !== businessSlug)) {
+        // Redirect to login with the business slug if available
+        if (businessSlug) {
+          router.push(`/hvacportal/login?slug=${businessSlug}`);
+        } else {
+          router.push('/hvacportal/login');
+        }
+      } else {
+        setIsAuthenticated(true);
       }
     };
     
     checkAuth();
-  }, [router, supabase.auth]);
+  }, [router, businessSlug]);
 
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.push('/hvacportal/login');
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
+  const handleSignOut = () => {
+    // Clear authentication state
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('businessSlug');
+    localStorage.removeItem('username');
+    
+    // Redirect to login
+    router.push('/hvacportal/login');
   };
 
-  // If not on client side yet, show minimal layout
-  if (!isClient) {
+  // If not on client side yet or not authenticated, show minimal layout
+  if (!isClient || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-100 flex justify-center items-center">
         <p>Loading...</p>
