@@ -74,6 +74,8 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
         email: '',
         phone: '',
         message: '',
+        companyId: company.id || '',
+        companySlug: company.slug || '',
       });
 
       // Close chat after 3 seconds on success

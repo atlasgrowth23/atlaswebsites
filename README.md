@@ -1,88 +1,92 @@
-# HVAC Website Static Site Generator
+# HVAC Business Management Platform
 
-A Next.js Static Site Generator (SSG) for HVAC contractor websites. This project uses Next.js Pages Router, TypeScript, Tailwind CSS, and Supabase to generate static websites tailored for HVAC contractors.
+A comprehensive platform for HVAC contractors to manage their business website, customer contacts, and messaging.
 
 ## Features
 
-- **Static Site Generation**: Pre-renders pages at build time for optimal performance
-- **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **Template-Based**: Customizable components specific to HVAC businesses
-- **Dynamic Routing**: Company-specific pages with unique URLs
-- **SEO Optimized**: Built-in meta tags and structured data
-- **CMS Integration**: Pulls data from Supabase for easy content management
+- **Multi-tenant architecture**: Host multiple HVAC business websites on one platform
+- **Template-based websites**: Each business uses a professional template 
+- **Custom domain support**: Businesses can use custom domains or subdomains
+- **Customer messaging system**: Built-in chat widget that connects to the admin portal
+- **Contact management**: Store and manage customer contacts
+- **Real-time notifications**: Get notified of new messages immediately
 
-## Template Components
+## Technology Stack
 
-The HVAC website template includes the following components:
-
-- Header with navigation
-- Hero section with call-to-action
-- Services showcase
-- About section
-- Customer reviews
-- Location map with Google Maps integration
-- Contact information and footer
+- **Frontend**: Next.js, React, TypeScript, and Tailwind CSS
+- **Backend**: Next.js API Routes, PostgreSQL database
+- **Deployment**: Vercel (with instructions for setup)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 14.6.0 or newer
-- A Supabase account for the database
+- Node.js 14+ and npm
+- PostgreSQL database (can use Replit database or external)
 
 ### Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/atlasgrowth23/atlaswebsites.git
-   cd atlaswebsites
+1. Clone the repository
+   ```
+   git clone https://github.com/yourusername/hvac-platform.git
+   cd hvac-platform
    ```
 
-2. Install dependencies:
-   ```bash
+2. Install dependencies
+   ```
    npm install
    ```
 
-3. Create a `.env.local` file in the root directory with your Supabase credentials:
+3. Set up environment variables
+   Create a `.env.local` file with:
    ```
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key (optional)
+   DATABASE_URL=your_postgresql_connection_string
+   PRIMARY_DOMAIN=yourdomain.com
    ```
 
-4. Run the development server:
-   ```bash
+4. Run database setup
+   ```
+   npx tsx scripts/create-hvac-tables.ts
+   npx tsx scripts/create-message-tables.ts
+   ```
+
+5. Start the development server
+   ```
    npm run dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Project Structure
 
-## Database Schema
+- `/pages` - Next.js pages including:
+  - `/pages/t/[template_key]/[slug].tsx` - Business website templates
+  - `/pages/hvacportal` - Admin portal for businesses
+  - `/pages/api` - API endpoints
+  
+- `/components` - Reusable React components
+  - `/components/chat` - Chat widget components
+  - `/components/portal` - Admin portal components
+  
+- `/lib` - Utility functions and database interactions
+  - `/lib/db.js` - Database connection and query functions
+  
+- `/public` - Static assets (images, etc.)
 
-The project expects the following tables in your Supabase database:
+- `/scripts` - Database and setup scripts
 
-1. `companies` - Contains HVAC company information
-2. `reviews` - Customer reviews for each company
+## Domains & Routing
 
-See the `types/index.ts` file for the complete data structure.
+The platform supports three ways to access business websites:
 
-## Building for Production
+1. Direct URL: `/t/[template_key]/[slug]`
+2. Subdomain: `business-name.yourdomain.com`
+3. Custom domain: `businessdomain.com`
 
-To generate static sites for all companies:
+Routing is handled by Next.js middleware and the domain handler API.
 
-```bash
-npm run build
-```
+## Deployment
 
-This will create a `out` directory with all static files ready for deployment.
+See the [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) file for detailed instructions on deploying to Vercel and setting up domains.
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
-
-## Acknowledgements
-
-- [Next.js](https://nextjs.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Supabase](https://supabase.io/)
-- [TypeScript](https://www.typescriptlang.org/)
+This project is licensed under the MIT License - see the LICENSE file for details.
