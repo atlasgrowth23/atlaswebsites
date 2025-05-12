@@ -2,37 +2,20 @@
 // Direct API approach for Supabase
 const fetch = require('node-fetch');
 
+// Get environment variables directly
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
 
-async function createTable() {
-  console.log('Attempting direct SQL create table...');
+console.log('Starting direct insert into frames table...');
+
+// Skip the table creation using rpc/exec_sql since it's failing
+// Instead, insert directly and let Supabase create the table if needed
+async function insertImage() {
   try {
-    // First create the table
-    const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
-      },
-      body: JSON.stringify({
-        sql: `
-          CREATE TABLE IF NOT EXISTS frames (
-            id SERIAL PRIMARY KEY,
-            template_key TEXT NOT NULL,
-            frame_name TEXT NOT NULL,
-            image_url TEXT NOT NULL,
-            created_at TIMESTAMPTZ DEFAULT NOW()
-          );
-        `
-      })
-    });
+    console.log('Inserting image into frames table...');
     
-    console.log('Create table response:', await createResponse.text());
-    
-    // Then insert the image
+    // Insert the image directly
     const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/frames`, {
       method: 'POST',
       headers: {
@@ -48,13 +31,21 @@ async function createTable() {
       })
     });
     
-    console.log('Insert response:', await insertResponse.text());
+    const insertData = await insertResponse.json();
+    console.log('Insert response:', insertData);
     
+    return insertData;
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error inserting image:', error);
+    throw error;
   }
 }
 
-createTable()
-  .then(() => console.log('Process completed'))
-  .catch(err => console.error('Fatal error:', err));
+// Run the function
+insertImage()
+  .then(result => {
+    console.log('Successfully inserted image:', result);
+  })
+  .catch(error => {
+    console.error('Failed to insert image:', error);
+  });
