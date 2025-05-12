@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, MessageSquare, Send, Lightbulb, Calendar, Star, AlertTriangle, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
 
 interface ChatWidgetProps {
   company: Company;
 }
 
-// Quick response options with prominent service options
-const QUICK_RESPONSES = [
+// Service options with descriptions
+const SERVICE_OPTIONS = [
   { 
     id: 'service', 
     text: 'Schedule Service', 
@@ -43,8 +42,12 @@ interface Message {
 }
 
 export default function ChatWidget({ company }: ChatWidgetProps) {
-  // Auto-open chat after 3 seconds when visitors arrive
+  // State
   const [isOpen, setIsOpen] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [aiThinking, setAiThinking] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -56,24 +59,21 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showContactForm, setShowContactForm] = useState(false); // Start with chat interface instead of form
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [aiThinking, setAiThinking] = useState(false);
   
-  // Auto-open chat after a short delay
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsOpen(true);
-    }, 3000); // 3 seconds delay
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // Set company colors based on company settings or defaults
+  // Company colors
   const primaryColor = company.primary_color || '#2563eb';
   const secondaryColor = company.secondary_color || '#1e40af';
   
-  // Add a system welcome message when chat is first opened
+  // Auto-open chat after a delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsOpen(true);
+    }, 3000); // 3 seconds
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Add welcome message when chat opens
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([
@@ -87,9 +87,43 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     }
   }, [isOpen, company.name, messages.length]);
 
+  // Format chat timestamp
+  const formatTimestamp = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    }).format(date);
+  };
+
+  // Handle form input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle service option selection
+  const handleServiceOption = (optionId: string) => {
+    let message = '';
+    
+    switch(optionId) {
+      case 'service':
+        message = "I'd like to schedule a service appointment";
+        break;
+      case 'quote':
+        message = "I'm interested in getting a quote for a new system";
+        break;
+      case 'emergency':
+        message = "I need emergency HVAC service";
+        break;
+      case 'hours':
+        message = "What are your business hours?";
+        break;
+      default:
+        message = "I need assistance with my HVAC system";
+    }
+    
+    handleChatMessage(message);
   };
 
   // Handle AI chat message
@@ -108,7 +142,7 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     setAiThinking(true);
     
     try {
-      // Get company identifier for API call
+      // Get company identifier for API
       const companyIdentifier = company.slug 
         ? { companySlug: company.slug } 
         : { companyId: company.id };
@@ -157,28 +191,13 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     }
   };
 
-  // Handle quick response selection
-  const handleQuickResponse = (responseId: string) => {
-    let message = '';
-    
-    switch(responseId) {
-      case 'service':
-        message = "I'd like to schedule a service appointment";
-        break;
-      case 'quote':
-        message = "I'm interested in getting a quote for a new system";
-        break;
-      case 'emergency':
-        message = "I need emergency HVAC service";
-        break;
-      case 'hours':
-        message = "What are your business hours?";
-        break;
-      default:
-        message = "I need assistance with my HVAC system";
+  // Handle sending a chat message
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputMessage.trim()) {
+      handleChatMessage(inputMessage);
+      setInputMessage('');
     }
-    
-    handleChatMessage(message);
   };
 
   // Handle contact form submission
@@ -249,26 +268,6 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
       setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Convert chat timestamp to readable format
-  const formatTimestamp = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    }).format(date);
-  };
-  
-  // Function to handle sending a chat message
-  const [inputMessage, setInputMessage] = useState('');
-  
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputMessage.trim()) {
-      handleChatMessage(inputMessage);
-      setInputMessage('');
     }
   };
 
@@ -364,12 +363,12 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                   </p>
                 </div>
               
-                {/* Quick response options */}
+                {/* Service options */}
                 <div className="flex flex-col space-y-3 mt-2">
-                  {QUICK_RESPONSES.map((option) => (
+                  {SERVICE_OPTIONS.map((option) => (
                     <button
                       key={option.id}
-                      onClick={() => handleQuickResponse(option.id)}
+                      onClick={() => handleServiceOption(option.id)}
                       className="w-full flex flex-col items-start px-4 py-3 rounded-md transition-all duration-200 hover:shadow-md"
                       style={{ 
                         backgroundColor: `${primaryColor}10`, 
@@ -390,147 +389,150 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
 
           {/* Input area or contact form */}
           <div className="border-t p-4">
-            {showContactForm && submitSuccess ? (
-              <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
-                <h4 className="text-green-800 font-medium mb-1">Message Sent!</h4>
-                <p className="text-green-700 text-sm">
-                  Thanks for reaching out. {company.name} will contact you shortly.
-                </p>
-              </div>
-            ) : showContactForm ? (
-              <>
-                <div className="pb-2">
-                  <h3 className="text-lg font-semibold mb-3" style={{ color: primaryColor }}>
-                    Contact Us Directly
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Leave your details and we'll get back to you as soon as possible.
+            {showContactForm ? (
+              submitSuccess ? (
+                <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
+                  <h4 className="text-green-800 font-medium mb-1">Message Sent!</h4>
+                  <p className="text-green-700 text-sm">
+                    Thanks for reaching out. {company.name} will contact you shortly.
                   </p>
                 </div>
-                
-                <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="relative">
-                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Name*</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-
-                <div className="relative">
-                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Email*</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-
-                <div className="relative">
-                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Phone Number</label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  />
-                </div>
-
-                <div className="relative">
-                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Message*</label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    rows={3}
-                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                  ></textarea>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800">
-                    {error}
+              ) : (
+                <>
+                  <div className="pb-2">
+                    <h3 className="text-lg font-semibold mb-3" style={{ color: primaryColor }}>
+                      Contact Us Directly
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Leave your details and we'll get back to you as soon as possible.
+                    </p>
                   </div>
-                )}
+                  
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="relative">
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Name*</label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
 
-                <div className="flex space-x-3">
+                    <div className="relative">
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Email*</label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    <div className="relative">
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Phone Number</label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+
+                    <div className="relative">
+                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Message*</label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        value={formData.message}
+                        onChange={handleChange}
+                        required
+                        rows={3}
+                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      ></textarea>
+                    </div>
+
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800">
+                        {error}
+                      </div>
+                    )}
+
+                    <div className="flex space-x-3">
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="flex-1 py-3 text-white font-medium rounded-md shadow-md transition-all duration-200 flex justify-center items-center"
+                        style={{ backgroundColor: primaryColor }}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Sending...
+                          </>
+                        ) : (
+                          <>Send Message</>
+                        )}
+                      </button>
+                      
+                      <button 
+                        type="button"
+                        onClick={() => setShowContactForm(false)}
+                        className="px-3 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )
+            ) : (
+              <>
+                <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      placeholder="Type your question here..."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="flex-1 py-3 text-white font-medium rounded-md shadow-md transition-all duration-200 flex justify-center items-center"
+                    disabled={!inputMessage.trim() || aiThinking}
+                    className="p-3 rounded-md text-white flex-shrink-0 transition-all duration-200 shadow-md hover:shadow-lg"
                     style={{ backgroundColor: primaryColor }}
                   >
-                    {isSubmitting ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Sending...
-                      </>
-                    ) : (
-                      <>Send Message</>
-                    )}
+                    <Send size={22} />
                   </button>
-                  
+                </form>
+                
+                {/* Link to contact form */}
+                <div className="mt-4 pt-3 border-t border-gray-200">
                   <button 
-                    type="button"
-                    onClick={() => setShowContactForm(false)}
-                    className="px-3 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50"
+                    onClick={() => setShowContactForm(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-colors duration-200"
+                    style={{ color: primaryColor }}
                   >
-                    Cancel
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Contact us directly with your details
                   </button>
                 </div>
-              </form>
-            ) : (
-              <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Type your question here..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
-                    style={{ borderColor: primaryColor }}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={!inputMessage.trim() || aiThinking}
-                  className="p-3 rounded-md text-white flex-shrink-0 transition-all duration-200 shadow-md hover:shadow-lg"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  <Send size={22} />
-                </button>
-              </form>
-            )}
-            
-            {!showContactForm && (
-              <div className="mt-4 pt-3 border-t border-gray-200">
-                <button 
-                  onClick={() => setShowContactForm(true)}
-                  className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-colors duration-200"
-                  style={{ color: primaryColor }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Contact us directly with your details
-                </button>
-              </div>
+              </>
             )}
           </div>
         </div>
