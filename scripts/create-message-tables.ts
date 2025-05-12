@@ -1,104 +1,65 @@
-import { query } from '../lib/db-simple';
+import { query } from '../lib/db';
 
 async function main() {
   try {
-    console.log('Creating message and user credential tables in Replit PostgreSQL...');
-    
-    // Connect to the database
-    const dbInfo = await query('SELECT current_database() as db_name, version()');
-    console.log('Connected to database:', dbInfo.rows[0].db_name);
-    console.log('PostgreSQL version:', dbInfo.rows[0].version);
-    
+    console.log('Creating messages table...');
+
     // Create messages table
-    console.log('\nCreating messages table...');
     await query(`
       CREATE TABLE IF NOT EXISTS messages (
         id SERIAL PRIMARY KEY,
-        company_id TEXT NOT NULL,
-        sender_name TEXT NOT NULL,
-        sender_email TEXT,
-        sender_phone TEXT,
+        company_id VARCHAR(255) NOT NULL,
+        sender_name VARCHAR(255) NOT NULL,
+        sender_email VARCHAR(255) NOT NULL,
+        sender_phone VARCHAR(50),
         message_content TEXT NOT NULL,
-        read BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `);
-    console.log('Messages table created successfully');
-    
-    // Create user_credentials table
-    console.log('\nCreating user_credentials table...');
-    await query(`
-      CREATE TABLE IF NOT EXISTS user_credentials (
-        id SERIAL PRIMARY KEY,
-        business_slug TEXT NOT NULL UNIQUE,
-        username TEXT NOT NULL,
-        password TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT NOW(),
-        last_login TIMESTAMP
+        read BOOLEAN DEFAULT FALSE
       )
     `);
-    console.log('User credentials table created successfully');
-    
-    // Create an index on company_id in the messages table for faster queries
-    console.log('\nCreating index on company_id in messages table...');
-    await query(`
-      CREATE INDEX IF NOT EXISTS idx_messages_company_id ON messages(company_id)
-    `);
-    console.log('Index created successfully');
-    
-    // Verify the tables were created
-    console.log('\nVerifying created tables:');
-    const tablesResult = await query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' AND 
-      table_name IN ('messages', 'user_credentials')
+    console.log('- messages table created successfully');
+
+    // Seed messages with initial data
+    const companies = await query(`
+      SELECT slug FROM companies LIMIT 10
     `);
     
-    if (tablesResult.rows.length === 2) {
-      console.log('Both tables were created successfully!');
-    } else {
-      console.log('Tables found:', tablesResult.rows.map((r: any) => r.table_name).join(', '));
-    }
-    
-    // Generate default credentials for each company
-    console.log('\nGenerating default credentials for companies...');
-    const companies = await query('SELECT id, name, slug FROM companies');
+    console.log(`Found ${companies.rows.length} companies to seed messages for`);
     
     for (const company of companies.rows) {
-      try {
-        // Generate a username based on company name (lowercase, no spaces)
-        const username = company.name
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '') // Remove special characters and spaces
-          .substring(0, 20); // Limit length
-        
-        // Generate a default password
-        const defaultPassword = `hvac${Math.floor(1000 + Math.random() * 9000)}`; // e.g., hvac1234
-        
-        console.log(`Creating credentials for ${company.name} (${username}:${defaultPassword})`);
-        
-        // Insert into user_credentials table, skip if business_slug already exists
-        await query(`
-          INSERT INTO user_credentials (business_slug, username, password)
-          VALUES ($1, $2, $3)
-          ON CONFLICT (business_slug) DO NOTHING
-        `, [company.slug, username, defaultPassword]);
-      } catch (err) {
-        console.error(`Error creating credentials for ${company.name}:`, err);
+      const companyId = company.slug;
+      
+      // Check if company already has messages
+      const existingMessages = await query(
+        'SELECT COUNT(*) FROM messages WHERE company_id = $1',
+        [companyId]
+      );
+      
+      if (parseInt(existingMessages.rows[0].count) > 0) {
+        console.log(`- Company ${companyId} already has messages, skipping...`);
+        continue;
       }
+      
+      console.log(`- Adding messages for company ${companyId}`);
+      
+      // Add messages
+      await query(`
+        INSERT INTO messages 
+          (company_id, sender_name, sender_email, sender_phone, message_content, created_at, read)
+        VALUES
+          ($1, 'John Smith', 'john.smith@example.com', '(555) 123-4567', 'I need service for my AC unit. It''s not cooling properly and making strange noises. Can someone come take a look at it this week?', NOW() - INTERVAL '2 days', FALSE),
+          ($1, 'Sarah Johnson', 'sarah.j@example.com', '(555) 987-6543', 'Hi there, I''m interested in getting a quote for a new HVAC system for my home. We have about 2,000 sq ft. When can someone come out for an estimate?', NOW() - INTERVAL '5 days', TRUE),
+          ($1, 'Mike Wilson', 'mike.w@example.com', '(555) 555-5555', 'My furnace is making a loud banging noise when it turns on. It''s concerning and I need someone to check it ASAP. Please call me when you can fit me in.', NOW() - INTERVAL '1 day', FALSE),
+          ($1, 'Emily Davis', 'emily.davis@example.com', NULL, 'Just wanted to say thank you for the great service last week. The technician was professional and fixed our issue quickly.', NOW() - INTERVAL '10 days', TRUE),
+          ($1, 'Robert Brown', 'robert.b@example.com', '(555) 222-3333', 'I need to schedule my annual maintenance for my HVAC system. I''m a regular customer and would like to set something up for next month.', NOW() - INTERVAL '3 hours', FALSE)
+      `, [companyId]);
     }
-    
-    // Count how many credentials were generated
-    const credCount = await query('SELECT COUNT(*) as count FROM user_credentials');
-    console.log(`\nGenerated ${credCount.rows[0].count} default user credentials`);
-    
-    console.log('\nDatabase setup completed successfully!');
-    
-  } catch (err: any) {
-    console.error('Setup failed:', err.message);
+
+    console.log('Messages table setup completed successfully!');
+  } catch (error) {
+    console.error('Error setting up messages table:', error);
   } finally {
-    process.exit(0);
+    process.exit();
   }
 }
 

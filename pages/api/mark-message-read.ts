@@ -10,30 +10,29 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
-  // Only allow POST method
+  // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false, 
-      message: 'Method not allowed' 
+    return res.status(405).json({
+      success: false,
+      message: 'Method not allowed. Use POST.'
     });
   }
 
   const { messageId } = req.body;
-  
+
   if (!messageId) {
-    return res.status(400).json({ 
-      success: false, 
-      message: 'Message ID is required' 
+    return res.status(400).json({
+      success: false,
+      message: 'Missing messageId'
     });
   }
 
   try {
-    // Update message to mark it as read
-    await query(`
-      UPDATE messages 
-      SET read = true 
-      WHERE id = $1
-    `, [messageId]);
+    // Update the message to mark it as read
+    await query(
+      'UPDATE messages SET read = true WHERE id = $1',
+      [messageId]
+    );
 
     return res.status(200).json({
       success: true,
@@ -44,7 +43,7 @@ export default async function handler(
     
     return res.status(500).json({
       success: false,
-      message: 'Failed to mark message as read: ' + error.message
+      message: 'Server error: ' + error.message
     });
   }
 }
