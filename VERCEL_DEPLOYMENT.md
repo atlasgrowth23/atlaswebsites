@@ -1,97 +1,159 @@
-# Vercel Deployment Guide for HVAC Website
+# Deploying to Vercel
 
-This guide will help you deploy your Next.js HVAC management platform to Vercel and set up domain handling properly.
+This guide provides step-by-step instructions for deploying the HVAC Business Platform to Vercel.
 
 ## Prerequisites
 
-Before deploying to Vercel, make sure you have:
+- A GitHub account with this repository pushed to it
+- A Vercel account (can sign up at [vercel.com](https://vercel.com))
+- Access to your PostgreSQL database credentials
 
-1. A Vercel account
-2. Access to your database connection string (the DATABASE_URL environment variable)
-3. GitHub account and repository with your project
+## Step 1: Prepare Your Repository
 
-## Step 1: Prepare Your Project for Deployment
+1. Make sure all your changes are committed and pushed to GitHub
+2. Ensure the code is free of TypeScript errors by running:
+   ```
+   npm run build
+   ```
+3. Fix any errors that appear during the build process
 
-Your project is already set up for Vercel deployment. The key files include:
+## Step 2: Connect to Vercel
 
-- `.env.production` - Contains the environment variables for production
-- `middleware.ts` - Handles subdomains and custom domains
-- `pages/api/domain-handler.ts` - API route to redirect based on domains
-- `next.config.js` - Configuration for images and headers
+1. Go to [vercel.com](https://vercel.com) and sign up or log in
+2. Connect your GitHub account if you haven't already
 
-## Step 2: Deploy to Vercel
+## Step 3: Create a New Project
 
-1. **Connect to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Sign up or log in
-   - Click "Add New" and select "Project"
-   - Import your repository
+1. From the Vercel dashboard, click "Add New" → "Project"
+2. Select your repository from the list
+3. Configure the project with the following settings:
 
-2. **Configure Project Settings**
-   - In the project configuration screen, add these environment variables:
-     - `DATABASE_URL` - Your PostgreSQL database connection string
-     - `PRIMARY_DOMAIN` - Your main domain name (e.g., yourhvacsite.com)
-   - Keep the default Next.js build settings
-   - Click "Deploy"
+   ![Project Configuration](https://i.imgur.com/example-config.png)
 
-3. **Wait for Deployment**
-   - Vercel will build and deploy your project
-   - Once complete, you'll get a preview URL (something.vercel.app)
+   - **Framework Preset**: Next.js
+   - **Root Directory**: ./
+   - **Build Command**: `next build` (default)
+   - **Install Command**: `npm install` (default)
+   - **Output Directory**: `.next` (default)
 
-## Step 3: Set Up Domains
+## Step 4: Environment Variables
 
-1. **Add Primary Domain**
-   - Go to "Settings" → "Domains"
-   - Add your primary domain
-   - Follow Vercel's instructions to verify domain ownership
+Add the following environment variables:
 
-2. **Set Up Subdomains (Optional)**
-   - To support business subdomains (e.g., business.yourhvacsite.com)
-   - Add a wildcard domain: `*.yourhvacsite.com`
+- `DATABASE_URL`: Your PostgreSQL connection string
+  ```
+  postgresql://username:password@hostname:port/database
+  ```
 
-3. **Custom Business Domains (Optional)**
-   - For each business with a custom domain, add it in Vercel domains
-   - Configure the DNS records as instructed by Vercel
+- `PRIMARY_DOMAIN`: Your main domain (e.g., `hvacbusiness.com`)
+  ```
+  hvacbusiness.com
+  ```
 
-## Step 4: Database Schema Updates
+- `REVALIDATE_SECRET`: A random string for secure revalidation
+  ```
+  your-random-secret-string
+  ```
 
-When you update your database schema on Replit:
+![Environment Variables](https://i.imgur.com/example-env-vars.png)
 
-1. Run the same schema changes on your production database
-2. Use scripts in the `scripts/` directory to apply migrations
-3. Always back up your database before making changes
+## Step 5: Deploy
 
-## Using the System
+1. Click "Deploy"
+2. Wait for the build and deployment to complete
+3. Once deployed, Vercel will provide you with a URL (e.g., `your-project.vercel.app`)
 
-1. **Admin Portal**
-   - Access the admin portal at your-domain.com/hvacportal
-   - Use the appropriate credentials to login
+## Step 6: Configure Custom Domains
 
-2. **Business Websites**
-   - Each business will be available at:
-     - `/t/[template_key]/[slug]` - Direct template access
-     - `business-slug.yourdomain.com` - If using subdomains
-     - `custombusiness.com` - If using custom domains
+To set up custom domains:
+
+1. Go to your project settings in the Vercel dashboard
+2. Click on "Domains"
+3. Add your primary domain:
+   - Enter your domain name (e.g., `hvacbusiness.com`)
+   - Follow the instructions to configure DNS records
+
+4. For wildcard subdomains (if using business.yourdomain.com format):
+   - Add `*.yourdomain.com` as a domain
+   - Set up the DNS records as instructed by Vercel
+
+5. For business-specific custom domains:
+   - Add each domain individually
+   - Configure DNS as instructed
+
+![Domain Configuration](https://i.imgur.com/example-domain-config.png)
+
+## Step 7: Test Your Deployment
+
+After deployment, test the following:
+
+1. The main website landing page
+2. Business-specific pages:
+   - Via direct URL: `/t/[template_key]/[slug]`
+   - Via subdomain (if configured): `business.yourdomain.com`
+   - Via custom domain (if configured): `businessdomain.com`
+3. The business portal login and functionality
+4. The chat widget on business pages
+
+## Updating Your Deployment
+
+When you push changes to your GitHub repository, Vercel will automatically redeploy your project.
+
+### Manual Redeployment
+
+If you need to redeploy manually:
+
+1. Go to your project in the Vercel dashboard
+2. Click "Deployments"
+3. Click "Redeploy" on the deployment you want to rebuild
+
+### Rollbacks
+
+If a deployment causes issues:
+
+1. Go to your project's "Deployments" tab
+2. Find a previous working deployment
+3. Click the three dots (⋮) and select "Promote to Production"
+
+## Monitoring and Logs
+
+To view logs and monitor your deployment:
+
+1. Go to your project in the Vercel dashboard
+2. Click "Deployments" then select a specific deployment
+3. Click "Functions" to see serverless function logs
+4. Click "Runtime Logs" to see application logs
 
 ## Troubleshooting
 
-1. **Database Connection Issues**
-   - Check that your DATABASE_URL is correctly set in Vercel
-   - Verify database connection permissions allow Vercel IPs
+### Database Connection Issues
 
-2. **Domain Issues**
-   - Make sure DNS records are properly configured
-   - Allow 24-48 hours for DNS changes to fully propagate
+If your app cannot connect to the database:
 
-3. **Image Loading Issues**
-   - Check that the image domains are correctly listed in next.config.js
-   - Add any new image domains as needed
+1. Verify the `DATABASE_URL` environment variable
+2. Check if your database allows connections from Vercel's IP ranges
+3. Test the connection locally with the same URL
 
-## Getting Help
+### Build Failures
 
-If you encounter issues, check:
-- Vercel deployment logs
-- Database connection logs
-- Next.js build errors
+If your build fails:
 
-For more assistance, please contact support or refer to Next.js and Vercel documentation.
+1. Check the build logs for specific errors
+2. Fix TypeScript errors or other issues in your code
+3. Redeploy after making changes
+
+### Domain Configuration
+
+If domain connections aren't working:
+
+1. Verify DNS records are set up correctly
+2. Check the domain settings in Vercel dashboard
+3. Allow time for DNS propagation (up to 48 hours)
+
+## Need Help?
+
+If you continue to have deployment issues:
+
+- Check [Vercel Documentation](https://vercel.com/docs)
+- Visit [Vercel Support](https://vercel.com/support)
+- Consult community forums like [Stack Overflow](https://stackoverflow.com/questions/tagged/vercel)

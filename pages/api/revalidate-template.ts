@@ -1,61 +1,50 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { queryMany } from '@/lib/db';
+
+type ResponseData = {
+  revalidated: boolean;
+  message?: string;
+};
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse
+  res: NextApiResponse<ResponseData>
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+  // Check for secret to confirm this is a valid request
+  if (process.env.REVALIDATE_SECRET && req.query.secret !== process.env.REVALIDATE_SECRET) {
+    return res.status(401).json({ 
+      revalidated: false,
+      message: 'Invalid token' 
+    });
   }
   
   try {
-    // Get parameters
-    const { slug, template_key } = req.body;
+    const { slug, template } = req.query;
     
-    if (!slug && !template_key) {
-      // If no specific slug/template, revalidate all templates
-      console.log('Revalidating all template pages...');
-      
-      // Get all company slugs
-      const companies = await queryMany(`
-        SELECT slug FROM companies ORDER BY name
-      `);
-      
-      // Revalidate each template for each company
-      const templates = ['boldenergy', 'moderntrust'];
-      const revalidated: string[] = [];
-      
-      for (const company of companies) {
-        for (const template of templates) {
-          const path = `/t/${template}/${company.slug}`;
-          await res.revalidate(path);
-          revalidated.push(path);
-          console.log(`Revalidated: ${path}`);
-        }
-      }
-      
-      return res.json({
-        revalidated: true,
-        paths: revalidated,
-        count: revalidated.length
-      });
-    } else {
-      // Revalidate specific template page
-      const path = `/t/${template_key}/${slug}`;
-      console.log(`Revalidating page: ${path}`);
-      await res.revalidate(path);
-      
-      return res.json({
-        revalidated: true,
-        path
+    if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({
+        revalidated: false,
+        message: 'Missing slug parameter'
       });
     }
+
+    // Revalidate the specific template page
+    if (template && typeof template === 'string') {
+      await res.revalidate(`/t/${template}/${slug}`);
+    } 
+    
+    // Also revalidate the redirect page for the slug
+    await res.revalidate(`/${slug}`);
+
+    return res.json({
+      revalidated: true,
+      message: 'Paths revalidated successfully'
+    });
   } catch (err: any) {
-    console.error('Error revalidating:', err);
-    return res.status(500).json({
-      error: 'Error revalidating pages',
-      message: err.message
+    // If there was an error, Next.js will continue to show the last successfully
+    // generated page
+    return res.status(500).send({ 
+      revalidated: false,
+      message: 'Error revalidating: ' + err.message
     });
   }
 }

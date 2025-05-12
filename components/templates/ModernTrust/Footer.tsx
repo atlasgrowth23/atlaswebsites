@@ -17,10 +17,10 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
           {/* Company Info */}
           <div>
             <h3 className="text-xl font-bold mb-4">{company.name}</h3>
-            {company.address && (
+            {company.full_address && (
               <address className="not-italic mb-4 text-gray-300">
-                {company.address}<br />
-                {company.city}, {company.state} {company.zip}
+                {company.street || company.full_address}<br />
+                {company.city}, {company.state} {company.postal_code}
               </address>
             )}
             {company.phone && (
@@ -31,11 +31,11 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
                 </a>
               </p>
             )}
-            {company.email && (
+            {company.email_1 && (
               <p>
                 <span className="font-semibold">Email: </span>
-                <a href={`mailto:${company.email}`} className="text-blue-400 hover:text-blue-300">
-                  {company.email}
+                <a href={`mailto:${company.email_1}`} className="text-blue-400 hover:text-blue-300">
+                  {company.email_1}
                 </a>
               </p>
             )}
