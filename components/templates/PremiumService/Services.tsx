@@ -53,7 +53,7 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
     {
       id: 5,
       title: 'Ductwork Services',
-      description: 'Complete duct installation, cleaning, and repair services to improve your HVAC system's efficiency.',
+      description: "Complete duct installation, cleaning, and repair services to improve your HVAC system's efficiency.",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
@@ -63,7 +63,7 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
     {
       id: 6,
       title: '24/7 Emergency Service',
-      description: 'We're available around the clock for urgent HVAC issues to ensure your comfort and safety.',
+      description: "We're available around the clock for urgent HVAC issues to ensure your comfort and safety.",
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
