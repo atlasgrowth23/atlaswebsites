@@ -23,7 +23,12 @@ export default function Login() {
     
     // Get business from query parameter
     const { business } = router.query;
-    if (business && typeof business === 'string') {
+    
+    // Important: We need to stop the auto-redirect behavior when the user 
+    // comes with a business parameter, as they need to complete the login manually
+    const hasBusinessParam = business && typeof business === 'string';
+    
+    if (hasBusinessParam) {
       setBusinessSlug(business);
       
       // Pre-populate email based on business slug
@@ -31,11 +36,13 @@ export default function Login() {
       // (You should update this to match your actual email format)
       setEmail(`${business}@hvacportal.com`);
       
-      // We don't pre-populate the password for security reasons,
-      // but you could set a hint or placeholder
+      // Just show the form right away without checking session when business param exists
+      setIsLoading(false);
+      return; // Skip the session check when we have a business param
     }
 
     // Check if the user is already logged in
+    // ONLY do this when there's no business parameter
     const checkSession = async () => {
       try {
         const { data } = await supabase.auth.getSession();
