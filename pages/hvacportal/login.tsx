@@ -59,19 +59,32 @@ export default function Login() {
       
       console.log('Credentials response:', data);
       
-      if (data.success && data.username && data.password) {
-        // Pre-populate both username and password
+      if (data.success) {
+        // Pre-populate username field
         console.log('Setting username to:', data.username);
-        console.log('Setting password to:', data.password);
-        setUsername(data.username);
-        setPassword(data.password);
-        setDefaultCredentialsLoaded(true);
+        setUsername(data.username || '');
         
-        // Auto-login after a short delay to allow state updates
-        setTimeout(() => {
-          console.log('Auto-logging in with:', data.username, data.password);
-          handleLogin(null, data.username, data.password);
-        }, 1000);
+        // Check if password is returned and populate it
+        if (data.password) {
+          console.log('Setting password to:', data.password);
+          setPassword(data.password);
+          setDefaultCredentialsLoaded(true);
+          
+          // Store credentials for auto-login
+          const autoUsername = data.username;
+          const autoPassword = data.password;
+          
+          // Add a slight delay to make sure the form is ready
+          setTimeout(() => {
+            console.log('Auto-login attempt with:', autoUsername, autoPassword);
+            // Directly use fetch instead of handleLogin to bypass any UI state issues
+            loginWithCredentials(autoUsername, autoPassword, slug);
+          }, 1500);
+        } else {
+          console.log('Password not returned from API');
+          setIsLoading(false);
+          setDefaultCredentialsLoaded(true);
+        }
       } else {
         console.log('Failed to load credentials:', data.message);
         setIsLoading(false);
@@ -79,6 +92,48 @@ export default function Login() {
     } catch (err) {
       console.error('Error fetching default credentials:', err);
       setIsLoading(false);
+    }
+  };
+  
+  // Direct login function that bypasses the form
+  const loginWithCredentials = async (username: string, password: string, slug: string) => {
+    console.log('Direct login with:', { username, password, slug });
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+          businessSlug: slug
+        }),
+      });
+      
+      const data = await response.json();
+      console.log('Login API response:', data);
+      
+      if (data.success) {
+        console.log('Login successful, redirecting to dashboard');
+        // Store login state in localStorage
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('businessSlug', data.businessSlug);
+        localStorage.setItem('username', data.username);
+        
+        // Redirect to dashboard
+        router.push('/hvacportal/dashboard');
+      } else {
+        console.log('Login failed:', data.message);
+        setError(data.message || 'Invalid credentials');
+        setIsSubmitting(false);
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'An error occurred during sign in');
+      setIsSubmitting(false);
     }
   };
 
@@ -171,11 +226,18 @@ export default function Login() {
                       <strong>Auto-Login for {businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</strong>
                     </p>
                     <p className="text-blue-700 text-sm">
-                      {defaultCredentialsLoaded ? 
-                        `Username and password have been auto-filled. Just click "Sign In" to continue.` : 
-                        `Loading login credentials... If not loaded, try refreshing the page.`
+                      {isSubmitting ? 
+                        `Logging in automatically...` : 
+                        defaultCredentialsLoaded ? 
+                          `Credentials loaded. Auto-login in progress, or click "Sign In" to continue.` : 
+                          `Loading login credentials... Please wait.`
                       }
                     </p>
+                    {isSubmitting && (
+                      <div className="flex justify-center items-center mt-2">
+                        <div className="animate-spin h-4 w-4 border-b-2 border-blue-700 rounded-full"></div>
+                      </div>
+                    )}
                   </div>
                 )}
                 
