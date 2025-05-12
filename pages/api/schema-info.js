@@ -14,86 +14,149 @@ export default async function handler(req, res) {
     // Create Supabase client with service role
     const supabase = createClient(true);
     
-    console.log('Using known table names approach');
-    
-    // Only check tables that we've confirmed exist in the Supabase instance
-    // Based on the screenshot and feedback
-    const existingTableNames = [
-      'companies', 
-      'reviews', 
-      'user_profiles' // This might not exist yet but will be created
-    ];
-    
     // Format table info in the expected format
     const formattedTables = [];
     
-    // For each table, try to get its columns
-    for (const tableName of existingTableNames) {
-      try {
-        console.log(`Checking table: ${tableName}`);
-        const { data: columns, error: columnsError } = await supabase
-          .from(tableName)
-          .select()
-          .limit(1);
-          
-        if (columnsError) {
-          console.log(`Table ${tableName} might not exist:`, columnsError.message);
-          
-          // For user_profiles, add a placeholder if it doesn't exist yet
-          if (tableName === 'user_profiles') {
-            formattedTables.push({
-              table_name: tableName,
-              columns: [
-                'id::serial',
-                'user_id::uuid',
-                'role::text',
-                'permissions::jsonb',
-                'business_slug::text',
-                'created_at::timestamp'
-              ],
-              exists: false,
-              placeholder: true,
-              message: 'This table does not exist yet but can be created via Setup Database'
-            });
-          }
-          continue;
-        }
+    try {
+      // First try to get list of all tables from the database directly
+      // Using the information_schema which should work on all PostgreSQL databases
+      console.log('Fetching tables from information_schema');
+      const { data: tablesList, error: tablesError } = await supabase
+        .from('information_schema.tables')
+        .select('table_name')
+        .eq('table_schema', 'public')
+        .not('table_name', 'like', 'pg_%');  // Exclude PostgreSQL system tables
         
-        // If we have data, extract column names
-        if (columns && columns.length > 0) {
-          const columnsList = Object.keys(columns[0]).map(col => `${col}::unknown`);
-          formattedTables.push({
-            table_name: tableName,
-            columns: columnsList,
-            exists: true
-          });
-          console.log(`Table ${tableName} exists with columns:`, columnsList);
-        } else {
-          // Table exists but is empty
-          const { data: tableInfo, error: tableInfoError } = await supabase
-            .from(tableName)
-            .select('*', { head: true, count: 'exact' });
+      if (tablesError) {
+        console.log('Failed to fetch from information_schema, falling back to known tables');
+        
+        // Use a fallback list of tables we know should exist
+        const knownTableNames = ['companies', 'reviews'];
+        
+        // For each table, try to get its columns
+        for (const tableName of knownTableNames) {
+          try {
+            console.log(`Checking table: ${tableName}`);
+            const { data: columns, error: columnsError } = await supabase
+              .from(tableName)
+              .select()
+              .limit(1);
+              
+            if (columnsError) {
+              console.log(`Table ${tableName} might not exist:`, columnsError.message);
+              continue;
+            }
             
-          // If this also errors, the table probably doesn't exist
-          if (tableInfoError) {
-            console.log(`Could not verify if table ${tableName} exists:`, tableInfoError.message);
+            // If we have data, extract column names
+            if (columns && columns.length > 0) {
+              const columnsList = Object.keys(columns[0]).map(col => `${col}::unknown`);
+              formattedTables.push({
+                table_name: tableName,
+                columns: columnsList,
+                exists: true
+              });
+              console.log(`Table ${tableName} exists with columns:`, columnsList);
+            } else {
+              // Table exists but is empty
+              formattedTables.push({
+                table_name: tableName,
+                columns: [],
+                exists: true,
+                empty: true
+              });
+              console.log(`Table ${tableName} exists but is empty`);
+            }
+          } catch (err) {
+            console.error(`Error processing table ${tableName}:`, err);
+          }
+        }
+      } else if (tablesList && tablesList.length > 0) {
+        // Successfully got table list from information_schema
+        console.log(`Found ${tablesList.length} tables from information_schema`);
+        
+        // Process each table to get its columns
+        for (const table of tablesList) {
+          const tableName = table.table_name;
+          try {
+            console.log(`Checking table: ${tableName}`);
+            const { data: columns, error: columnsError } = await supabase
+              .from(tableName)
+              .select()
+              .limit(1);
+              
+            if (columnsError) {
+              console.log(`Error fetching data from ${tableName}:`, columnsError.message);
+              continue;
+            }
+            
+            // If we have data, extract column names
+            if (columns && columns.length > 0) {
+              const columnsList = Object.keys(columns[0]).map(col => `${col}::unknown`);
+              formattedTables.push({
+                table_name: tableName,
+                columns: columnsList,
+                exists: true
+              });
+              console.log(`Table ${tableName} exists with columns:`, columnsList);
+            } else {
+              // Table exists but is empty
+              formattedTables.push({
+                table_name: tableName,
+                columns: [],
+                exists: true,
+                empty: true
+              });
+              console.log(`Table ${tableName} exists but is empty`);
+            }
+          } catch (err) {
+            console.error(`Error processing table ${tableName}:`, err);
+          }
+        }
+      } else {
+        console.log('No tables found in information_schema');
+      }
+    } catch (err) {
+      console.error('Error querying database schema:', err);
+      
+      // Last resort fallback to known tables
+      const knownTableNames = ['companies', 'reviews'];
+      
+      // For each table, try to get its columns
+      for (const tableName of knownTableNames) {
+        try {
+          console.log(`Checking table: ${tableName}`);
+          const { data: columns, error: columnsError } = await supabase
+            .from(tableName)
+            .select()
+            .limit(1);
+            
+          if (columnsError) {
+            console.log(`Table ${tableName} might not exist:`, columnsError.message);
             continue;
           }
           
-          // We know the table exists, but we don't know its structure
-          // Let's use a general approach to get column names by making a dummy insert
-          // This is a bit hacky but gives us the columns
-          
-          formattedTables.push({
-            table_name: tableName,
-            columns: [],
-            exists: true,
-            empty: true
-          });
-          console.log(`Table ${tableName} exists but is empty`);
+          // If we have data, extract column names
+          if (columns && columns.length > 0) {
+            const columnsList = Object.keys(columns[0]).map(col => `${col}::unknown`);
+            formattedTables.push({
+              table_name: tableName,
+              columns: columnsList,
+              exists: true
+            });
+            console.log(`Table ${tableName} exists with columns:`, columnsList);
+          } else {
+            // Table exists but is empty
+            formattedTables.push({
+              table_name: tableName,
+              columns: [],
+              exists: true,
+              empty: true
+            });
+            console.log(`Table ${tableName} exists but is empty`);
+          }
+        } catch (err) {
+          console.error(`Error processing table ${tableName}:`, err);
         }
-      } catch (err) {
-        console.error(`Error processing table ${tableName}:`, err);
       }
     }
     

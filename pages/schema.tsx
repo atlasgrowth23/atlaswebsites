@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface SchemaTable {
   table_name: string;
   columns: string[];
+  exists?: boolean;
+  empty?: boolean;
+  message?: string;
 }
 
 interface SchemaResponse {
@@ -53,6 +56,7 @@ export default function SchemaPage() {
 
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-8">Database Schema</h1>
+        <p className="mb-4 text-gray-600">Displaying the current database structure from Supabase.</p>
 
         {loading && <p className="text-gray-600">Loading schema information...</p>}
 
@@ -79,95 +83,57 @@ export default function SchemaPage() {
         {schema && schema.success && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {schema.tables.map((table) => (
-                <Card key={table.table_name} className={`shadow-md hover:shadow-lg transition-shadow ${!table.exists ? 'border-2 border-dashed border-yellow-300' : ''}`}>
-                  <CardHeader className={table.exists ? "bg-blue-50" : "bg-yellow-50"}>
-                    <CardTitle className={table.exists ? "text-blue-700" : "text-yellow-700"}>
-                      {table.table_name}
-                      {table.exists ? 
-                        <span className="ml-2 text-xs inline-block bg-green-100 text-green-800 px-2 py-1 rounded">Exists</span> :
-                        <span className="ml-2 text-xs inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Needs Creation</span>
-                      }
-                    </CardTitle>
-                    {table.message && (
-                      <p className="text-sm mt-1 text-gray-600">{table.message}</p>
-                    )}
-                    {table.empty && (
-                      <p className="text-sm mt-1 text-gray-600">This table exists but has no data yet.</p>
-                    )}
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    {table.columns.length > 0 ? (
-                      <table className="w-full">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Column</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {table.columns.map((column, i) => {
-                            const { name, type } = parseColumnInfo(column);
-                            return (
-                              <tr key={i} className="hover:bg-gray-50">
-                                <td className="px-4 py-2 text-sm font-medium">{name}</td>
-                                <td className="px-4 py-2 text-sm text-gray-500">{type}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="p-4 text-center text-gray-500">
-                        {table.exists && table.empty ? (
-                          "This table is empty. Data structure will be shown when rows are added."
-                        ) : (
-                          "Table structure will be available after creation."
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+              {schema.tables.map((table) => {
+                // Only show tables that actually exist (with data or empty)
+                if (table.exists === false) return null;
+                
+                return (
+                  <Card key={table.table_name} className="shadow-md hover:shadow-lg transition-shadow">
+                    <CardHeader className="bg-blue-50">
+                      <CardTitle className="text-blue-700">
+                        {table.table_name}
+                      </CardTitle>
+                      {table.empty && (
+                        <p className="text-sm mt-1 text-gray-600">This table exists but has no data yet.</p>
+                      )}
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      {table.columns.length > 0 ? (
+                        <table className="w-full">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Column</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {table.columns.map((column, i) => {
+                              const { name, type } = parseColumnInfo(column);
+                              return (
+                                <tr key={i} className="hover:bg-gray-50">
+                                  <td className="px-4 py-2 text-sm font-medium">{name}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-500">{type}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div className="p-4 text-center text-gray-500">
+                          This table exists but is empty. Data structure will be shown when rows are added.
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              }).filter(Boolean)}
             </div>
 
-            {schema.tables.length === 0 && (
+            {schema.tables.filter(t => t.exists !== false).length === 0 && (
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                <p className="text-yellow-700">No tables found in the database. You might need to set up the database first.</p>
+                <p className="text-yellow-700">No tables found in the database.</p>
               </div>
             )}
-
-            <div className="mt-6 p-4 bg-blue-50 rounded-md">
-              <h2 className="text-lg font-semibold text-blue-800 mb-2">Database Setup</h2>
-              <p className="mb-4">If you need to create the initial tables, click the button below:</p>
-              <button
-                onClick={async () => {
-                  try {
-                    setLoading(true);
-                    const res = await fetch('/api/setup-database', {
-                      method: 'POST',
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      // Refresh schema data
-                      const schemaRes = await fetch('/api/schema-info');
-                      const schemaData = await schemaRes.json();
-                      setSchema(schemaData);
-                    } else {
-                      setError('Failed to set up database: ' + data.error);
-                    }
-                  } catch (err: any) {
-                    setError(err.message || 'Failed to set up database');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                disabled={loading}
-              >
-                {loading ? 'Setting up...' : 'Setup Database Tables'}
-              </button>
-            </div>
           </>
         )}
       </div>
