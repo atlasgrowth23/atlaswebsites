@@ -78,15 +78,41 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       return { notFound: true };
     }
     
-    // Get template frames (images)
-    console.log('Added template frames:', {
-      hero_img: 'https://images.unsplash.com/photo-1581146783519-13333b79e6c6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80',
-      about_img: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1169&q=80'
+    const company = result.rows[0];
+    
+    // Get company-specific frames
+    const companyFramesResult = await query(
+      'SELECT frame_key, image_url FROM company_frames WHERE company_id = $1 AND template_key = $2',
+      [slug, template_key]
+    );
+
+    // Get template frames
+    const templateFramesResult = await query(
+      'SELECT frame_key, image_url FROM template_frames WHERE template_key = $1',
+      [template_key]
+    );
+
+    // Convert to objects for easier lookup
+    const company_frames = {};
+    companyFramesResult.rows.forEach((frame) => {
+      company_frames[frame.frame_key] = frame.image_url;
     });
+
+    const template_frames = {};
+    templateFramesResult.rows.forEach((frame) => {
+      template_frames[frame.frame_key] = frame.image_url;
+    });
+
+    // Add frames to company object
+    company.company_frames = company_frames;
+    company.template_frames = template_frames;
+    
+    // Log what frames we're using
+    console.log('Added template frames:', template_frames);
     
     return {
       props: {
-        company: JSON.parse(JSON.stringify(result.rows[0])),
+        company: JSON.parse(JSON.stringify(company)),
         template_key,
       },
       revalidate: 60 * 10, // Revalidate every 10 minutes

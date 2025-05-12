@@ -6,10 +6,10 @@
  * @returns URL to the appropriate image
  */
 export function getPhotoUrl(company: any, frameName: string, templateKey: string): string {
-  // First try to get from company frames
-  if (company?.frames && company.frames[frameName]) {
-    console.log('Using company frame:', frameName, company.frames[frameName]);
-    return company.frames[frameName];
+  // First try to get from company_frames database table
+  if (company?.company_frames && company.company_frames[frameName]) {
+    console.log('Using company-specific frame:', frameName, company.company_frames[frameName]);
+    return company.company_frames[frameName];
   }
   
   // Then try template frames
@@ -17,9 +17,6 @@ export function getPhotoUrl(company: any, frameName: string, templateKey: string
     console.log('Using template frame:', frameName, company.template_frames[frameName]);
     return company.template_frames[frameName];
   }
-  
-  // Check if we need to fetch from the template frames table
-  // (This will be handled separately in server-side props)
   
   // Fall back to stock images
   console.log('Using stock image for:', templateKey, frameName);
