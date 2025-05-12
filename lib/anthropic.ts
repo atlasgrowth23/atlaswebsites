@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { MessageParam } from '@anthropic-ai/sdk/resources';
 
 // The newest Anthropic model is "claude-3-7-sonnet-20250219" which was released February 24, 2025
 const anthropic = new Anthropic({
@@ -37,7 +38,18 @@ ${companyInfo.phone ? `Phone: ${companyInfo.phone}` : ''}
       ],
     });
 
-    return message.content[0].text;
+    // Get the text from content blocks
+    const textContent = message.content
+      .filter(block => block.type === 'text')
+      .map(block => (block.type === 'text' ? block.text : ''))
+      .join(' ');
+    
+    if (textContent) {
+      return textContent;
+    }
+    
+    // Fallback response
+    return "I'm here to help with your HVAC needs. Please let me know how I can assist you today.";
   } catch (error) {
     console.error('Error generating HVAC response:', error);
     return "I'm sorry, I'm having trouble connecting to our assistant right now. Please leave your contact information and our team will get back to you as soon as possible.";
@@ -67,7 +79,19 @@ Return only the category name, nothing else.
       ],
     });
 
-    return response.content[0].text.trim();
+    // Get the text from content blocks
+    const textContent = response.content
+      .filter(block => block.type === 'text')
+      .map(block => (block.type === 'text' ? block.text : ''))
+      .join(' ')
+      .trim();
+    
+    if (textContent) {
+      return textContent;
+    }
+    
+    // Default category if unable to classify
+    return "general_inquiry";
   } catch (error) {
     console.error('Error categorizing customer message:', error);
     return "general_inquiry";
