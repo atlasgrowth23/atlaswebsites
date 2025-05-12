@@ -85,60 +85,7 @@ export default function Login() {
     }
   };
   
-  const handleLogin = async (e: React.FormEvent | null, autoUsername?: string, autoPassword?: string) => {
-    if (e) e.preventDefault();
-
-    // Use either auto-provided credentials or form state
-    const loginUsername = autoUsername || username;
-    const loginPassword = autoPassword || password;
-
-    console.log('Login attempt with:', loginUsername, loginPassword);
-
-    setError(null);
-    setIsSubmitting(true);
-
-    await loginWithCredentials(loginUsername, loginPassword, businessSlug!);
-  };
-
-  // Example invocation
-  // Assuming you want to replace your current fetch inside handleLogin with the function
-  const loginWithCredentials = async (username: string, password: string, slug: string) => {
-    console.log('Direct login with:', { username, password, slug });
-    setIsSubmitting(true);
-
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          password,
-          businessSlug: slug
-        }),
-      });
-
-      const data = await response.json();
-      console.log('Login API response:', data);
-
-      if (data.success) {
-        console.log('Login successful, redirecting to dashboard');
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('businessSlug', data.businessSlug);
-        localStorage.setItem('username', data.username);
-        router.push('/hvacportal/dashboard');
-      } else {
-        console.log('Login failed:', data.message);
-        setError(data.message || 'Invalid credentials');
-        setIsSubmitting(false);
-      }
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.message || 'An error occurred during sign in');
-      setIsSubmitting(false);
-    }
-  };
+ 
 
   const handleLogin = async (e: React.FormEvent | null, autoUsername?: string, autoPassword?: string) => {
     if (e) e.preventDefault();
