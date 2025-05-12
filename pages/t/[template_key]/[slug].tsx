@@ -1,6 +1,6 @@
 import type { GetStaticProps, GetStaticPaths } from 'next';
 import { useRouter } from 'next/router';
-import { createClient } from '@/lib/supabase/client';
+import { queryMany, queryOne } from '@/lib/db';
 import { Company } from '@/types';
 
 // Dynamic Template Components
@@ -40,85 +40,96 @@ const TemplatePage = ({ company }: TemplateProps) => {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const supabase = createClient();
+  try {
+    // Fetch all companies using PostgreSQL
+    const companies = await queryMany(`
+      SELECT slug FROM companies ORDER BY name
+    `);
 
-  const { data: companies, error } = await supabase
-    .from('companies')
-    .select('slug')
-    .order('name');
+    // Generate paths for both templates
+    const templates = ['boldenergy', 'moderntrust'];
+    const paths = companies?.flatMap((company) => 
+      templates.map((template) => ({
+        params: {
+          template_key: template,
+          slug: company.slug,
+        },
+      }))
+    ) || [];
 
-  if (error) {
-    console.error('Error fetching companies:', error);
+    return { paths, fallback: 'blocking' };
+  } catch (err) {
+    console.error('Error fetching companies for paths:', err);
     return { paths: [], fallback: 'blocking' };
   }
-
-  // Generate paths for both templates
-  const templates = ['boldenergy', 'moderntrust'];
-  const paths = companies?.flatMap((company) => 
-    templates.map((template) => ({
-      params: {
-        template_key: template,
-        slug: company.slug,
-      },
-    }))
-  ) || [];
-
-  return { paths, fallback: 'blocking' };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { slug, template_key } = params as Params;
 
-  const supabase = createClient();
+  try {
+    // Fetch company data
+    const company = await queryOne(`
+      SELECT * FROM companies WHERE slug = $1
+    `, [slug]);
 
-  // Fetch company data
-  const { data: company, error } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+    if (!company) {
+      return {
+        notFound: true,
+      };
+    }
+    
+    // Fetch template frames from frames table
+    const templateFrames = await queryMany(`
+      SELECT frame_name, image_url 
+      FROM frames 
+      WHERE template_key = $1 
+      AND company_id IS NULL
+    `, [template_key]);
+    
+    // Convert frames array to object format for easy lookup
+    if (templateFrames && templateFrames.length > 0) {
+      const frameObj = templateFrames.reduce((acc: any, frame: any) => {
+        acc[frame.frame_name] = frame.image_url;
+        return acc;
+      }, {});
+      
+      // Add template frames to company object
+      company.template_frames = frameObj;
+      console.log('Added template frames:', frameObj);
+    }
 
-  if (error) {
-    console.error('Error fetching company:', error);
+    // Fetch any company-specific frames that might override template frames
+    const companyFrames = await queryMany(`
+      SELECT frame_name, image_url 
+      FROM frames 
+      WHERE company_id = $1
+    `, [company.id]);
+    
+    // Add any company-specific frames
+    if (companyFrames && companyFrames.length > 0) {
+      const frameObj = companyFrames.reduce((acc: any, frame: any) => {
+        acc[frame.frame_name] = frame.image_url;
+        return acc;
+      }, {});
+      
+      // Add company frames to company object
+      company.frames = frameObj;
+      console.log('Added company frames:', frameObj);
+    }
+
+    return {
+      props: {
+        company,
+      },
+      revalidate: 60, // Revalidate every 60 seconds
+    };
+  } catch (err) {
+    console.error('Error in getStaticProps:', err);
     return {
       notFound: true,
     };
   }
-
-  if (!company) {
-    return {
-      notFound: true,
-    };
-  }
-  
-  // Fetch template frames from frames table
-  const { data: templateFrames, error: framesError } = await supabase
-    .from('frames')
-    .select('frame_name, image_url')
-    .eq('template_key', template_key);
-    
-  if (framesError) {
-    console.error('Error fetching template frames:', framesError);
-  }
-  
-  // Convert frames array to object format for easy lookup
-  if (templateFrames && templateFrames.length > 0) {
-    const frameObj = templateFrames.reduce((acc, frame) => {
-      acc[frame.frame_name] = frame.image_url;
-      return acc;
-    }, {});
-    
-    // Add template frames to company object
-    company.template_frames = frameObj;
-    console.log('Added template frames:', frameObj);
-  }
-
-  return {
-    props: {
-      company,
-    },
-    revalidate: 60, // Revalidate every 60 seconds
-  };
 };
 
 export default TemplatePage;

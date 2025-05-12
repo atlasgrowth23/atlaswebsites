@@ -4,7 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
-import { createClient } from '@/lib/supabase/client';
+import { queryMany } from '@/lib/db';
 
 interface HomeProps {
   companies: Company[];
@@ -133,24 +133,13 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
 };
 
 export async function getStaticProps() {
-  // Connect to Supabase
-  const supabase = createClient();
-  
   try {
-    // Fetch all companies, removing the biz_id that doesn't exist
-    const { data: companies, error } = await supabase
-      .from('companies')
-      .select('id, slug, name, city, state')
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching companies:', error);
-      return {
-        props: {
-          companies: [],
-        },
-      };
-    }
+    // Fetch all companies using PostgreSQL
+    const companies = await queryMany(`
+      SELECT id, slug, name, city, state 
+      FROM companies 
+      ORDER BY name
+    `);
 
     return {
       props: {
