@@ -1,8 +1,9 @@
-
 import Layout from './Layout';
+import Header from './Header';
 import Hero from './Hero';
 import About from './About';
+import Services from './Services';
+import Footer from './Footer';
 
-// Export components for use in template registry
-export { default } from './Layout';
-export { Layout, Hero, About };
+export { Header, Hero, About, Services, Footer };
+export default Layout;
