@@ -57,6 +57,7 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     city: '',
     state: '',
     zip: '',
+    type: 'residential', // Required field for contact creation
     notes: '', // Use this for the message content from the form
     companyId: company.id || '',
     companySlug: company.slug || '',
@@ -255,6 +256,7 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
         city: formData.city,
         state: formData.state,
         zip: formData.zip,
+        type: formData.type, // Include the required type field
         notes: formData.notes || "Contact created from chat widget", // Default notes if none provided
         companyId: company.id,
         companySlug: company.slug,
@@ -340,6 +342,7 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
         city: '',
         state: '',
         zip: '',
+        type: 'residential', // Include type field
         notes: '',
         companyId: company.id || '',
         companySlug: company.slug || '',

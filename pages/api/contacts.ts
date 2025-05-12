@@ -157,10 +157,11 @@ async function createContact(
         city,
         state,
         zip,
+        type,
         notes,
         created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-      RETURNING id, name, email, phone, address, city, state, zip, notes, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      RETURNING id, name, email, phone, address, city, state, zip, type, notes, created_at
     `, [
       company_id,
       name,
@@ -170,6 +171,7 @@ async function createContact(
       city || null,
       state || null,
       zip || null,
+      'residential', // Default to residential type
       notes || null
     ]);
 
