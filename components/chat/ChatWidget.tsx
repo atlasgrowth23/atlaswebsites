@@ -7,12 +7,32 @@ interface ChatWidgetProps {
   company: Company;
 }
 
-// Quick response options
+// Quick response options with prominent service options
 const QUICK_RESPONSES = [
-  { id: 'service', text: 'Schedule a service', icon: <Calendar size={16} className="mr-2" /> },
-  { id: 'quote', text: 'Request a quote', icon: <Star size={16} className="mr-2" /> },
-  { id: 'emergency', text: 'Emergency service', icon: <AlertTriangle size={16} className="mr-2" /> },
-  { id: 'hours', text: 'Business hours', icon: <Clock size={16} className="mr-2" /> },
+  { 
+    id: 'service', 
+    text: 'Schedule Service', 
+    icon: <Calendar size={18} className="mr-2" />,
+    description: 'Book a regular maintenance or service appointment'
+  },
+  { 
+    id: 'quote', 
+    text: 'Get a Quote', 
+    icon: <Star size={18} className="mr-2" />,
+    description: 'Request pricing for repairs or new installations'
+  },
+  { 
+    id: 'emergency', 
+    text: 'Emergency Service', 
+    icon: <AlertTriangle size={18} className="mr-2" />,
+    description: 'Immediate help for urgent HVAC problems'
+  },
+  { 
+    id: 'hours', 
+    text: 'Business Hours', 
+    icon: <Clock size={18} className="mr-2" />,
+    description: 'Check our availability and operating hours'
+  },
 ];
 
 interface Message {
@@ -23,6 +43,7 @@ interface Message {
 }
 
 export default function ChatWidget({ company }: ChatWidgetProps) {
+  // Auto-open chat after 3 seconds when visitors arrive
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -35,9 +56,18 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showContactForm, setShowContactForm] = useState(true);
+  const [showContactForm, setShowContactForm] = useState(false); // Start with chat interface instead of form
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiThinking, setAiThinking] = useState(false);
+  
+  // Auto-open chat after a short delay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsOpen(true);
+    }, 3000); // 3 seconds delay
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   // Set company colors based on company settings or defaults
   const primaryColor = company.primary_color || '#2563eb';
@@ -324,24 +354,33 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
               </div>
             ) : (
               <div className="h-full flex flex-col justify-between">
-                <div className="text-center py-8">
-                  <Lightbulb className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-1">How can we help?</h3>
-                  <p className="text-sm text-gray-500">
-                    Chat with our virtual assistant or leave a message for our team.
+                <div className="text-center py-5">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Lightbulb className="h-9 w-9" style={{ color: primaryColor }} />
+                  </div>
+                  <h3 className="text-xl font-medium text-gray-900 mb-1">How can we help you today?</h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Select an option below or type your question
                   </p>
                 </div>
               
                 {/* Quick response options */}
-                <div className="grid grid-cols-2 gap-2 mt-4">
+                <div className="flex flex-col space-y-3 mt-2">
                   {QUICK_RESPONSES.map((option) => (
                     <button
                       key={option.id}
                       onClick={() => handleQuickResponse(option.id)}
-                      className="flex items-center justify-center px-3 py-2 text-sm bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-md border border-gray-200"
+                      className="w-full flex flex-col items-start px-4 py-3 rounded-md transition-all duration-200 hover:shadow-md"
+                      style={{ 
+                        backgroundColor: `${primaryColor}10`, 
+                        borderLeft: `4px solid ${primaryColor}` 
+                      }}
                     >
-                      {option.icon}
-                      <span>{option.text}</span>
+                      <div className="flex items-center font-medium text-gray-800 mb-1">
+                        {option.icon}
+                        <span>{option.text}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 pl-7">{option.description}</p>
                     </button>
                   ))}
                 </div>
@@ -359,8 +398,19 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                 </p>
               </div>
             ) : showContactForm ? (
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div>
+              <>
+                <div className="pb-2">
+                  <h3 className="text-lg font-semibold mb-3" style={{ color: primaryColor }}>
+                    Contact Us Directly
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-4">
+                    Leave your details and we'll get back to you as soon as possible.
+                  </p>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="relative">
+                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Name*</label>
                   <input
                     type="text"
                     id="name"
@@ -368,12 +418,12 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    placeholder="Your name *"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 </div>
 
-                <div>
+                <div className="relative">
+                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Email*</label>
                   <input
                     type="email"
                     id="email"
@@ -381,33 +431,32 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    placeholder="Your email *"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 </div>
 
-                <div>
+                <div className="relative">
+                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Phone Number</label>
                   <input
                     type="tel"
                     id="phone"
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    placeholder="Your phone (optional)"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 </div>
 
-                <div>
+                <div className="relative">
+                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Message*</label>
                   <textarea
                     id="message"
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
                     required
-                    rows={2}
-                    placeholder="Your message *"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    rows={3}
+                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   ></textarea>
                 </div>
 
@@ -417,50 +466,71 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-2 px-4 text-white font-medium rounded-md shadow-sm transition-colors duration-200 flex justify-center text-sm"
-                  style={{ backgroundColor: primaryColor }}
-                >
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
-                </button>
-                
-                <button 
-                  type="button"
-                  onClick={() => setShowContactForm(false)}
-                  className="w-full text-xs text-gray-500 hover:text-gray-700 underline py-1"
-                >
-                  Back to chat
-                </button>
+                <div className="flex space-x-3">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 py-3 text-white font-medium rounded-md shadow-md transition-all duration-200 flex justify-center items-center"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      <>Send Message</>
+                    )}
+                  </button>
+                  
+                  <button 
+                    type="button"
+                    onClick={() => setShowContactForm(false)}
+                    className="px-3 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </form>
             ) : (
               <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Type your question here..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent"
+                    style={{ borderColor: primaryColor }}
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={!inputMessage.trim() || aiThinking}
-                  className="p-2 rounded-md text-white flex-shrink-0"
+                  className="p-3 rounded-md text-white flex-shrink-0 transition-all duration-200 shadow-md hover:shadow-lg"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  <Send size={20} />
+                  <Send size={22} />
                 </button>
               </form>
             )}
             
-            {!showContactForm && messages.length > 0 && (
-              <button 
-                onClick={() => setShowContactForm(true)}
-                className="w-full mt-3 text-xs text-center text-gray-500 hover:text-gray-700 py-1"
-              >
-                Need to leave your contact info? Click here
-              </button>
+            {!showContactForm && (
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                <button 
+                  onClick={() => setShowContactForm(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-colors duration-200"
+                  style={{ color: primaryColor }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Contact us directly with your details
+                </button>
+              </div>
             )}
           </div>
         </div>
