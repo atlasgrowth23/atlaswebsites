@@ -1,9 +1,11 @@
 import type { GetStaticProps, GetStaticPaths } from 'next';
+import { useRouter } from 'next/router';
 import { createClient } from '@/lib/supabase/client';
 import { Company } from '@/types';
 
 // Dynamic Template Components
 import * as BoldEnergyTemplate from '@/components/templates/BoldEnergy';
+import * as ModernTrustTemplate from '@/components/templates/ModernTrust';
 
 export interface TemplateProps {
   company: Company;
@@ -22,9 +24,11 @@ const TemplatePage = ({ company }: TemplateProps) => {
   // Template component mapping
   const templates: Record<string, any> = {
     boldenergy: BoldEnergyTemplate,
+    moderntrust: ModernTrustTemplate,
   };
 
-  const templateKey = 'boldenergy'; // Enforce BoldEnergy template
+  // Use the template_key from URL params or fallback to boldenergy
+  const templateKey = company ? (useRouter().query.template_key as string || 'boldenergy') : 'boldenergy';
 
   const TemplateComponent = templates[templateKey];
 
@@ -48,13 +52,16 @@ export const getStaticPaths: GetStaticPaths = async () => {
     return { paths: [], fallback: 'blocking' };
   }
 
-  // Generate paths only for BoldEnergy template
-  const paths = companies?.map((company) => ({
-    params: {
-      template_key: 'boldenergy',
-      slug: company.slug,
-    },
-  })) || [];
+  // Generate paths for both templates
+  const templates = ['boldenergy', 'moderntrust'];
+  const paths = companies?.flatMap((company) => 
+    templates.map((template) => ({
+      params: {
+        template_key: template,
+        slug: company.slug,
+      },
+    }))
+  ) || [];
 
   return { paths, fallback: 'blocking' };
 };
