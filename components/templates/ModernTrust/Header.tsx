@@ -15,9 +15,9 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <div className="flex items-center">
-            {company.logo_url ? (
+            {company.logo || company.logo_override ? (
               <Image 
-                src={company.logo_url} 
+                src={company.logo_override || company.logo || ''} 
                 alt={`${company.name} logo`}
                 width={180}
                 height={60}
