@@ -97,21 +97,17 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
     }
   }, [isOpen, company.name, messages.length]);
 
-  // Check message count and prompt for contact info after a few messages
+  // Prompt for contact info after first AI response
   useEffect(() => {
-    // After 3 messages from user, prompt for contact info if they haven't already been prompted
-    if (messageCount >= 3 && !promptedForContact) {
-      const promptMessage: Message = {
-        id: `system-prompt-${Date.now()}`,
-        content: "Would you like to leave your contact information so we can follow up with you?",
-        sender: 'system',
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, promptMessage]);
+    // After first AI message (when we have 3 messages total: welcome, user, AI), prompt for contact
+    if (messages.length === 3 && !promptedForContact) {
       setPromptedForContact(true);
+      // Show contact form immediately after first exchange
+      setTimeout(() => {
+        setShowContactForm(true);
+      }, 500);
     }
-  }, [messageCount, promptedForContact]);
+  }, [messages.length, promptedForContact]);
 
   // Auto-scroll to bottom of chat when messages change
   useEffect(() => {
@@ -404,12 +400,11 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
             </button>
           </div>
 
-          {/* Messages area */}
+          {/* Messages area with optional contact form */}
           <div 
             ref={chatContainerRef}
             className="flex-1 overflow-y-auto p-4" 
-            style={{ height: '350px' }}
-          >
+            style={{ height: showContactForm ? '500px' : '350px' }}>
             {messages.length > 0 ? (
               <div className="space-y-4">
                 {messages.map((msg) => (
@@ -433,6 +428,8 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                     </div>
                   </div>
                 ))}
+                
+                {/* Show typing indicator */}
                 {aiThinking && (
                   <div className="flex justify-start">
                     <div className="max-w-[80%] bg-gray-100 rounded-lg px-4 py-2">
@@ -445,15 +442,152 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
                     </div>
                   </div>
                 )}
-                {promptedForContact && !showContactForm && (
-                  <div className="flex justify-center mt-4">
-                    <button
-                      onClick={() => setShowContactForm(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 border border-green-200 rounded-md shadow-sm hover:bg-green-200 transition-colors"
-                    >
-                      <UserPlus size={16} />
-                      <span>Leave your contact info</span>
-                    </button>
+                
+                {/* Contact form inside chat stream */}
+                {showContactForm && (
+                  <div className="flex justify-start w-full">
+                    <div className="w-full max-w-[95%] bg-white rounded-lg border border-blue-200 shadow-md p-4" style={{ borderColor: primaryColor }}>
+                      {submitSuccess ? (
+                        <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
+                          <h4 className="text-green-800 font-medium mb-1">Information Received!</h4>
+                          <p className="text-green-700 text-sm">
+                            Thanks for reaching out. {company.name} will contact you shortly.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mb-3">
+                            <h3 className="text-base font-semibold" style={{ color: primaryColor }}>
+                              Please provide your contact information
+                            </h3>
+                          </div>
+                          
+                          <form onSubmit={handleSubmit} className="space-y-3">
+                            <div className="relative">
+                              <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Name*</label>
+                              <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              />
+                            </div>
+
+                            <div className="relative">
+                              <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Email*</label>
+                              <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                required
+                                className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              />
+                            </div>
+
+                            <div className="relative">
+                              <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Phone Number</label>
+                              <input
+                                type="tel"
+                                id="phone"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              />
+                            </div>
+
+                            <div className="relative">
+                              <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Address</label>
+                              <GooglePlacesAutocomplete
+                                onAddressSelected={handleAddressSelected}
+                                placeholder="Start typing your address"
+                                className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              />
+                            </div>
+
+                            {formData.address && (
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="relative">
+                                  <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">City</label>
+                                  <input
+                                    type="text"
+                                    id="city"
+                                    name="city"
+                                    value={formData.city}
+                                    onChange={handleChange}
+                                    className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 text-sm"
+                                  />
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="relative">
+                                    <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">State</label>
+                                    <input
+                                      type="text"
+                                      id="state"
+                                      name="state"
+                                      value={formData.state}
+                                      onChange={handleChange}
+                                      className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 text-sm"
+                                    />
+                                  </div>
+                                  <div className="relative">
+                                    <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">ZIP</label>
+                                    <input
+                                      type="text"
+                                      id="zip"
+                                      name="zip"
+                                      value={formData.zip}
+                                      onChange={handleChange}
+                                      className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {error && (
+                              <div className="bg-red-50 border border-red-200 rounded-md p-2 text-xs text-red-800">
+                                {error}
+                              </div>
+                            )}
+
+                            <div className="flex space-x-2 pt-1">
+                              <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="flex-1 py-2 text-white text-sm font-medium rounded-md shadow-sm transition-all duration-200 flex justify-center items-center"
+                                style={{ backgroundColor: primaryColor }}
+                              >
+                                {isSubmitting ? (
+                                  <>
+                                    <svg className="animate-spin -ml-1 mr-1 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  <>Submit</>
+                                )}
+                              </button>
+                              
+                              <button 
+                                type="button"
+                                onClick={() => setShowContactForm(false)}
+                                className="px-3 py-2 text-sm border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -492,205 +626,47 @@ export default function ChatWidget({ company }: ChatWidgetProps) {
               </div>
             )}
           </div>
-
-          {/* Input area or contact form */}
-          <div className="border-t p-4">
-            {showContactForm ? (
-              submitSuccess ? (
-                <div className="bg-green-50 border border-green-200 rounded-md p-4 text-center">
-                  <h4 className="text-green-800 font-medium mb-1">Information Received!</h4>
-                  <p className="text-green-700 text-sm">
-                    Thanks for reaching out. {company.name} will contact you shortly.
-                  </p>
+          
+          {/* Input area - only show when not displaying contact form */}
+          {!showContactForm && (
+            <div className="border-t p-4">
+              <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Type your question here..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
                 </div>
-              ) : (
-                <>
-                  <div className="pb-2">
-                    <h3 className="text-lg font-semibold mb-3" style={{ color: primaryColor }}>
-                      Your Contact Information
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Please provide your details so we can follow up with you.
-                    </p>
-                  </div>
-                  
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="relative">
-                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Name*</label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Your Email*</label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Phone Number</label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                    </div>
-
-                    <div className="relative">
-                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Address</label>
-                      <GooglePlacesAutocomplete
-                        onAddressSelected={handleAddressSelected}
-                        placeholder="Start typing your address"
-                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      />
-                    </div>
-
-                    {formData.address && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="relative">
-                          <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">City</label>
-                          <input
-                            type="text"
-                            id="city"
-                            name="city"
-                            value={formData.city}
-                            onChange={handleChange}
-                            className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          />
-                        </div>
-                        <div className="relative grid grid-cols-2 gap-2">
-                          <div className="relative">
-                            <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">State</label>
-                            <input
-                              type="text"
-                              id="state"
-                              name="state"
-                              value={formData.state}
-                              onChange={handleChange}
-                              className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            />
-                          </div>
-                          <div className="relative">
-                            <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">ZIP</label>
-                            <input
-                              type="text"
-                              id="zip"
-                              name="zip"
-                              value={formData.zip}
-                              onChange={handleChange}
-                              className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="relative">
-                      <label className="absolute -top-2 left-3 px-1 bg-white text-xs text-gray-500">Additional Notes</label>
-                      <textarea
-                        id="notes"
-                        name="notes"
-                        value={formData.notes}
-                        onChange={handleChange}
-                        rows={3}
-                        className="w-full px-3 pt-3 pb-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                      ></textarea>
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-800">
-                        {error}
-                      </div>
-                    )}
-
-                    <div className="flex space-x-3">
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="flex-1 py-3 text-white font-medium rounded-md shadow-md transition-all duration-200 flex justify-center items-center"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Submitting...
-                          </>
-                        ) : (
-                          <>Submit Information</>
-                        )}
-                      </button>
-                      
-                      <button 
-                        type="button"
-                        onClick={() => setShowContactForm(false)}
-                        className="px-3 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </>
-              )
-            ) : (
-              <>
-                <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
-                      placeholder="Type your question here..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!inputMessage.trim() || aiThinking}
-                    className="p-3 rounded-md text-white flex-shrink-0 transition-all duration-200 shadow-md hover:shadow-lg"
-                    style={{ backgroundColor: primaryColor }}
+                <button
+                  type="submit"
+                  disabled={!inputMessage.trim() || aiThinking}
+                  className="p-3 rounded-md text-white flex-shrink-0 transition-all duration-200 shadow-md hover:shadow-lg"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  <Send size={22} />
+                </button>
+              </form>
+              
+              {/* Link to contact form */}
+              {!promptedForContact && (
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <button 
+                    onClick={() => setShowContactForm(true)}
+                    className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-colors duration-200"
+                    style={{ color: primaryColor }}
                   >
-                    <Send size={22} />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Leave your contact information
                   </button>
-                </form>
-                
-                {/* Link to contact form */}
-                {!promptedForContact && (
-                  <div className="mt-4 pt-3 border-t border-gray-200">
-                    <button 
-                      onClick={() => setShowContactForm(true)}
-                      className="w-full flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-colors duration-200"
-                      style={{ color: primaryColor }}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                      Leave your contact information
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

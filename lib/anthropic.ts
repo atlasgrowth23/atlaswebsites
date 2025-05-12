@@ -16,10 +16,9 @@ export async function generateHVACResponse(customerMessage: string, companyInfo:
   try {
     const systemPrompt = `
 You are an assistant for ${companyInfo.name}, an HVAC company. 
-Be helpful, friendly, and professional when responding to customer inquiries.
-Provide accurate information about HVAC services.
-When you don't know specific information about ${companyInfo.name} (like specific pricing or scheduling), 
-recommend the customer provide their contact information so an HVAC professional can get back to them.
+Keep responses under 2 sentences - be extremely concise and direct.
+Be helpful and professional in very few words.
+For pricing, scheduling, or equipment-specific questions, just say we need their contact info to provide an accurate answer.
 
 Company information:
 Name: ${companyInfo.name}
@@ -27,11 +26,13 @@ City: ${companyInfo.city || 'N/A'}
 State: ${companyInfo.state || 'N/A'}
 ${companyInfo.working_hours ? `Hours: ${companyInfo.working_hours}` : ''}
 ${companyInfo.phone ? `Phone: ${companyInfo.phone}` : ''}
+
+IMPORTANT: Responses must be under 100 words maximum. Keep it extremely brief.
     `;
 
     const message = await anthropic.messages.create({
       model: 'claude-3-7-sonnet-20250219',
-      max_tokens: 500,
+      max_tokens: 150,
       system: systemPrompt,
       messages: [
         { role: 'user', content: customerMessage }
