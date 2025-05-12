@@ -18,9 +18,9 @@ const Layout: React.FC<LayoutProps> = ({
   
   // Add tracking beacon
   useEffect(() => {
-    if (company?.biz_id) {
+    if (company?.id) {
       navigator.sendBeacon('/api/track', JSON.stringify({
-        companyId: company.biz_id,
+        companyId: company.id,
         path: window.location.pathname
       }));
     }

@@ -78,7 +78,7 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
           {filteredCompanies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredCompanies.map((company) => (
-                <div key={company.biz_id || company.name} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                <div key={company.id || company.name} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="p-6">
                     <h3 className="text-xl font-bold mb-2">{company.name}</h3>
                     <p className="text-gray-600 mb-4">
@@ -136,28 +136,37 @@ export async function getStaticProps() {
   // Connect to Supabase
   const supabase = createClient();
   
-  // Fetch all companies
-  const { data: companies, error } = await supabase
-    .from('companies')
-    .select('id, biz_id, slug, name, city, state')
-    .order('name');
+  try {
+    // Fetch all companies, removing the biz_id that doesn't exist
+    const { data: companies, error } = await supabase
+      .from('companies')
+      .select('id, slug, name, city, state')
+      .order('name');
 
-  if (error) {
-    console.error('Error fetching companies:', error);
+    if (error) {
+      console.error('Error fetching companies:', error);
+      return {
+        props: {
+          companies: [],
+        },
+      };
+    }
+
+    return {
+      props: {
+        companies: companies || [],
+      },
+      // Revalidate the page every hour (3600 seconds)
+      revalidate: 3600,
+    };
+  } catch (err) {
+    console.error('Unexpected error fetching companies:', err);
     return {
       props: {
         companies: [],
       },
     };
   }
-
-  return {
-    props: {
-      companies: companies || [],
-    },
-    // Revalidate the page every hour (3600 seconds)
-    revalidate: 3600,
-  };
 }
 
 export default Home;

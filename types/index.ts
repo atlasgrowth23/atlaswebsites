@@ -4,6 +4,7 @@ export interface CompanyColors {
 }
 
 export interface Company {
+  id?: number | null; // Added id field from database
   name: string;
   slug?: string | null;
   phone?: string | null;
@@ -24,8 +25,27 @@ export interface Company {
   primary_color?: string | null;
   secondary_color?: string | null;
   place_id?: string | null;
-  biz_id?: string | number | null;
+  // Removed biz_id as it doesn't exist in the database
   site_company_insights_description?: string | null;
+  // Additional fields from database schema
+  subdomain?: string | null;
+  custom_domain?: string | null;
+  site?: string | null;
+  phone_carrier_type?: string | null;
+  category?: string | null;
+  street?: string | null;
+  postal_code?: string | null;
+  photos_count?: number | null;
+  about?: string | null;
+  verified?: boolean | null;
+  location_link?: string | null;
+  location_reviews_link?: string | null;
+  email_1?: string | null;
+  email_1_validator_status?: string | null;
+  email_1_full_name?: string | null;
+  extras?: any | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface Review {
