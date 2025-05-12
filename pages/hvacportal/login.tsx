@@ -47,7 +47,7 @@ export default function Login() {
     }
   }, [router.query]);
 
-  // Fetch default credentials for a business and auto-login
+  // Fetch default credentials for a business but DON'T auto-login
   const fetchDefaultCredentials = async (slug: string) => {
     console.log('Fetching credentials for:', slug);
     try {
@@ -69,17 +69,7 @@ export default function Login() {
           console.log('Setting password to:', data.password);
           setPassword(data.password);
           setDefaultCredentialsLoaded(true);
-          
-          // Store credentials for auto-login
-          const autoUsername = data.username;
-          const autoPassword = data.password;
-          
-          // Add a slight delay to make sure the form is ready
-          setTimeout(() => {
-            console.log('Auto-login attempt with:', autoUsername, autoPassword);
-            // Directly use fetch instead of handleLogin to bypass any UI state issues
-            loginWithCredentials(autoUsername, autoPassword, slug);
-          }, 1500);
+          setIsLoading(false);
         } else {
           console.log('Password not returned from API');
           setIsLoading(false);
@@ -226,12 +216,7 @@ export default function Login() {
                       <strong>Auto-Login for {businessSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</strong>
                     </p>
                     <p className="text-blue-700 text-sm">
-                      {isSubmitting ? 
-                        `Logging in automatically...` : 
-                        defaultCredentialsLoaded ? 
-                          `Credentials loaded. Auto-login in progress, or click "Sign In" to continue.` : 
-                          `Loading login credentials... Please wait.`
-                      }
+                      Credentials loaded. Auto-login in progress, or click "Sign In" to continue.
                     </p>
                     {isSubmitting && (
                       <div className="flex justify-center items-center mt-2">
