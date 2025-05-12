@@ -47,7 +47,7 @@ export default function Login() {
     }
   }, [router.query]);
 
-  // Fetch default credentials for a business
+  // Fetch default credentials for a business and auto-login
   const fetchDefaultCredentials = async (slug: string) => {
     console.log('Fetching credentials for:', slug);
     try {
@@ -59,25 +59,37 @@ export default function Login() {
       
       console.log('Credentials response:', data);
       
-      if (data.success) {
+      if (data.success && data.username && data.password) {
         // Pre-populate both username and password
         console.log('Setting username to:', data.username);
         console.log('Setting password to:', data.password);
-        setUsername(data.username || '');
-        setPassword(data.password || '');
+        setUsername(data.username);
+        setPassword(data.password);
         setDefaultCredentialsLoaded(true);
+        
+        // Auto-login after a short delay to allow state updates
+        setTimeout(() => {
+          console.log('Auto-logging in with:', data.username, data.password);
+          handleLogin(null, data.username, data.password);
+        }, 1000);
       } else {
         console.log('Failed to load credentials:', data.message);
+        setIsLoading(false);
       }
     } catch (err) {
       console.error('Error fetching default credentials:', err);
-    } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e: React.FormEvent | null, autoUsername?: string, autoPassword?: string) => {
+    if (e) e.preventDefault();
+    
+    // Use either auto-provided credentials or form state
+    const loginUsername = autoUsername || username;
+    const loginPassword = autoPassword || password;
+    
+    console.log('Login attempt with:', loginUsername, loginPassword);
     
     setError(null);
     setIsSubmitting(true);
@@ -89,13 +101,14 @@ export default function Login() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username,
-          password,
+          username: loginUsername,
+          password: loginPassword,
           businessSlug
         }),
       });
       
       const data = await response.json();
+      console.log('Login response:', data);
       
       if (!data.success) {
         setError(data.message || 'Invalid credentials');

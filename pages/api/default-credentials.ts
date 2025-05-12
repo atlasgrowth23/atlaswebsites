@@ -32,7 +32,7 @@ export default async function handler(
   try {
     // Query to get default credentials by business slug
     const result = await query(
-      'SELECT username FROM user_credentials WHERE business_slug = $1',
+      'SELECT username, password FROM user_credentials WHERE business_slug = $1',
       [slug]
     );
 
