@@ -15,7 +15,14 @@ interface Message {
   contact_phone?: string;
 }
 
-export default function MessagesPage({ params }: { params: { slug: string } }) {
+interface MessagesPageProps {
+  params: {
+    slug: string;
+  };
+}
+
+export default function MessagesPage({ params }: MessagesPageProps) {
+  const companySlug = params.slug;
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +42,7 @@ export default function MessagesPage({ params }: { params: { slug: string } }) {
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/company/messages?slug=${params.slug}`);
+      const response = await fetch(`/api/company/messages?slug=${companySlug}`);
       
       if (!response.ok) {
         throw new Error('Failed to load messages');
@@ -56,7 +63,7 @@ export default function MessagesPage({ params }: { params: { slug: string } }) {
     loadMessages();
     
     // Set up websocket connection for real-time updates
-    const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws?slug=${params.slug}`);
+    const ws = new WebSocket(`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/ws?slug=${companySlug}`);
     
     ws.onmessage = (event) => {
       try {
@@ -74,7 +81,7 @@ export default function MessagesPage({ params }: { params: { slug: string } }) {
     return () => {
       ws.close();
     };
-  }, [params.slug]);
+  }, [companySlug]);
 
   // Handle message selection for conversion
   const handleSelectMessage = (message: Message) => {
@@ -107,7 +114,7 @@ export default function MessagesPage({ params }: { params: { slug: string } }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          companySlug: params.slug,
+          companySlug: companySlug,
           messageId: selectedMessage.id,
           name: formData.name,
           phone: formData.phone,
@@ -135,7 +142,7 @@ export default function MessagesPage({ params }: { params: { slug: string } }) {
       });
       
       // Navigate to schedule page
-      router.push(`/${params.slug}/portal/schedule`);
+      router.push(`/${companySlug}/portal/schedule`);
     } catch (error) {
       console.error('Error converting message:', error);
       // Show error to user
