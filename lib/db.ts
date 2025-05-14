@@ -1,15 +1,21 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, QueryResult } from 'pg';
 
 // Configure retry mechanism
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 500;
 
-// Define a mock pool type that matches the Pool interface but returns mock data
+// Interface for query results that works with both real and mock data
+interface QueryResultLike {
+  rows: any[];
+  rowCount: number | null;
+}
+
+// Define a mock pool that provides the behavior we need for testing
 class MockPool {
-  async query(text: string) {
+  async query(text: string): Promise<QueryResultLike> {
     console.log('MOCK DB QUERY:', text.substring(0, 50) + (text.length > 50 ? '...' : ''));
     
-    // If the query is looking for companies, return mock data
+    // Provide mock data for companies table queries
     if (text.toLowerCase().includes('from companies')) {
       return {
         rows: [
@@ -31,55 +37,45 @@ class MockPool {
       };
     }
     
-    // For other queries, return empty result
+    // Return empty result for other queries
     return { rows: [], rowCount: 0 };
   }
   
+  // Simplified pool methods that match what we need
   async connect() {
-    return new MockPoolClient();
+    // In real code, we would never use this - we throw an error in getClient
+    return {} as PoolClient;
   }
   
-  async end() {
+  async end(): Promise<void> {
     // Do nothing
   }
   
-  on() {
+  on(): this {
     // Do nothing
     return this;
   }
 }
 
-class MockPoolClient {
-  async query() {
-    return { rows: [], rowCount: 0 };
-  }
-  
-  async release() {
-    // Do nothing
-  }
-}
-
-// Create a PostgreSQL connection pool with better error handling
-const createPool = (): Pool | MockPool => {
+// Create database pool with error handling
+function createPool(): Pool | MockPool {
   try {
     return new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: {
         rejectUnauthorized: false // Required for Neon PostgreSQL
       },
-      // Add connection timeout to prevent hanging
       connectionTimeoutMillis: 5000,
-      // Retry strategy for failed connections
-      max: 20, // Max number of clients in the pool
-      idleTimeoutMillis: 30000, // How long a client is allowed to remain idle
-      allowExitOnIdle: true // Close idle clients after idleTimeoutMillis
+      max: 20,
+      idleTimeoutMillis: 30000,
+      allowExitOnIdle: true
     });
   } catch (error) {
     console.error('Failed to create database pool:', error);
-    // Return a mock pool that will return empty results
+    // Return a mock pool in development
     return new MockPool();
   }
-};
+}
 
 // Initialize the pool
 const pool = createPool();
@@ -104,21 +100,24 @@ async function retryQuery<T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promi
   }
 }
 
+// The result type of our query functions, handles both real and mock responses
+type QueryResponse = QueryResult | QueryResultLike;
+
 // Helper function to run SQL queries with parameters and retries
-export async function query(text: string, params?: any[]) {
+export async function query(text: string, params?: any[]): Promise<QueryResponse> {
   try {
     return await retryQuery(() => pool.query(text, params));
   } catch (error) {
     console.error('Database query error:', error);
-    // Return empty result instead of throwing to prevent crashes during static generation
+    // Return empty result instead of throwing
     return { rows: [], rowCount: 0 };
   }
 }
 
 // Function to query a single row with retries
-export async function queryOne(text: string, params?: any[]) {
+export async function queryOne(text: string, params?: any[]): Promise<any | null> {
   try {
-    const result = await retryQuery(() => pool.query(text, params));
+    const result = await query(text, params);
     return result.rows[0] || null;
   } catch (error) {
     console.error('Database query error:', error);
@@ -127,9 +126,9 @@ export async function queryOne(text: string, params?: any[]) {
 }
 
 // Function to query multiple rows with retries
-export async function queryMany(text: string, params?: any[]) {
+export async function queryMany(text: string, params?: any[]): Promise<any[]> {
   try {
-    const result = await retryQuery(() => pool.query(text, params));
+    const result = await query(text, params);
     return result.rows;
   } catch (error) {
     console.error('Database query error:', error);
@@ -139,8 +138,12 @@ export async function queryMany(text: string, params?: any[]) {
 
 // Function to get a client from the pool for transactions
 export async function getClient(): Promise<PoolClient> {
+  if (pool instanceof MockPool) {
+    throw new Error('Mock pool does not support real client connections');
+  }
+  
   try {
-    return await pool.connect();
+    return await (pool as Pool).connect();
   } catch (error) {
     console.error('Error getting client from pool:', error);
     throw error;
