@@ -16,9 +16,19 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // For portal access and sales dashboard, always pass through
-  if (pathname.startsWith('/hvacportal') || 
-      pathname.startsWith('/api/') || 
+  // Check for portal routes that need authentication
+  if (pathname.startsWith('/portal') && 
+      !pathname.startsWith('/portal/login')) {
+    // Check if user is logged in via cookie/localStorage
+    // Note: Edge middleware can only access cookies, not localStorage
+    // For a real implementation, you would use JWT tokens in cookies
+    
+    // For now, we'll pass through and let the client-side code handle auth redirects
+    return NextResponse.next();
+  }
+  
+  // For API and sales dashboard, always pass through
+  if (pathname.startsWith('/api/') || 
       pathname.startsWith('/sales')) {
     return NextResponse.next();
   }
