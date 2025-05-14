@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Button } from '@/components/ui/button';
@@ -7,21 +7,15 @@ import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('');
+  const [businessId, setBusinessId] = useState('');
   const [password, setPassword] = useState('demo123');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    // Always reset login status - force login every time
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('businessSlug');
-  }, []);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username) {
+    if (!businessId) {
       setError('Please enter your Business ID');
       return;
     }
@@ -35,9 +29,9 @@ export default function LoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username,
+          username: businessId,
           password,
-          businessSlug: username
+          businessSlug: businessId
         }),
       });
       
@@ -46,10 +40,10 @@ export default function LoginPage() {
       if (data.success) {
         // Store login state in localStorage
         localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('businessSlug', username);
+        localStorage.setItem('businessSlug', businessId);
         
         // Redirect to dashboard
-        router.push('/portal/dashboard');
+        router.push('/software/dashboard');
       } else {
         // Show error message from API
         setError(data.message || 'Login failed. Please try again.');
@@ -64,14 +58,14 @@ export default function LoginPage() {
   return (
     <>
       <Head>
-        <title>HVAC Portal Login</title>
+        <title>HVAC Software | Login</title>
       </Head>
 
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
             <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">
-              HVAC Portal Login
+              HVAC Software Login
             </h1>
             
             <form onSubmit={handleLogin} className="space-y-4">
@@ -82,12 +76,12 @@ export default function LoginPage() {
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="username">Business ID</Label>
+                <Label htmlFor="businessId">Business ID</Label>
                 <Input 
-                  id="username"
+                  id="businessId"
                   type="text" 
-                  value={username} 
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={businessId} 
+                  onChange={(e) => setBusinessId(e.target.value)}
                   placeholder="Enter your business ID"
                   required
                 />
@@ -103,6 +97,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   required
                 />
+                <p className="text-xs text-gray-500">Default password: demo123</p>
               </div>
               
               <div className="pt-2">

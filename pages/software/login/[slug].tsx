@@ -1,43 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export default function CompanyLogin() {
+export default function CompanyLoginPage() {
   const router = useRouter();
   const { slug } = router.query;
-  const [businessName, setBusinessName] = useState<string>('');
-  const [username, setUsername] = useState('');
+  const [businessId, setBusinessId] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [password, setPassword] = useState('demo123');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Always reset login status - force login every time
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('businessSlug');
-    
     if (slug && typeof slug === 'string') {
-      // Format the business name from the slug for display
+      // Auto-populate businessId from slug
+      setBusinessId(slug);
+      
+      // Format business name for display
       const formattedName = slug
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
       
       setBusinessName(formattedName);
-      
-      // Auto-populate the username based on the slug
-      setUsername(slug);
     }
   }, [slug]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!slug) {
-      setError('Business not specified. Please use a valid login link.');
+    if (!businessId) {
+      setError('Business ID is required');
       return;
     }
     
@@ -50,9 +46,9 @@ export default function CompanyLogin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: username,
-          password: password,
-          businessSlug: slug
+          username: businessId,
+          password,
+          businessSlug: businessId
         }),
       });
       
@@ -61,10 +57,10 @@ export default function CompanyLogin() {
       if (data.success) {
         // Store login state in localStorage
         localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('businessSlug', slug as string);
+        localStorage.setItem('businessSlug', businessId);
         
         // Redirect to dashboard
-        router.push('/portal/dashboard');
+        router.push('/software/dashboard');
       } else {
         // Show error message from API
         setError(data.message || 'Login failed. Please try again.');
@@ -79,16 +75,14 @@ export default function CompanyLogin() {
   return (
     <>
       <Head>
-        <title>
-          {businessName ? `${businessName} Portal Login` : 'HVAC Portal Login'}
-        </title>
+        <title>{businessName || 'Company'} Login | HVAC Software</title>
       </Head>
 
       <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6">
             <h1 className="text-2xl font-bold text-center text-blue-600 mb-6">
-              {businessName ? `${businessName} Portal` : 'HVAC Portal Login'}
+              {businessName ? `${businessName} Portal` : 'HVAC Software Login'}
             </h1>
             
             <form onSubmit={handleLogin} className="space-y-4">
@@ -98,7 +92,7 @@ export default function CompanyLogin() {
                 </div>
               )}
               
-              {slug && (
+              {businessName && (
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
                   <p className="text-blue-700 text-sm mb-2">
                     <strong>Login for {businessName}</strong>
@@ -110,15 +104,16 @@ export default function CompanyLogin() {
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="username">Business ID</Label>
+                <Label htmlFor="businessId">Business ID</Label>
                 <Input 
-                  id="username"
+                  id="businessId"
                   type="text" 
-                  value={username} 
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={businessId} 
+                  onChange={(e) => setBusinessId(e.target.value)}
                   placeholder="Enter business ID"
                   required
                   readOnly={!!slug}
+                  className={slug ? "bg-gray-100" : ""}
                 />
               </div>
               
@@ -132,6 +127,7 @@ export default function CompanyLogin() {
                   placeholder="Enter your password"
                   required
                 />
+                <p className="text-xs text-gray-500">Default password: demo123</p>
               </div>
               
               <div className="pt-2">
