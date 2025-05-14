@@ -8,6 +8,12 @@ export interface Company {
   site?: string;
   custom_domain?: string;
   subdomain?: string;
+  phone?: string;
+  rating?: number;
+  reviews?: number;
+  // Added for template frames
+  company_frames?: Record<string, string>;
+  template_frames?: Record<string, string>;
 }
 
 // Minimal lead type
