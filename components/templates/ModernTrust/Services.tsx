@@ -1,12 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Company } from '@/types';
-import { Container } from '@/components/ui/container';
-import { Heading } from '@/components/ui/heading';
-import { Text } from '@/components/ui/text';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 interface ServicesProps {
   company: Company;
@@ -97,163 +90,114 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
 
   return (
     <div id="services" className="py-20">
-      <Tabs 
-        defaultValue="cooling" 
-        onValueChange={(value) => handleToggle(value as 'cooling' | 'heating')}
-        className="w-full"
-      >
-        {/* Hero intro that's visible above the fold */}
-        <div className={`${activeType === 'cooling' ? 'bg-blue-600' : 'bg-red-700'} transition-colors duration-500 mb-16`}>
-          <Container>
-            <div className="py-16 relative overflow-hidden">
-              {/* Decorative elements */}
-              <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white opacity-5 -mt-32 -mr-32"></div>
-              <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white opacity-5 -mb-24 -ml-24"></div>
-              
-              {/* Icon for service type */}
-              <div className="absolute right-10 top-10 hidden lg:block">
-                <div className="relative w-32 h-32">
-                  {activeType === 'cooling' ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-white opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-white opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                    </svg>
-                  )}
-                </div>
+      {/* Hero intro that's visible above the fold */}
+      <div className={`${activeType === 'cooling' ? 'bg-blue-600' : 'bg-red-700'} transition-colors duration-500 mb-16`}>
+        <div className="container mx-auto px-4">
+          <div className="py-16 relative overflow-hidden">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-white opacity-5 -mt-32 -mr-32"></div>
+            <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-white opacity-5 -mb-24 -ml-24"></div>
+            
+            {/* Icon for service type */}
+            <div className="absolute right-10 top-10 hidden lg:block">
+              <div className="relative w-32 h-32">
+                {activeType === 'cooling' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-white opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-white opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                  </svg>
+                )}
               </div>
+            </div>
+            
+            <div className="relative z-10">
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 text-center md:text-left">
+                {company.name} <br/>
+                <span className="inline-block mt-2">
+                  {activeType === 'cooling' ? 'Cooling' : 'Heating'} Services
+                </span>
+              </h2>
               
-              <div className="relative z-10">
-                <Badge 
-                  variant="outline" 
-                  className="mb-4 py-1.5 px-4 text-sm font-medium bg-white/10 text-white border-white/20 backdrop-blur-sm"
-                >
-                  HVAC Excellence
-                </Badge>
-                
-                <Heading 
-                  level={2}
-                  className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-6 text-center md:text-left"
-                >
-                  {company.name} <br/>
-                  <span className="inline-block mt-2">
-                    {activeType === 'cooling' ? 'Cooling' : 'Heating'} Services
-                  </span>
-                </Heading>
-                
-                <Text className="text-xl text-white/90 max-w-2xl mb-10 text-center md:text-left">
-                  {activeType === 'cooling'
-                    ? `Expert air conditioning solutions to keep your family comfortable during the hottest summer days, while maximizing energy efficiency.`
-                    : `Reliable heating services to ensure your home stays warm and cozy throughout the cold winter months.`
-                  }
-                </Text>
-                
-                {/* Service toggle with shadcn Tabs */}
-                <TabsList className="bg-white/10 p-1.5 rounded-lg shadow-lg inline-flex border-none">
-                  <TabsTrigger 
-                    value="cooling"
+              <p className="text-xl text-white text-opacity-90 max-w-2xl mb-10 text-center md:text-left">
+                {activeType === 'cooling'
+                  ? `Expert air conditioning solutions to keep your family comfortable during the hottest summer days, while maximizing energy efficiency.`
+                  : `Reliable heating services to ensure your home stays warm and cozy throughout the cold winter months.`
+                }
+              </p>
+              
+              {/* Service toggle */}
+              <div className="flex justify-center md:justify-start">
+                <div className="bg-white bg-opacity-10 backdrop-blur-sm p-1.5 rounded-lg shadow-lg inline-flex">
+                  <button 
+                    onClick={() => handleToggle('cooling')} 
                     className={`px-6 py-3 rounded-md font-medium text-lg transition-all duration-300 flex items-center ${
                       activeType === 'cooling' 
-                        ? 'bg-white text-blue-600 data-[state=active]:bg-white data-[state=active]:text-blue-600' 
-                        : 'text-white hover:bg-white/10 data-[state=active]:bg-white data-[state=active]:text-blue-600'
+                        ? 'bg-white text-blue-600 shadow-md' 
+                        : 'text-white hover:bg-white hover:bg-opacity-10'
                     }`}
                   >
                     <svg className="w-6 h-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
                     </svg>
                     Cooling
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="heating"
+                  </button>
+                  <button 
+                    onClick={() => handleToggle('heating')} 
                     className={`px-6 py-3 rounded-md font-medium text-lg transition-all duration-300 flex items-center ${
                       activeType === 'heating' 
-                        ? 'bg-white text-red-700 data-[state=active]:bg-white data-[state=active]:text-red-700' 
-                        : 'text-white hover:bg-white/10 data-[state=active]:bg-white data-[state=active]:text-red-700'
+                        ? 'bg-white text-red-700 shadow-md' 
+                        : 'text-white hover:bg-white hover:bg-opacity-10'
                     }`}
                   >
                     <svg className="w-6 h-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
                     </svg>
                     Heating
-                  </TabsTrigger>
-                </TabsList>
+                  </button>
+                </div>
               </div>
             </div>
-          </Container>
-        </div>
-        
-        {/* Main content */}
-        <Container>
-          {/* Service cards using shadcn Card components */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-            <TabsContent value="cooling" className="mt-0 grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-              {coolingServices.map((service, index) => (
-                <Card 
-                  key={service.title}
-                  className={`border-blue-200 transition-all duration-300 hover:shadow-xl group`}
-                >
-                  <CardHeader className="text-center pb-0">
-                    <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-6 mx-auto 
-                      transition-colors duration-300 group-hover:scale-110 transform">
-                      <div className="text-blue-600">
-                        {service.icon}
-                      </div>
-                    </div>
-                    <CardTitle className="text-2xl font-bold text-gray-800">{service.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <Text className="text-gray-600 text-lg">
-                      {service.description}
-                    </Text>
-                  </CardContent>
-                  <CardFooter className="justify-center">
-                    <Button variant="ghost" className="text-blue-600 font-semibold flex items-center">
-                      Learn More
-                      <svg className="w-5 h-5 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="heating" className="mt-0 grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-              {heatingServices.map((service, index) => (
-                <Card 
-                  key={service.title}
-                  className={`border-red-200 transition-all duration-300 hover:shadow-xl group`}
-                >
-                  <CardHeader className="text-center pb-0">
-                    <div className="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center mb-6 mx-auto 
-                      transition-colors duration-300 group-hover:scale-110 transform">
-                      <div className="text-red-700">
-                        {service.icon}
-                      </div>
-                    </div>
-                    <CardTitle className="text-2xl font-bold text-gray-800">{service.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <Text className="text-gray-600 text-lg">
-                      {service.description}
-                    </Text>
-                  </CardContent>
-                  <CardFooter className="justify-center">
-                    <Button variant="ghost" className="text-red-700 font-semibold flex items-center">
-                      Learn More
-                      <svg className="w-5 h-5 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </TabsContent>
           </div>
-        </Container>
-      </Tabs>
+        </div>
+      </div>
+      
+      {/* Main content */}
+      <div className="container mx-auto px-4">
+        {/* Service cards - simple with no complex animations */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+          {services.map((service, index) => (
+            <div 
+              key={service.title}
+              className={`bg-white rounded-xl shadow-lg p-8 border ${activeColors.border} 
+                transition-all duration-300 hover:shadow-xl group`}
+            >
+              <div className={`w-16 h-16 ${activeColors.bgLight} rounded-xl flex items-center justify-center mb-6 mx-auto 
+                transition-colors duration-300 group-hover:scale-110 transform`}>
+                <div className={activeColors.text}>
+                  {service.icon}
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold text-center mb-4 text-gray-800">{service.title}</h3>
+              <p className="text-gray-600 text-center text-lg">
+                {service.description}
+              </p>
+              
+              {/* Action button */}
+              <div className="mt-8 text-center">
+                <button className={`${activeColors.text} font-semibold flex items-center mx-auto`}>
+                  Learn More
+                  <svg className="w-5 h-5 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
