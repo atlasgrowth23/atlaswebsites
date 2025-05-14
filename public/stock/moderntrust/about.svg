@@ -1,0 +1,64 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="800" fill="#F8FAFC" />
+  
+  <!-- Grid pattern -->
+  <rect width="1200" height="800" fill="url(#grid_pattern)" opacity="0.3" />
+  
+  <!-- HVAC technician illustration -->
+  <g transform="translate(200, 150)">
+    <!-- Person silhouette -->
+    <path d="M400 350C400 405.228 355.228 450 300 450C244.772 450 200 405.228 200 350C200 294.772 244.772 250 300 250C355.228 250 400 294.772 400 350Z" fill="#0066FF" fill-opacity="0.1" />
+    <path d="M320 220L340 230L320 320L300 350L280 320L260 230L280 220L300 200L320 220Z" fill="#0066FF" />
+    <circle cx="300" cy="180" r="40" fill="#0066FF" />
+    <path d="M220 350L240 390L280 420L300 450L320 420L360 390L380 350" stroke="#0066FF" stroke-width="4" />
+    
+    <!-- Toolbox -->
+    <rect x="380" y="400" width="100" height="70" rx="10" fill="#F6AD55" />
+    <rect x="420" y="390" width="20" height="10" rx="5" fill="#F6AD55" />
+    <line x1="380" y1="420" x2="480" y2="420" stroke="#ED8936" stroke-width="2" />
+    
+    <!-- Tool in hand -->
+    <path d="M380 350L430 320L450 340L380 380" fill="#D1D5DB" />
+    <line x1="430" y1="320" x2="450" y2="340" stroke="#6B7280" stroke-width="2" />
+  </g>
+  
+  <!-- AC unit -->
+  <g transform="translate(600, 220)">
+    <!-- Unit case -->
+    <rect x="0" y="0" width="300" height="200" rx="15" fill="#E2E8F0" />
+    <rect x="20" y="20" width="260" height="160" rx="10" fill="white" />
+    
+    <!-- Vents -->
+    <g fill="#94A3B8">
+      <rect x="40" y="40" width="220" height="5" rx="2.5" />
+      <rect x="40" y="60" width="220" height="5" rx="2.5" />
+      <rect x="40" y="80" width="220" height="5" rx="2.5" />
+      <rect x="40" y="100" width="220" height="5" rx="2.5" />
+      <rect x="40" y="120" width="220" height="5" rx="2.5" />
+      <rect x="40" y="140" width="220" height="5" rx="2.5" />
+    </g>
+    
+    <!-- Control panel -->
+    <rect x="100" y="160" width="100" height="30" rx="5" fill="#0066FF" />
+    <circle cx="120" cy="175" r="5" fill="white" />
+    <circle cx="140" cy="175" r="5" fill="white" />
+    <rect x="160" y="170" width="20" height="10" rx="5" fill="white" />
+  </g>
+  
+  <!-- Cool wave overlay -->
+  <path d="M0 600C100 550 200 650 300 600C400 550 500 650 600 600C700 550 800 650 900 600C1000 550 1100 650 1200 600V800H0V600Z" fill="#0066FF" fill-opacity="0.1" />
+  
+  <!-- Small decorative elements -->
+  <circle cx="150" cy="150" r="50" fill="#0066FF" fill-opacity="0.1" />
+  <circle cx="1050" cy="650" r="70" fill="#F6AD55" fill-opacity="0.1" />
+  <path d="M900 200L950 150L1000 200L950 250L900 200Z" fill="#0066FF" fill-opacity="0.2" />
+  
+  <defs>
+    <!-- Grid pattern definition -->
+    <pattern id="grid_pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 0H40V40H0V0Z" fill="none" />
+      <path d="M40 0V40M0 40H40" stroke="#E2E8F0" stroke-width="1" />
+    </pattern>
+  </defs>
+</svg>

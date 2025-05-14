@@ -1,0 +1,55 @@
+<svg width="1200" height="800" viewBox="0 0 1200 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <rect width="1200" height="800" fill="url(#paint0_linear)" />
+  
+  <!-- Pattern overlay -->
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M0 0H1200V800H0V0Z" fill="url(#paint1_radial)" fill-opacity="0.15" />
+  
+  <!-- AC Unit illustration -->
+  <g opacity="0.9">
+    <rect x="700" y="300" width="300" height="200" rx="10" fill="#ffffff" />
+    <rect x="720" y="330" width="260" height="140" rx="5" fill="#f0f9ff" />
+    <rect x="740" y="350" width="220" height="5" rx="2.5" fill="#0066FF" />
+    <rect x="740" y="370" width="220" height="5" rx="2.5" fill="#0066FF" />
+    <rect x="740" y="390" width="220" height="5" rx="2.5" fill="#0066FF" />
+    <rect x="740" y="410" width="220" height="5" rx="2.5" fill="#0066FF" />
+    <rect x="740" y="430" width="220" height="5" rx="2.5" fill="#0066FF" />
+    <rect x="740" y="450" width="100" height="5" rx="2.5" fill="#0066FF" />
+    <circle cx="850" cy="280" r="30" fill="#0066FF" />
+    <path d="M850 260V290M835 275H865" stroke="white" stroke-width="4" stroke-linecap="round" />
+  </g>
+  
+  <!-- Cool breeze lines -->
+  <path d="M650 350C750 330 800 370 850 350" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" />
+  <path d="M650 380C750 360 800 400 850 380" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" />
+  <path d="M650 410C750 390 800 430 850 410" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" />
+  
+  <!-- Home outline -->
+  <path d="M200 450L350 350L500 450V600H200V450Z" stroke="white" stroke-width="3" fill="url(#paint2_linear)" fill-opacity="0.3" />
+  <rect x="320" y="500" width="60" height="100" rx="5" fill="white" fill-opacity="0.5" />
+  <path d="M350 350L350 300" stroke="white" stroke-width="3" />
+  
+  <!-- Temperature indicator -->
+  <circle cx="250" cy="250" r="60" fill="url(#paint3_radial)" />
+  <text x="250" y="265" font-family="Arial" font-size="40" text-anchor="middle" fill="white">72°</text>
+  
+  <!-- Definitions -->
+  <defs>
+    <linearGradient id="paint0_linear" x1="0" y1="0" x2="1200" y2="800" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0066FF" />
+      <stop offset="1" stop-color="#2563EB" />
+    </linearGradient>
+    <radialGradient id="paint1_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(600 400) rotate(90) scale(600 600)">
+      <stop stop-color="white" />
+      <stop offset="1" stop-color="white" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="paint2_linear" x1="350" y1="350" x2="350" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0066FF" stop-opacity="0.2" />
+      <stop offset="1" stop-color="#0066FF" stop-opacity="0.1" />
+    </linearGradient>
+    <radialGradient id="paint3_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(250 250) rotate(90) scale(60)">
+      <stop stop-color="#F6AD55" />
+      <stop offset="1" stop-color="#ED8936" />
+    </radialGradient>
+  </defs>
+</svg>
