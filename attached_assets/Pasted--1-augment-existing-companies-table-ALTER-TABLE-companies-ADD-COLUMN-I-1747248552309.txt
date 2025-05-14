@@ -1,0 +1,190 @@
+/* ---------- 1. augment existing companies table ---------- */
+ALTER TABLE companies
+  ADD COLUMN IF NOT EXISTS brand_color   TEXT,
+  ADD COLUMN IF NOT EXISTS accent_color  TEXT,
+  ADD COLUMN IF NOT EXISTS multi_tech    BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS plan          TEXT    DEFAULT 'prospect'
+    CHECK (plan IN ('prospect','trial','paid')),
+  ADD COLUMN IF NOT EXISTS settings      JSONB   DEFAULT '{}'::jsonb;
+
+/* ---------- 2. tenant‑scoped tables (prefixed company_) ---------- */
+CREATE TABLE IF NOT EXISTS company_users (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id  UUID NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  email       TEXT NOT NULL,
+  phone       TEXT,
+  role        TEXT NOT NULL CHECK (role IN ('owner','tech','dispatcher')),
+  avatar_url  TEXT,
+  invite_status TEXT DEFAULT 'accepted' CHECK (invite_status IN ('pending','accepted'))
+);
+
+CREATE TABLE IF NOT EXISTS company_contacts (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id  UUID NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  phone       TEXT NOT NULL,
+  email       TEXT,
+  street      TEXT,
+  city        TEXT,
+  notes       TEXT,
+  UNIQUE      (company_id, phone)
+);
+
+CREATE TABLE IF NOT EXISTS company_messages (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id  UUID NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  contact_id  UUID REFERENCES company_contacts (id) ON DELETE SET NULL,
+  direction   TEXT NOT NULL CHECK (direction IN ('in','out')),
+  body        TEXT NOT NULL,
+  service_type TEXT,
+  ts          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_msg_company_ts ON company_messages (company_id, ts DESC);
+
+CREATE TABLE IF NOT EXISTS company_jobs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id    UUID NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  contact_id    UUID NOT NULL REFERENCES company_contacts (id) ON DELETE CASCADE,
+  tech_id       UUID REFERENCES company_users (id) ON DELETE SET NULL,
+  service_type  TEXT NOT NULL,
+  status        TEXT NOT NULL CHECK (status IN ('NEW','SCHEDULED','PROGRESS','DONE')),
+  priority      TEXT DEFAULT 'normal' CHECK (priority IN ('normal','emergency')),
+  scheduled_at  TIMESTAMPTZ,
+  notes         TEXT
+);
+
+CREATE TABLE IF NOT EXISTS company_equipment (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id   UUID NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  contact_id   UUID NOT NULL REFERENCES company_contacts (id) ON DELETE CASCADE,
+  type         TEXT,
+  brand        TEXT,
+  model        TEXT,
+  install_year SMALLINT,
+  serial       TEXT,
+  extra        JSONB
+);
+
+/* ---------- 3. shared image‑slot tables ---------- */
+CREATE TABLE IF NOT EXISTS frames (
+  slug         TEXT PRIMARY KEY,
+  default_url  TEXT NOT NULL,
+  alt          TEXT
+);
+
+CREATE TABLE IF NOT EXISTS company_frames (
+  company_id   UUID NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  slug         TEXT NOT NULL REFERENCES frames (slug) ON DELETE CASCADE,
+  url          TEXT NOT NULL,
+  PRIMARY KEY  (company_id, slug)
+);
+
+You are my HVAC‑Portal bootstrapper.  Use the fresh DB schema and build a “phase‑1” vertical slice.
+
+1.  **Init UI kit**: run `npx shadcn-ui@latest init -y` and add card, button, tabs, dialog, toast.
+
+2.  **Add token layer**: create `src/styles/tokens.css` with Tailwind directives + CSS variables (surface, border, primary, accent, radius-lg, space-1, space-3).  Import once in `layout.tsx`.
+
+3.  **Next‑13 /app routing**:
+    ├─ `src/app/[company]/portal/layout.tsx`  (Sidebar + topbar shell)
+    ├─ `src/app/[company]/portal/page.tsx`    (redirect to messages)
+    ├─ `(messages)/page.tsx`  – live feed from `company_messages`
+    ├─ `(contacts)/page.tsx`  – list from `company_contacts`
+    ├─ `(schedule)/page.tsx`  – placeholder “Calendar coming soon”
+    └─ `(settings)/page.tsx`  – reads `companies` row, writes brand_color
+
+4.  **Instant‑demo route**: `src/app/[company]/portal/demo/page.tsx` → `useEffect` auto‑POST to `/api/auth/demo` then redirect to portal.
+
+5.  **API routes**:
+    • `/api/auth/demo` – check company.plan='prospect', set 30‑day JWT cookie.  
+    • `/api/lead` – upsert `company_contacts`, insert into `company_messages` (direction='in', service_type or custom), return `{ok:true}`.
+
+6.  **Universal chat widget** in `src/components/widget/Widget.tsx`:
+    • Bubble + Panel‑step with 4 buttons + free‑text box → mini‑form.  
+    • On submit POST to `/api/lead`.  
+    • Mount in `pages/t/template/modern-trust` and `comfort-classic` with `<Widget companySlug={slug} />`.
+
+7.  **getFrame helper** (`lib/getFrame.ts`) that selects company override or fallback; update hero & about sections to use it.
+
+8.  **Seeding helper**: in `scripts/seed-owner.ts`, loop companies table, insert one owner row into `company_users` with role='owner' and email=`owner@${slug}.test`.
+
+9.  **Run & smoke‑test**:
+      npm run dev
+      – visit `/atlas-hvac/portal/demo`   → redirects to messages
+      – submit widget on template         → message appears in portal.
+
+10.  Commit on branch `portal-phase1`:
+      git add -A
+      git commit -m "feat: phase‑1 HVAC portal vertical slice"
+      git push origin portal-phase1
+
+Return ONLY:
+**“PHASE‑1 PORTAL LIVE”**
+when everything compiles without TypeScript errors and the smoke‑test passes.
+
+You are my senior full‑stack engineer. Build a COMPLETE Phase‑1 HVAC portal in our fresh Next 13 repo using the DB schema that now includes companies, company_users, company_contacts, company_messages, company_jobs, company_equipment, frames, and company_frames.
+
+● 0.  ONBOARDING WIZARD (runs on first login only)
+    –  Step 1  Brand colour picker → stores brand_color & accent_color in companies.
+    –  Step 2  “How many field techs?”  (Just me · 2‑5 · 6+) → sets multi_tech boolean & pre‑creates empty tech rows in company_users.
+    –  Step 3  “Where is your schedule today?”  (Google, Outlook, Paper/Other) → stores companies.settings.schedule_origin.
+    Wizard writes a flag to localStorage so it never shows again.
+
+● 1.  SIDEBAR LAYOUT (`src/app/[company]/portal/layout.tsx`)
+    –  Tabs: Messages • Contacts • Schedule • Settings.
+    –  Brand tint: use CSS vars --color-primary & --color-accent pulled from companies.
+    –  Dark‑mode auto if OS prefers‑color‑scheme: dark.
+
+● 2.  MESSAGES PAGE
+    –  Live feed from company_messages via React Query + WebSocket.
+    –  Button “Convert to Contact & Job” creates company_contacts + company_jobs(status=NEW, service_type or 'custom') then jumps to Schedule tab.
+
+● 3.  CONTACTS PAGE
+    –  List company_contacts; clicking opens side‑drawer with equipment list and last 3 jobs.
+    –  Inline “+ Equipment” drawer (brand & model fields only) inserts into company_equipment.
+
+● 4.  SCHEDULE PAGE
+    –  Drag‑and‑drop calendar:
+          • If multi_tech=false → single column titled “My Schedule”.
+          • If multi_tech=true  → one column per tech (initials avatar).
+    –  Color logic:
+          • brand‑tint background for normal jobs.
+          • red #E53E3E for priority='emergency'.
+          • amber #F6AD55 while status='PROGRESS'.
+          • green #48BB78 & 50 % opacity after status='DONE' for 24 h.
+    –  Outbound ICS link per tech: `/ics/{tech_uuid}.ics?token=jwt`.
+
+● 5.  SETTINGS PAGE
+    –  Sections: Business Profile (logo upload), Team (invite/remove users if multi_tech), Notifications (email on new lead), Widget Buttons (editable array stored in companies.settings.buttons), hidden Twilio / QuickBooks stubs.
+
+● 6.  UNIVERSAL CHAT WIDGET (`src/components/widget/Widget.tsx`)
+    –  Bubble bottom‑right uses brand‑primary background.
+    –  Panel Step 1: 4 buttons rendered from companies.settings.buttons plus free‑text input.
+    –  Panel Step 2: mini‑form (name*, phone*, email?, street?).
+    –  Submit → POST /api/lead → upsert contact, insert message (direction='in'), create job(status=NEW, service_type or 'custom').
+    –  Closes panel, shows toast “Thanks {Name}, we’ll confirm soon”.
+
+● 7.  API ROUTES
+    –  `/api/lead` (described above).
+    –  `/api/auth/demo`  returns 30‑day JWT for companies.plan='prospect'.
+    –  `/api/ws`  WebSocket endpoint broadcasting new messages/jobs to the portal.
+
+● 8.  IMAGE HANDLING
+    –  Add `lib/getFrame.ts` helper: select company_frames.url OR frames.default_url.
+    –  Replace hero & about images in Modern‑Trust and Comfort‑Classic templates with `<Image src={getFrame(company,'hero-bg')} …/>`.
+
+● 9.  SEEDING
+    –  For every row in companies, insert one owner into company_users and random techs if multi_tech=true.
+    –  Insert default frames for hero-bg, about-photo-1, service-card-1.
+
+● 10.  POLISH
+    –  Use shadcn Card, Tabs, Dialog, Toast for all UI.
+    –  Add Framer‑Motion fade‑in when a tab mounts.
+    –  Lighthouse score ≥ 90 on desktop.
+
+Commit all work on branch **phase1-complete** with message “feat: full Phase‑1 HVAC portal (wizard, widget, messages, contacts, schedule, settings)” and push.  When `npm run build` passes and `/atlas-hvac/portal/demo` works end‑to‑end, reply ONLY:
+
+PHASE‑1 PORTAL COMPLETE
+
+
