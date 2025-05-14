@@ -1,14 +1,13 @@
 const { Pool } = require('pg');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 const dotenv = require('dotenv');
-const { stringify } = require('csv-stringify/sync');
+const path = require('path');
+const fs = require('fs');
 
 // Load environment variables
 dotenv.config({ path: path.join(process.cwd(), '.env.local') });
 
-// Create PostgreSQL pool
+// Database connection
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
@@ -21,107 +20,64 @@ const APIFY_ENDPOINT = `https://api.apify.com/v2/acts/compass~google-maps-review
 
 // Configuration
 const CONFIG = {
-  batchSize: 10,            // Number of companies to process in each batch
-  maxReviewsPerCompany: 300, // Max reviews per company, matching our filter criteria (5-300)
-  delayBetweenBatches: 5000, // Delay between batches in ms
-  exportCsv: true,          // Export reviews to CSV
-  consolidatedCsv: true,    // Use a single CSV file instead of individual files
-  logLevel: 'verbose',      // 'verbose' or 'normal'
-  limit: 0,                 // Maximum number of companies to process (0 = no limit)
-  stateFilter: null,        // Optional state filter (e.g., 'Alabama') - set to null to process all states
-  skipExisting: true,       // Skip companies that already have reviews
-  minReviews: 5             // Minimum reviews matching our filter criteria
+  batchSize: 5,            // Number of companies to process in each batch
+  maxReviewsPerCompany: 0, // Maximum reviews per company (0 = all reviews)
+  delayBetweenBatches: 2000, // Delay between batches in ms
+  exportCsv: false,         // Export reviews to CSV
+  limitCompanies: 0,       // How many companies to process (0 = all)
+  stateFilter: null,       // Optional state filter (e.g., 'Alabama')
+  skipExisting: true,      // Skip companies that already have reviews
+  minReviewsFilter: 10     // Minimum number of reviews in google
 };
 
 /**
- * Log message with optional verbose check
+ * Execute a database query with error handling
  */
-function log(message, level = 'normal') {
-  if (level === 'verbose' && CONFIG.logLevel !== 'verbose') {
-    return;
+async function query(text, params = []) {
+  try {
+    const result = await pool.query(text, params);
+    return result;
+  } catch (err) {
+    console.error(`Error executing query: ${err.message}`);
+    return { rows: [] };
   }
-  console.log(message);
 }
 
 /**
- * Get companies with place_ids from our filtered list
+ * Get companies with place_ids
  */
 async function getCompaniesWithPlaceIds() {
-  // Create the filtered_companies table if it doesn't exist yet
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS filtered_companies (
-        company_id TEXT PRIMARY KEY,
-        place_id TEXT,
-        added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      );
-    `);
-  } catch (err) {
-    console.error('Error creating filtered_companies table:', err.message);
-  }
-  
-  // Try to populate filtered_companies table if it's empty
-  try {
-    const countResult = await pool.query('SELECT COUNT(*) FROM filtered_companies');
-    if (parseInt(countResult.rows[0].count) === 0) {
-      console.log('Filtered companies table is empty. Loading from combined CSV file...');
-      
-      // Check if the combined file exists
-      const fs = require('fs');
-      const path = require('path');
-      const combinedFile = path.join(process.cwd(), 'combined_filtered_hvac.csv');
-      
-      if (fs.existsSync(combinedFile)) {
-        // Parse the combined file
-        const { parse } = require('csv-parse/sync');
-        const combinedContent = fs.readFileSync(combinedFile, 'utf8');
-        const records = parse(combinedContent, { columns: true, skip_empty_lines: true });
-        
-        console.log(`Found ${records.length} companies in combined file. Adding to filtered_companies table...`);
-        
-        // Add records to filtered_companies table
-        for (const record of records) {
-          if (record.id && record.place_id) {
-            await pool.query(
-              'INSERT INTO filtered_companies (company_id, place_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-              [record.id, record.place_id]
-            );
-          }
-        }
-        
-        console.log('Added companies to filtered_companies table');
-      } else {
-        console.log(`Combined file not found: ${combinedFile}`);
-      }
-    }
-  } catch (err) {
-    console.error('Error populating filtered_companies table:', err.message);
-  }
-  
-  // Get only companies that are in our filtered list
-  let query = `
-    SELECT c.id, c.name, c.place_id, c.state, c.city
-    FROM companies c
-    JOIN filtered_companies fc ON c.id = fc.company_id
-    WHERE c.place_id IS NOT NULL AND c.place_id != ''
+  // Build the query based on configuration
+  let queryText = `
+    SELECT id, name, place_id, state, city, reviews as review_count
+    FROM companies
+    WHERE place_id IS NOT NULL AND place_id != ''
   `;
   
-  const params = [];
+  const queryParams = [];
+  
+  // Add review count filter if specified
+  if (CONFIG.minReviewsFilter > 0) {
+    queryText += ` AND reviews >= $${queryParams.length + 1}`;
+    queryParams.push(CONFIG.minReviewsFilter);
+  }
   
   // Add state filter if specified
   if (CONFIG.stateFilter) {
-    query += ' AND c.state = $1';
-    params.push(CONFIG.stateFilter);
+    queryText += ` AND state = $${queryParams.length + 1}`;
+    queryParams.push(CONFIG.stateFilter);
   }
   
   // Add limit if specified
-  if (CONFIG.limit > 0) {
-    query += ' LIMIT $' + (params.length + 1);
-    params.push(CONFIG.limit);
+  if (CONFIG.limitCompanies > 0) {
+    queryText += ` ORDER BY reviews DESC LIMIT $${queryParams.length + 1}`;
+    queryParams.push(CONFIG.limitCompanies);
+  } else {
+    queryText += ` ORDER BY reviews DESC`;
   }
   
-  const result = await pool.query(query, params);
-  console.log(`Found ${result.rows.length} companies from our filtered list with place_ids`);
+  // Execute the query
+  const result = await query(queryText, queryParams);
   return result.rows;
 }
 
@@ -129,7 +85,7 @@ async function getCompaniesWithPlaceIds() {
  * Get companies that already have reviews
  */
 async function getCompaniesWithExistingReviews() {
-  const result = await pool.query(`
+  const result = await query(`
     SELECT DISTINCT place_id
     FROM company_reviews
   `);
@@ -142,8 +98,9 @@ async function getCompaniesWithExistingReviews() {
  */
 async function fetchReviewsFromApify(company) {
   try {
-    log(`Fetching reviews for ${company.name} (${company.place_id})...`);
+    console.log(`Fetching reviews for ${company.name} (${company.place_id})...`);
     
+    // Prepare the API request
     const requestBody = {
       placeId: company.place_id,
       startUrls: [{ url: `https://www.google.com/maps/place/?q=place_id:${company.place_id}` }],
@@ -151,18 +108,17 @@ async function fetchReviewsFromApify(company) {
       dialect: "us"
     };
     
-    // Add max reviews limit if configured
+    // Add max reviews limit if configured and greater than 0
     if (CONFIG.maxReviewsPerCompany > 0) {
       requestBody.maxReviews = CONFIG.maxReviewsPerCompany;
     }
-    
-    log(`API request for ${company.name}`, 'verbose');
     
     // Make the API request
     const response = await axios.post(APIFY_ENDPOINT, requestBody, {
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 300000 // 5 minute timeout
     });
     
     // Check for valid response
@@ -188,7 +144,13 @@ async function fetchReviewsFromApify(company) {
       }
     }
     
-    log(`Received ${reviews.length} reviews for ${company.name}`);
+    console.log(`Received ${reviews.length} reviews for ${company.name}`);
+    
+    // Save a copy of the raw response for debugging
+    const filename = `apify-response-${company.id}.json`;
+    fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+    console.log(`Saved raw response to ${filename}`);
+    
     return reviews;
     
   } catch (error) {
@@ -205,13 +167,13 @@ async function saveReviewsToDatabase(company, reviews) {
     return { added: 0, skipped: 0 };
   }
   
-  log(`Saving ${reviews.length} reviews for ${company.name} to database...`);
+  console.log(`Saving ${reviews.length} reviews for ${company.name} to database...`);
   
   let added = 0;
   let skipped = 0;
   
   // Get all existing review IDs for this company to avoid duplicates
-  const existingResult = await pool.query(
+  const existingResult = await query(
     'SELECT review_id FROM company_reviews WHERE place_id = $1',
     [company.place_id]
   );
@@ -228,7 +190,7 @@ async function saveReviewsToDatabase(company, reviews) {
       }
       
       // Insert the review
-      await pool.query(`
+      await query(`
         INSERT INTO company_reviews (
           review_id, company_id, place_id, reviewer_name, review_text, 
           rating, published_at, reviewer_photo_url, response_from_owner_text,
@@ -255,83 +217,77 @@ async function saveReviewsToDatabase(company, reviews) {
     }
   }
   
-  log(`Saved ${added} new reviews for ${company.name} (${skipped} already existed)`);
+  console.log(`Saved ${added} new reviews for ${company.name} (${skipped} already existed)`);
+  
+  // Update company review stats
+  await updateCompanyReviewStats(company.id, company.place_id);
+  
   return { added, skipped };
 }
 
-// Global variable to store all reviews for consolidated CSV
-const allReviewsForCsv = [];
-
 /**
- * Export reviews to CSV
+ * Update review statistics for a company
  */
-async function exportReviewsToCsv(company, reviews) {
-  if (!CONFIG.exportCsv || reviews.length === 0) {
-    return null;
-  }
-  
+async function updateCompanyReviewStats(companyId, placeId) {
   try {
-    // Format data for CSV and add to global array
-    const csvData = reviews.map(review => ({
-      company_id: company.id,
-      company_name: company.name,
-      place_id: company.place_id,
-      state: company.state,
-      city: company.city,
-      review_id: review.reviewId,
-      reviewer_name: review.reviewerName || review.name || '',
-      rating: review.stars || review.rating || '',
-      review_text: review.reviewText || review.text || '',
-      published_at: review.publishedAtDate || '',
-      reviewer_photo: review.reviewerPhotoUrl || '',
-      response_text: review.responseFromOwnerText || '',
-      response_date: review.responseFromOwnerDate || '',
-      review_url: review.reviewUrl || ''
-    }));
+    // Get review statistics
+    const statsResult = await query(`
+      SELECT 
+        COUNT(*) as total_reviews,
+        ROUND(AVG(rating)::numeric, 2) as average_rating,
+        COUNT(*) FILTER (WHERE rating = 1) as rating_1_count,
+        COUNT(*) FILTER (WHERE rating = 2) as rating_2_count,
+        COUNT(*) FILTER (WHERE rating = 3) as rating_3_count,
+        COUNT(*) FILTER (WHERE rating = 4) as rating_4_count,
+        COUNT(*) FILTER (WHERE rating = 5) as rating_5_count,
+        MAX(published_at) as last_review_date
+      FROM company_reviews
+      WHERE place_id = $1
+    `, [placeId]);
     
-    // Add to the consolidated reviews array
-    allReviewsForCsv.push(...csvData);
-    
-    log(`Added ${reviews.length} reviews to consolidated CSV data for ${company.name}`, 'verbose');
-    
-    return true;
-  } catch (err) {
-    console.error(`Error processing reviews for CSV for ${company.name}:`, err.message);
-    return null;
-  }
-}
-
-/**
- * Write the consolidated CSV file with all reviews
- */
-async function writeConsolidatedCsv() {
-  if (!CONFIG.exportCsv || !CONFIG.consolidatedCsv || allReviewsForCsv.length === 0) {
-    return null;
-  }
-  
-  try {
-    // Create CSV output with headers
-    const csvOutput = stringify(allReviewsForCsv, { header: true });
-    
-    // Create directory if it doesn't exist
-    const csvDir = path.join(process.cwd(), 'reviews_csv');
-    if (!fs.existsSync(csvDir)) {
-      fs.mkdirSync(csvDir);
+    if (statsResult.rows.length === 0) {
+      return;
     }
     
-    // Define the consolidated CSV filename
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const statePrefix = CONFIG.stateFilter ? `${CONFIG.stateFilter.toLowerCase()}_` : '';
-    const csvPath = path.join(csvDir, `${statePrefix}all_reviews_${timestamp}.csv`);
+    const stats = statsResult.rows[0];
     
-    // Write to file
-    fs.writeFileSync(csvPath, csvOutput);
-    console.log(`\nExported ${allReviewsForCsv.length} reviews to consolidated CSV: ${csvPath}`);
+    // Update or insert review stats
+    await query(`
+      INSERT INTO company_review_stats (
+        place_id, company_id, total_reviews, average_rating,
+        rating_1_count, rating_2_count, rating_3_count, rating_4_count, rating_5_count,
+        last_review_date, last_updated
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()
+      )
+      ON CONFLICT (place_id) DO UPDATE SET
+        company_id = EXCLUDED.company_id,
+        total_reviews = EXCLUDED.total_reviews,
+        average_rating = EXCLUDED.average_rating,
+        rating_1_count = EXCLUDED.rating_1_count,
+        rating_2_count = EXCLUDED.rating_2_count,
+        rating_3_count = EXCLUDED.rating_3_count,
+        rating_4_count = EXCLUDED.rating_4_count,
+        rating_5_count = EXCLUDED.rating_5_count,
+        last_review_date = EXCLUDED.last_review_date,
+        last_updated = NOW()
+    `, [
+      placeId,
+      companyId,
+      stats.total_reviews,
+      stats.average_rating,
+      stats.rating_1_count,
+      stats.rating_2_count,
+      stats.rating_3_count,
+      stats.rating_4_count,
+      stats.rating_5_count,
+      stats.last_review_date
+    ]);
     
-    return csvPath;
+    console.log(`Updated review stats for company ${companyId} (${placeId}): ${stats.total_reviews} reviews, avg rating ${stats.average_rating}`);
+    
   } catch (err) {
-    console.error('Error exporting consolidated CSV:', err.message);
-    return null;
+    console.error(`Error updating review stats for company ${companyId}:`, err.message);
   }
 }
 
@@ -339,7 +295,7 @@ async function writeConsolidatedCsv() {
  * Process a batch of companies
  */
 async function processBatch(companies, existingReviews) {
-  log(`Processing batch of ${companies.length} companies...`);
+  console.log(`Processing batch of ${companies.length} companies...`);
   
   let totalReviews = 0;
   let totalAdded = 0;
@@ -349,7 +305,7 @@ async function processBatch(companies, existingReviews) {
   for (const company of companies) {
     // Skip if company already has reviews and skipExisting is enabled
     if (CONFIG.skipExisting && existingReviews.has(company.place_id)) {
-      log(`Skipping ${company.name} - already has reviews`, 'verbose');
+      console.log(`Skipping ${company.name} - already has reviews`);
       continue;
     }
     
@@ -360,9 +316,6 @@ async function processBatch(companies, existingReviews) {
       // Save to database
       const { added, skipped } = await saveReviewsToDatabase(company, reviews);
       
-      // Export to CSV
-      await exportReviewsToCsv(company, reviews);
-      
       totalReviews += reviews.length;
       totalAdded += added;
       totalSkipped += skipped;
@@ -370,12 +323,12 @@ async function processBatch(companies, existingReviews) {
     }
   }
   
-  log(`\nBatch summary:`);
-  log(`Companies processed: ${companies.length}`);
-  log(`Companies with reviews: ${companiesWithReviews}`);
-  log(`Total reviews found: ${totalReviews}`);
-  log(`Reviews added to database: ${totalAdded}`);
-  log(`Reviews skipped (already existed): ${totalSkipped}`);
+  console.log(`\nBatch summary:`);
+  console.log(`Companies processed: ${companies.length}`);
+  console.log(`Companies with reviews: ${companiesWithReviews}`);
+  console.log(`Total reviews found: ${totalReviews}`);
+  console.log(`Reviews added to database: ${totalAdded}`);
+  console.log(`Reviews skipped (already existed): ${totalSkipped}`);
   
   return { totalReviews, totalAdded, totalSkipped, companiesWithReviews };
 }
@@ -385,7 +338,7 @@ async function processBatch(companies, existingReviews) {
  */
 async function main() {
   try {
-    console.log('Starting Google Reviews fetch for all companies...');
+    console.log('Starting Google Reviews fetch...');
     console.log('Configuration:', JSON.stringify(CONFIG, null, 2));
     
     // Get all companies with place_ids
@@ -429,14 +382,9 @@ async function main() {
       
       // Add delay between batches
       if (i < batches.length - 1) {
-        log(`Waiting ${CONFIG.delayBetweenBatches}ms before next batch...`);
+        console.log(`Waiting ${CONFIG.delayBetweenBatches}ms before next batch...`);
         await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenBatches));
       }
-    }
-    
-    // Write consolidated CSV file if enabled
-    if (CONFIG.exportCsv && CONFIG.consolidatedCsv) {
-      await writeConsolidatedCsv();
     }
     
     // Final summary
@@ -448,7 +396,7 @@ async function main() {
     console.log(`Reviews skipped (already existed): ${overallStats.totalSkipped}`);
     
     // Fetch review stats from database
-    const statsResult = await pool.query(`
+    const statsResult = await query(`
       SELECT 
         COUNT(DISTINCT place_id) as companies_with_reviews,
         COUNT(*) as total_reviews,
@@ -462,12 +410,12 @@ async function main() {
     console.log(`Average rating across all reviews: ${statsResult.rows[0].average_rating}`);
     
     // State distribution
-    const stateResult = await pool.query(`
-      SELECT state, COUNT(DISTINCT rs.place_id) as companies, SUM(rs.total_reviews) as reviews
-      FROM company_review_stats rs
-      JOIN companies c ON rs.place_id = c.place_id
-      WHERE state IS NOT NULL AND state != ''
-      GROUP BY state
+    const stateResult = await query(`
+      SELECT c.state, COUNT(DISTINCT crs.place_id) as companies, SUM(crs.total_reviews) as reviews
+      FROM company_review_stats crs
+      JOIN companies c ON crs.place_id = c.place_id
+      WHERE c.state IS NOT NULL AND c.state != ''
+      GROUP BY c.state
       ORDER BY companies DESC
     `);
     

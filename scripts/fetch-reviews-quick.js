@@ -20,14 +20,12 @@ const APIFY_ENDPOINT = `https://api.apify.com/v2/acts/compass~google-maps-review
 
 // Configuration
 const CONFIG = {
-  batchSize: 2,            // Number of companies to process in each batch
-  maxReviewsPerCompany: 50, // Maximum reviews per company
+  batchSize: 1,             // Process 1 company at a time
+  maxReviewsPerCompany: 10, // Limit to 10 reviews per company
   delayBetweenBatches: 2000, // Delay between batches in ms
-  exportCsv: false,         // Export reviews to CSV
-  limitCompanies: 10,       // How many companies to process (0 = all)
-  stateFilter: null,       // Optional state filter (e.g., 'Alabama')
-  skipExisting: true,      // Skip companies that already have reviews
-  minReviewsFilter: 200      // Minimum number of reviews in google
+  limitCompanies: 2,        // Process only 2 companies for testing
+  skipExisting: true,       // Skip companies that already have reviews
+  minReviewsFilter: 10      // Minimum number of reviews in Google
 };
 
 /**
@@ -108,17 +106,19 @@ async function fetchReviewsFromApify(company) {
       dialect: "us"
     };
     
-    // Add max reviews limit if configured
+    // Add max reviews limit if configured and greater than 0
     if (CONFIG.maxReviewsPerCompany > 0) {
       requestBody.maxReviews = CONFIG.maxReviewsPerCompany;
     }
+    
+    console.log('Request body:', JSON.stringify(requestBody));
     
     // Make the API request
     const response = await axios.post(APIFY_ENDPOINT, requestBody, {
       headers: {
         'Content-Type': 'application/json'
       },
-      timeout: 300000 // 5 minute timeout
+      timeout: 60000 // 60 second timeout
     });
     
     // Check for valid response
@@ -145,10 +145,20 @@ async function fetchReviewsFromApify(company) {
     }
     
     console.log(`Received ${reviews.length} reviews for ${company.name}`);
+    
+    // Save a copy of the raw response for debugging
+    const filename = `apify-response-${company.id}.json`;
+    fs.writeFileSync(filename, JSON.stringify(data, null, 2));
+    console.log(`Saved raw response to ${filename}`);
+    
     return reviews;
     
   } catch (error) {
     console.error(`Error fetching reviews for ${company.name}:`, error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', JSON.stringify(error.response.data));
+    }
     return [];
   }
 }
@@ -332,7 +342,7 @@ async function processBatch(companies, existingReviews) {
  */
 async function main() {
   try {
-    console.log('Starting Google Reviews fetch...');
+    console.log('Starting Google Reviews fetch (quick test)...');
     console.log('Configuration:', JSON.stringify(CONFIG, null, 2));
     
     // Get all companies with place_ids
@@ -389,7 +399,7 @@ async function main() {
     console.log(`Reviews added to database: ${overallStats.totalAdded}`);
     console.log(`Reviews skipped (already existed): ${overallStats.totalSkipped}`);
     
-    // Fetch review stats from database
+    // Check database
     const statsResult = await query(`
       SELECT 
         COUNT(DISTINCT place_id) as companies_with_reviews,
@@ -398,25 +408,12 @@ async function main() {
       FROM company_reviews
     `);
     
-    console.log('\nDatabase Review Stats:');
-    console.log(`Companies with reviews in database: ${statsResult.rows[0].companies_with_reviews}`);
-    console.log(`Total reviews in database: ${statsResult.rows[0].total_reviews}`);
-    console.log(`Average rating across all reviews: ${statsResult.rows[0].average_rating}`);
-    
-    // State distribution
-    const stateResult = await query(`
-      SELECT c.state, COUNT(DISTINCT crs.place_id) as companies, SUM(crs.total_reviews) as reviews
-      FROM company_review_stats crs
-      JOIN companies c ON crs.place_id = c.place_id
-      WHERE c.state IS NOT NULL AND c.state != ''
-      GROUP BY c.state
-      ORDER BY companies DESC
-    `);
-    
-    console.log('\nReviews by State:');
-    stateResult.rows.forEach(row => {
-      console.log(`${row.state}: ${row.companies} companies, ${row.reviews} reviews`);
-    });
+    if (statsResult.rows.length > 0) {
+      console.log('\nDatabase Review Stats:');
+      console.log(`Companies with reviews in database: ${statsResult.rows[0].companies_with_reviews}`);
+      console.log(`Total reviews in database: ${statsResult.rows[0].total_reviews}`);
+      console.log(`Average rating across all reviews: ${statsResult.rows[0].average_rating}`);
+    }
     
   } catch (err) {
     console.error('Error in main function:', err);
