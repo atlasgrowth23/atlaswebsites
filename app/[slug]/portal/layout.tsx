@@ -22,7 +22,7 @@ export default async function PortalLayout({
   children,
   params,
 }: PortalLayoutProps) {
-  const slug = params.slug;
+  const slug = params?.slug || '';
   const company = await getCompanyData(slug);
   
   if (!company) {
@@ -56,7 +56,7 @@ export default async function PortalLayout({
           <ul className="space-y-2">
             <li>
               <Link 
-                href={`/${slug}/portal/messages`} 
+                href={`/${params.slug}/portal/messages`} 
                 className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -67,7 +67,7 @@ export default async function PortalLayout({
             </li>
             <li>
               <Link 
-                href={`/${slug}/portal/contacts`} 
+                href={`/${params.slug}/portal/contacts`} 
                 className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -78,7 +78,7 @@ export default async function PortalLayout({
             </li>
             <li>
               <Link 
-                href={`/${slug}/portal/schedule`} 
+                href={`/${params.slug}/portal/schedule`} 
                 className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -89,7 +89,7 @@ export default async function PortalLayout({
             </li>
             <li>
               <Link 
-                href={`/${slug}/portal/settings`} 
+                href={`/${params.slug}/portal/settings`} 
                 className="flex items-center px-4 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
