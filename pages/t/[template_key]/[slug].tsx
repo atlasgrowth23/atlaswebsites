@@ -17,7 +17,11 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
     case 'moderntrust':
       return <ModernTrustLayout company={company} />;
     case 'comfort-classic':
+    case 'comfortclassic':
       return <ComfortClassicLayout company={company} />;
+    case 'boldenergy':
+      // Fallback to ModernTrust for now, can add new templates later
+      return <ModernTrustLayout company={company} />;
     default:
       return (
         <div className="p-8">
@@ -32,20 +36,32 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  // Get all companies
-  const result = await query('SELECT slug FROM companies WHERE slug IS NOT NULL LIMIT 100');
-  
-  // Create paths for our templates for each company slug
-  const paths = [];
-  for (const company of result.rows) {
-    paths.push({ params: { template_key: 'moderntrust', slug: company.slug } });
-    paths.push({ params: { template_key: 'comfort-classic', slug: company.slug } });
+  try {
+    // Get all companies
+    const result = await query('SELECT slug FROM companies WHERE slug IS NOT NULL LIMIT 100');
+    
+    // Create paths for our templates for each company slug
+    const paths = [];
+    
+    if (result && result.rows) {
+      for (const company of result.rows) {
+        paths.push({ params: { template_key: 'moderntrust', slug: company.slug } });
+        paths.push({ params: { template_key: 'boldenergy', slug: company.slug } });
+        paths.push({ params: { template_key: 'comfortclassic', slug: company.slug } });
+      }
+    }
+    
+    return {
+      paths,
+      fallback: 'blocking', // Show 404 for unknown paths
+    };
+  } catch (error) {
+    console.error('Error generating static paths:', error);
+    return {
+      paths: [],
+      fallback: 'blocking',
+    };
   }
-  
-  return {
-    paths,
-    fallback: 'blocking', // Show 404 for unknown paths
-  };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
@@ -62,46 +78,24 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       [slug]
     );
     
-    if (result.rows.length === 0) {
+    if (!result || result.rows.length === 0) {
       return { notFound: true };
     }
     
     // Check if the template exists
-    if (!['moderntrust', 'comfort-classic'].includes(template_key as string)) {
+    const validTemplates = ['moderntrust', 'boldenergy', 'comfort-classic', 'comfortclassic'];
+    if (!validTemplates.includes(template_key as string)) {
       return { notFound: true };
     }
     
     const company = result.rows[0];
     
-    // Get company-specific frames
-    const companyFramesResult = await query(
-      'SELECT frame_name as frame_key, image_url FROM frames WHERE company_id = $1 AND template_key = $2',
-      [slug, template_key]
-    );
-
-    // Get template frames
-    const templateFramesResult = await query(
-      'SELECT frame_key, image_url FROM template_frames WHERE template_key = $1',
-      [template_key]
-    );
-
-    // Convert to objects for easier lookup
-    const company_frames = {};
-    companyFramesResult.rows.forEach((frame) => {
-      company_frames[frame.frame_key] = frame.image_url;
-    });
-
-    const template_frames = {};
-    templateFramesResult.rows.forEach((frame) => {
-      template_frames[frame.frame_key] = frame.image_url;
-    });
-
-    // Add frames to company object
-    company.company_frames = company_frames;
-    company.template_frames = template_frames;
+    // Initialize empty frames objects (since we dropped those tables)
+    company.company_frames = {};
+    company.template_frames = {};
     
     // Log what frames we're using
-    console.log('Added template frames:', template_frames);
+    console.log('Added template frames:', {});
     
     return {
       props: {

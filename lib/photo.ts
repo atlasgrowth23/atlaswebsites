@@ -6,34 +6,44 @@
  * @returns URL to the appropriate image
  */
 export function getPhotoUrl(company: any, frameName: string, templateKey: string): string {
-  // First try to get from company_frames database table
-  if (company?.company_frames && company.company_frames[frameName]) {
-    console.log('Using company-specific frame:', frameName, company.company_frames[frameName]);
+  // Check if the company has custom frames
+  if (company.company_frames && company.company_frames[frameName]) {
     return company.company_frames[frameName];
   }
   
-  // Then try template frames
-  if (company?.template_frames && company.template_frames[frameName]) {
-    console.log('Using template frame:', frameName, company.template_frames[frameName]);
+  // Check if there are template-specific frames
+  if (company.template_frames && company.template_frames[frameName]) {
     return company.template_frames[frameName];
   }
   
-  // Fall back to stock images
-  console.log('Using stock image for:', templateKey, frameName);
-  
-  // Default fallback images from Unsplash (free to use)
-  const defaultImages: Record<string, string> = {
-    'hero_img': 'https://images.unsplash.com/photo-1581146783519-13333b79e6c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
-    'about_img': 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1169&q=80',
-    'service_img': 'https://images.unsplash.com/photo-1581092919535-bac42a15a46b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80',
-    'team_img': 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80'
+  // Default stock images for each template
+  const stockImages: Record<string, Record<string, string>> = {
+    'moderntrust': {
+      'hero_img': '/stock/moderntrust/hero.jpg',
+      'about_img': '/stock/moderntrust/about.jpg',
+      'service_img': '/stock/moderntrust/service.jpg',
+      'testimonial_bg': '/stock/moderntrust/testimonial-bg.jpg',
+    },
+    'boldenergy': {
+      'hero_img': '/stock/boldenergy/hero.jpg',
+      'about_img': '/stock/boldenergy/about.jpg',
+      'service_img': '/stock/boldenergy/service.jpg',
+      'testimonial_bg': '/stock/boldenergy/testimonial-bg.jpg',
+    },
+    'comfort-classic': {
+      'hero_img': '/stock/comfort-classic/hero.jpg',
+      'about_img': '/stock/comfort-classic/about.jpg',
+      'service_img': '/stock/comfort-classic/service.jpg',
+      'testimonial_bg': '/stock/comfort-classic/testimonial-bg.jpg',
+    }
   };
   
-  // Return appropriate fallback image
-  if (defaultImages[frameName]) {
-    return defaultImages[frameName];
+  // Check if there's a stock image for this template and frame
+  if (stockImages[templateKey] && stockImages[templateKey][frameName]) {
+    console.log(`Using stock image for: ${templateKey} ${frameName}`);
+    return stockImages[templateKey][frameName];
   }
   
-  // Last resort fallback
-  return `/stock/${templateKey}/${frameName}.svg`;
+  // Fallback to a generic placeholder image
+  return '/stock/placeholder.jpg';
 }
