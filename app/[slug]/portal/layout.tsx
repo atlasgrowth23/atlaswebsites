@@ -22,7 +22,8 @@ export default async function PortalLayout({
   children,
   params,
 }: PortalLayoutProps) {
-  const company = await getCompanyData(params.slug);
+  const slug = params.slug;
+  const company = await getCompanyData(slug);
   
   if (!company) {
     return <div className="p-10">Company not found</div>;

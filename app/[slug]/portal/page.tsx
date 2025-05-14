@@ -1,6 +1,12 @@
 import { redirect } from 'next/navigation';
 
-export default function PortalPage({ params }: { params: { slug: string } }) {
+interface PageProps {
+  params: {
+    slug: string;
+  };
+}
+
+export default async function PortalPage({ params }: PageProps) {
   // Redirect to the messages page by default
   redirect(`/${params.slug}/portal/messages`);
 }
