@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { GetServerSideProps } from 'next';
 import { query } from '../../lib/db';
+import styles from '../../styles/sales-dashboard.module.css';
 
 // Types
 interface PipelineStage {
@@ -126,13 +127,13 @@ export default function SalesDashboard({
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className={styles.salesDashboard}>
       <Head>
         <title>Sales Pipeline</title>
       </Head>
 
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">HVAC Sales Pipeline</h1>
+      <div className={styles.dashboardHeader}>
+        <h1 className={styles.dashboardTitle}>HVAC Sales Pipeline</h1>
         <div className="flex space-x-4">
           <Link 
             href="/"
@@ -144,36 +145,33 @@ export default function SalesDashboard({
       </div>
 
       {/* Pipeline Stats */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Pipeline Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {pipelineStats.map(stat => (
-            <div 
-              key={stat.stage_id}
-              className="p-4 rounded-lg shadow"
-              style={{ backgroundColor: stat.stage_color + '20', borderLeft: `4px solid ${stat.stage_color}` }}
+      <div className={styles.pipelineStats}>
+        {pipelineStats.map(stat => (
+          <div 
+            key={stat.stage_id}
+            className={styles.statCard}
+          >
+            <div className={styles.statCardColorBar} style={{backgroundColor: stat.stage_color}}></div>
+            <h3 className={styles.statName}>{stat.stage_name}</h3>
+            <p className={styles.statValue}>{stat.count}</p>
+            <button 
+              onClick={() => setSelectedStage(stat.stage_id)}
+              className={styles.statAction}
             >
-              <h3 className="font-semibold text-gray-700">{stat.stage_name}</h3>
-              <p className="text-2xl font-bold">{stat.count}</p>
-              <button 
-                onClick={() => setSelectedStage(stat.stage_id)}
-                className="text-sm text-blue-600 hover:underline"
-              >
-                View Leads
-              </button>
-            </div>
-          ))}
-        </div>
+              View Leads
+            </button>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-4 items-center bg-gray-50 p-4 rounded-lg">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Pipeline Stage</label>
+      <div className={styles.filtersSection}>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Pipeline Stage</label>
           <select 
             value={selectedStage || ''}
             onChange={(e) => setSelectedStage(e.target.value ? parseInt(e.target.value) : null)}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            className={styles.filterControl}
           >
             <option value="">All Stages</option>
             {pipelineStages.map(stage => (
@@ -182,12 +180,12 @@ export default function SalesDashboard({
           </select>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Territory</label>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Territory</label>
           <select 
             value={selectedTerritory || ''}
             onChange={(e) => setSelectedTerritory(e.target.value || null)}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            className={styles.filterControl}
           >
             <option value="">All Territories</option>
             <option value="Alabama">Alabama</option>
@@ -198,10 +196,10 @@ export default function SalesDashboard({
           </select>
         </div>
         
-        <div className="ml-auto self-end">
+        <div className={styles.filterActions}>
           <button 
             onClick={resetFilters}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
             Reset Filters
           </button>
@@ -209,9 +207,9 @@ export default function SalesDashboard({
       </div>
 
       {/* Leads Table */}
-      <div className="bg-white shadow overflow-hidden rounded-lg">
-        <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-900">
+      <div className={styles.leadsTableContainer}>
+        <div className={styles.tableHeader}>
+          <h2 className={styles.tableTitle}>
             HVAC Businesses ({filteredLeads.length})
           </h2>
           <div>
@@ -222,125 +220,101 @@ export default function SalesDashboard({
             )}
           </div>
         </div>
-        <div className="border-t border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Company
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Template
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Last Contact
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Next Follow-up
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Assigned To
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredLeads.length > 0 ? (
-                  filteredLeads.map((lead) => (
-                    <tr key={lead.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Link href={`/sales/leads/${lead.id}`} className="text-blue-600 hover:underline">
-                          {lead.company_name}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {lead.city || 'N/A'}, {lead.state || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span 
-                          className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                          style={{ backgroundColor: lead.stage_color + '20', color: lead.stage_color }}
-                        >
-                          {lead.stage_name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {lead.template_shared ? (
-                          lead.template_viewed ? (
-                            <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                              Viewed
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                              Shared
-                            </span>
-                          )
-                        ) : (
-                          <Link 
-                            href={getTemplateUrl(lead.company_name)} 
-                            target="_blank"
-                            className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200"
-                          >
-                            Preview
-                          </Link>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {lead.last_contact_date ? formatDate(lead.last_contact_date) : 'Never'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {lead.next_follow_up ? (
-                          <span 
-                            className={`${
-                              new Date(lead.next_follow_up) < new Date() 
-                                ? 'text-red-600' 
-                                : 'text-gray-900'
-                            }`}
-                          >
-                            {formatDate(lead.next_follow_up)}
+        <div className="overflow-x-auto">
+          <table className={styles.leadsTable}>
+            <thead className={styles.tableHead}>
+              <tr>
+                <th>Company</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Template</th>
+                <th>Last Contact</th>
+                <th>Next Follow-up</th>
+                <th>Assigned To</th>
+                <th style={{textAlign: 'right'}}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLeads.length > 0 ? (
+                filteredLeads.map((lead) => (
+                  <tr key={lead.id} className={styles.tableRow}>
+                    <td>
+                      <Link href={`/sales/leads/${lead.id}`} className={styles.companyName}>
+                        {lead.company_name}
+                      </Link>
+                    </td>
+                    <td>
+                      {lead.city || 'N/A'}, {lead.state || 'N/A'}
+                    </td>
+                    <td>
+                      <span 
+                        className={styles.badge}
+                        style={{ backgroundColor: lead.stage_color + '20', color: lead.stage_color }}
+                      >
+                        {lead.stage_name}
+                      </span>
+                    </td>
+                    <td>
+                      {lead.template_shared ? (
+                        lead.template_viewed ? (
+                          <span className={`${styles.badge} ${styles.badgeViewed}`}>
+                            Viewed
                           </span>
                         ) : (
-                          'Not Scheduled'
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {lead.assigned_to_name || 'Unassigned'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2 justify-end">
-                          <Link 
-                            href={`tel:${lead.phone}`} 
-                            className="text-green-600 hover:text-green-900"
-                            onClick={() => trackCall(lead.id)}
-                          >
-                            Call
-                          </Link>
-                          <Link href={`/sales/leads/${lead.id}`} className="text-blue-600 hover:text-blue-900">
-                            View
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
-                      No leads found matching the filters.
+                          <span className={`${styles.badge} ${styles.badgeShared}`}>
+                            Shared
+                          </span>
+                        )
+                      ) : (
+                        <Link 
+                          href={getTemplateUrl(lead.company_name)} 
+                          target="_blank"
+                          className={`${styles.badge} ${styles.badgePreview}`}
+                        >
+                          Preview
+                        </Link>
+                      )}
+                    </td>
+                    <td>
+                      {lead.last_contact_date ? formatDate(lead.last_contact_date) : 'Never'}
+                    </td>
+                    <td>
+                      {lead.next_follow_up ? (
+                        <span className={new Date(lead.next_follow_up) < new Date() ? styles.dateOverdue : ''}>
+                          {formatDate(lead.next_follow_up)}
+                        </span>
+                      ) : (
+                        'Not Scheduled'
+                      )}
+                    </td>
+                    <td>
+                      {lead.assigned_to_name || 'Unassigned'}
+                    </td>
+                    <td>
+                      <div className={styles.tableActions}>
+                        <Link 
+                          href={`tel:${lead.phone}`} 
+                          className={styles.callLink}
+                          onClick={() => trackCall(lead.id)}
+                        >
+                          Call
+                        </Link>
+                        <Link href={`/sales/leads/${lead.id}`} className={styles.actionLink}>
+                          View
+                        </Link>
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr className={styles.tableRow}>
+                  <td colSpan={8} style={{textAlign: 'center'}}>
+                    No leads found matching the filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
