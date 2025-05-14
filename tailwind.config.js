@@ -16,13 +16,12 @@ module.exports = {
     },
     extend: {
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        surface: 'var(--color-surface)',
+        border: 'var(--color-border)',
+        primary: 'var(--color-primary)',
+        accent: 'var(--color-accent)',
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        primary: "var(--color-primary)",
-        accent: "var(--color-accent)",
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
@@ -43,23 +42,21 @@ module.exports = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        'on-primary': "var(--on-primary)",
-        'on-secondary': "var(--on-secondary)",
-        'widget': {
-          primary: "var(--widget-primary)",
-          accent: "var(--widget-accent)",
-        },
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
       },
       borderRadius: {
-        lg: "var(--radius)",
+        lg: 'var(--radius-lg)',
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      spacing: {
+        'space-1': 'var(--space-1)',
+        'space-3': 'var(--space-3)',
+        '128': '32rem',
+      },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-      },
-      spacing: {
-        '128': '32rem',
       },
       keyframes: {
         "accordion-down": {

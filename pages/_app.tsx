@@ -1,4 +1,4 @@
-import '../styles/globals.css'
+import '../styles/tokens.css'
 import type { AppProps } from 'next/app'
 import { Providers } from '@/components/ui/providers'
 

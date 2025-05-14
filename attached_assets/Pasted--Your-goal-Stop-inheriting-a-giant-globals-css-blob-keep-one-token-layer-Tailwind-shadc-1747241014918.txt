@@ -1,0 +1,127 @@
+### Your goal
+
+*Stop inheriting a giant globals.css blob,* keep **one token layer + Tailwind + shadcn/ui**, and let every component carry its own styles.
+
+Below is a **surgical plan**—follow it top‑to‑bottom and you can delete every remaining legacy style file without breaking the build.
+
+---
+
+## 1 Freeze what really must stay
+
+1. **`styles/globals.css` → rename to `styles/tokens.css`**
+   Keep only:
+
+   ```css
+   @tailwind base;
+   @tailwind components;
+   @tailwind utilities;
+
+   :root {
+     /* brand‑neutral defaults */
+     --color-surface:#ffffff;
+     --color-border:#e2e8f0;
+     --color-primary:#0A66FF;
+     --color-accent:#F6AD55;
+     --radius-lg:0.75rem;
+     --space-1:0.25rem;
+     --space-3:1rem;
+   }
+   ```
+
+2. **Tailwind config** – reference variables:
+
+   ```js
+   theme:{
+     extend:{
+       colors:{
+         surface:'hsl(var(--color-surface))',
+         border :'hsl(var(--color-border))',
+         primary:'hsl(var(--color-primary))',
+         accent :'hsl(var(--color-accent))'
+       },
+       borderRadius:{ lg:'var(--radius-lg)' },
+       spacing:{
+         'space-1':'var(--space-1)',
+         'space-3':'var(--space-3)'
+       }
+     }
+   }
+   ```
+
+3. **Import once in `_app.tsx`** (or `root-layout.tsx` for /app):
+
+   ```ts
+   import '@/styles/tokens.css';
+   ```
+
+---
+
+## 2 Delete every other style sheet
+
+```bash
+git rm -rf styles/legacy*
+git rm -f styles/globals.css   # now renamed
+find . -name "*.module.css" -exec git rm {} +
+```
+
+*(If a CSS module is truly unique—e.g. wave SVG—move it to `components/blocks/WaveDivider.module.css` and keep only those few selectors.)*
+
+---
+
+## 3 Run a **class codemod sweep**
+
+Replace bespoke classes with utilities:
+
+```bash
+# stat-card → Card primitive
+grep -Rl "stat-card" src/pages src/components | xargs sed -i '' \
+  -e 's/className="stat-card"/className="p-space-3 bg-surface rounded-lg shadow-sm"/g'
+
+# sales-dashboard grid → ui/Container
+grep -Rl "sales-dashboard" src | xargs git rm
+```
+
+---
+
+## 4 Test in dev
+
+```bash
+rm -rf .next
+npm run dev
+```
+
+* 404 on CSS? means you missed an import—search for `globals.css`.
+* UI glitch? open DevTools, inspect element; if a missing rule was important, convert it to Tailwind utility (max 3 lines—never resurrect globals).
+
+---
+
+## 5 CI guard to stop CSS relapse
+
+Add to **eslint plugin** or a script in `package.json`:
+
+```json
+"lint:noglobals": "grep -R 'class=\".*[a-zA-Z-]*-card' src || true"
+```
+
+Fail the build if any legacy class resurfaces.
+
+---
+
+## 6 Commit
+
+```bash
+git add -A
+git commit -m "refactor: purge legacy CSS, keep token layer only"
+git push origin css-slim
+```
+
+---
+
+### What you just achieved
+
+* **One tiny token file** drives colours, radii, spacing.
+* Every component now uses shadcn primitives + Tailwind utilities—no hidden overrides.
+* Any future brand override is *one inline style* (`--color-primary`), not a rebuild.
+* Repo loses hundreds of lines of dead CSS -> faster cold builds & easier mental model.
+
+Merge the `css-slim` branch once the preview looks right, and you’re done.
