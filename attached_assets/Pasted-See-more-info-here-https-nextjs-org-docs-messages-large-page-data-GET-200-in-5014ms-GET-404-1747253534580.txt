@@ -1,0 +1,86 @@
+See more info here: https://nextjs.org/docs/messages/large-page-data
+ GET / 200 in 5014ms
+ GET / 404 in 5286ms
+Added template frames: {
+  hero_img: 'https://t3.ftcdn.net/jpg/02/81/35/14/240_F_281351499_EEFFBZbeaq6GUxRabVIfIPr6UZU3RjKV.jpg',
+  about_img: 'https://t4.ftcdn.net/jpg/01/76/88/37/240_F_176883703_jmMWTobxh7e61FAJ4MoSsKDEGc1UfhTE.jpg'
+}
+Using template frame: hero_img https://t3.ftcdn.net/jpg/02/81/35/14/240_F_281351499_EEFFBZbeaq6GUxRabVIfIPr6UZU3RjKV.jpg
+Using template frame: about_img https://t4.ftcdn.net/jpg/01/76/88/37/240_F_176883703_jmMWTobxh7e61FAJ4MoSsKDEGc1UfhTE.jpg
+ GET /t/moderntrust/comfort-plus-air-and-heating 200 in 3646ms
+Added template frames: {
+  hero_img: 'https://t3.ftcdn.net/jpg/02/81/35/14/240_F_281351499_EEFFBZbeaq6GUxRabVIfIPr6UZU3RjKV.jpg',
+  about_img: 'https://t4.ftcdn.net/jpg/01/76/88/37/240_F_176883703_jmMWTobxh7e61FAJ4MoSsKDEGc1UfhTE.jpg'
+}
+Using company-specific frame: hero_img https://t3.ftcdn.net/jpg/02/48/42/64/240_F_248426448_NVKLywWqArG2ADUxDq6QprtIzsF82L5K.jpg
+Using template frame: about_img https://t4.ftcdn.net/jpg/01/76/88/37/240_F_176883703_jmMWTobxh7e61FAJ4MoSsKDEGc1UfhTE.jpg
+ POST /api/track-template-view 404 in 211ms
+Added template frames: {
+  hero_img: 'https://t3.ftcdn.net/jpg/02/81/35/14/240_F_281351499_EEFFBZbeaq6GUxRabVIfIPr6UZU3RjKV.jpg',
+  about_img: 'https://t4.ftcdn.net/jpg/01/76/88/37/240_F_176883703_jmMWTobxh7e61FAJ4MoSsKDEGc1UfhTE.jpg'
+}
+Using template frame: hero_img https://t3.ftcdn.net/jpg/02/81/35/14/240_F_281351499_EEFFBZbeaq6GUxRabVIfIPr6UZU3RjKV.jpg
+Using template frame: about_img https://t4.ftcdn.net/jpg/01/76/88/37/240_F_176883703_jmMWTobxh7e61FAJ4MoSsKDEGc1UfhTE.jpg
+ GET /t/moderntrust/comfort-plus-air-and-heating 200 in 905ms
+ POST /api/track-template-view 404 in 213ms
+Warning: data for page "/" is 148 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance.
+See more info here: https://nextjs.org/docs/messages/large-page-data
+ GET / 200 in 1276ms
+Database query error: error: Couldn't connect to compute node
+    at async query (lib/db.ts:14:19)
+    at async getStaticProps (pages/t/[template_key]/[slug].tsx:60:19)
+  12 | export async function query(text: string, params?: any[]) {
+  13 |   try {
+> 14 |     const result = await pool.query(text, params);
+     |                   ^
+  15 |     return result;
+  16 |   } catch (error) {
+  17 |     console.error('Database query error:', error); {
+  length: 53,
+  severity: 'ERROR',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: undefined,
+  line: undefined,
+  routine: undefined
+}
+Error fetching company data: error: Couldn't connect to compute node
+    at async query (lib/db.ts:14:19)
+    at async getStaticProps (pages/t/[template_key]/[slug].tsx:60:19)
+  12 | export async function query(text: string, params?: any[]) {
+  13 |   try {
+> 14 |     const result = await pool.query(text, params);
+     |                   ^
+  15 |     return result;
+  16 |   } catch (error) {
+  17 |     console.error('Database query error:', error); {
+  length: 53,
+  severity: 'ERROR',
+  code: 'XX000',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: undefined,
+  line: undefined,
+  routine: undefined
+}
+ GET /t/moderntrust/comfort-plus-air-and-heating 404 in 6907ms
+ POST /api/track-template-view 404 in 216ms

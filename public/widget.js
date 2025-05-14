@@ -118,9 +118,8 @@
         `;
 
         try {
-          // Now initiate widget loading from Next.js app
-          const response = await fetch(`/api/widget-loader?company=${encodeURIComponent(companySlug)}&t=${cacheBuster}`);
-          if (!response.ok) throw new Error('Failed to load widget');
+          // Skip the widget-loader API call since we removed the widget feature
+          // Just proceed to render the basic widget form directly
           
           // Replace with actual widget or show error
           container.innerHTML = `

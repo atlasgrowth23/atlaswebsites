@@ -4,7 +4,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Simply return a success response with empty data
-  // This is just a placeholder since we're no longer using the widget
+  // This is a simple placeholder for template view tracking
+  // In a real application, we might log the view in a database
   res.status(200).json({ success: true });
 }
