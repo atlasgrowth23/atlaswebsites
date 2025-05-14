@@ -67,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                       </svg>
                     ))}
                   </div>
-                  <span className="ml-2 text-white font-bold">{company.rating?.toFixed(1)}</span>
+                  <span className="ml-2 text-white font-bold">{typeof company.rating === 'number' ? company.rating.toFixed(1) : company.rating}</span>
                 </div>
                 <p className="text-xs text-white/80 font-medium">{company.reviews}+ Reviews</p>
               </div>

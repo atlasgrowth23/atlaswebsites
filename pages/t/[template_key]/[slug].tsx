@@ -86,7 +86,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     
     // Get company-specific frames
     const companyFramesResult = await query(
-      'SELECT frame_key, image_url FROM company_frames WHERE company_id = $1 AND template_key = $2',
+      'SELECT frame_name as frame_key, image_url FROM frames WHERE company_id = $1 AND template_key = $2',
       [slug, template_key]
     );
 
