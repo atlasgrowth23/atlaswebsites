@@ -20,14 +20,14 @@ const APIFY_ENDPOINT = `https://api.apify.com/v2/acts/compass~google-maps-review
 
 // Configuration
 const CONFIG = {
-  batchSize: 2,            // Number of companies to process in each batch
-  maxReviewsPerCompany: 50, // Maximum reviews per company
+  batchSize: 5,            // Number of companies to process in each batch
+  maxReviewsPerCompany: 200, // Maximum reviews per company
   delayBetweenBatches: 2000, // Delay between batches in ms
   exportCsv: false,         // Export reviews to CSV
-  limitCompanies: 10,       // How many companies to process (0 = all)
+  limitCompanies: 50,       // How many companies to process (0 = all)
   stateFilter: null,       // Optional state filter (e.g., 'Alabama')
   skipExisting: true,      // Skip companies that already have reviews
-  minReviewsFilter: 200      // Minimum number of reviews in google
+  minReviewsFilter: 0      // Minimum number of reviews in google
 };
 
 /**
