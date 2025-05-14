@@ -1,0 +1,90 @@
+### Why “/sales” feels slow and looks messy
+
+| Symptom you feel                                   | Likely root cause (from a quick read of the `/pages/sales` code)                                                                                                                                                             | What to fix first                                                                                                                                                         |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1 – 1½‑second blank flash when you click a tab** | • Each tab mounts a component that calls `fetch("/api/sales?tab=…")` **client‑side** every time.  No cache, no suspense.  <br>• Meanwhile Tailwind’s JIT output for that page (\~80 KB CSS) shows up only after JS hydrates. | a. Move the data fetch to **`getServerSideProps`** (SSR) so HTML + JSON arrive together.  <br>b. Or cache `fetchSales()` with SWR/React Query and show a skeleton loader. |
+| **Layout jumps; columns mis‑align**                | CSS grid in `SalesLayout.tsx` mixes fixed pixels and Tailwind flex utilities; different tabs render more items, causing height shifts.                                                                                       | Replace the bespoke grid with shadcn/ui `Tabs` + CSS Grid (`grid-cols-[16rem_auto]`) so columns never collapse.                                                           |
+| **Cards look “random”**                            | The components inside `/sales/contacts.tsx`, `/sales/appointments.tsx`, etc. still use the **old `.sales-card` class** (white bg, huge shadow) instead of the shared `<Card>` you defined elsewhere.                         | Convert those cards to the new `<Card>` component or re‑implement with `bg-surface p-space-3 shadow-sm rounded-lg`.                                                       |
+| **Appointments tab shows dummy lorem rows**        | Replit agent seeded mock data in `appointments.json` and you’re still rendering it.                                                                                                                                          | Switch to live `jobs` table; hide the tab when `jobs.length === 0`.                                                                                                       |
+
+---
+
+## Concrete “next‑sprint” plan for the **Sales** path
+
+1. **Server‑render the data (or cache it).**
+
+   ```tsx
+   // pages/sales/index.tsx
+   export const getServerSideProps = async ({ query }) => {
+     const tab = query.tab ?? "contacts";
+     const data = await fetchSalesServer(tab);     // hits your DB
+     return { props: { tab, data } };
+   };
+   ```
+
+   *Perceived load drops to \~200 ms; no blank flash.*
+
+2. **Adopt a shared shell.**
+
+   ```tsx
+   <SalesLayout>
+     <Tabs defaultValue={tab}>
+       <TabsList>
+         <TabsTrigger value="contacts">Contacts</TabsTrigger>
+         <TabsTrigger value="appointments">Appointments</TabsTrigger>
+         <TabsTrigger value="stats">Stats</TabsTrigger>
+       </TabsList>
+       <TabsContent value="contacts"><ContactsPanel data={data} /></TabsContent>
+       …
+   ```
+
+   shadcn/ui tabs handle keyboard nav, focus, and prevent layout jump.
+
+3. **Normalize card components.**
+
+   ```tsx
+   import { Card } from "@/components/ui/card";
+
+   function ContactsPanel({ data }) {
+     return (
+       <div className="grid gap-space-3">
+         {data.map(c => (
+           <Card key={c.id} className="flex items-center justify-between">
+             <div>
+               <p className="font-medium">{c.name}</p>
+               <p className="text-muted text-sm">{c.phone}</p>
+             </div>
+             <Button size="sm" variant="ghost">View</Button>
+           </Card>
+         ))}
+       </div>
+     );
+   }
+   ```
+
+4. **Real appointments feed.**
+
+   ```ts
+   const jobs = await db.selectFrom("jobs")
+     .select(["id", "scheduled_at", "service_type", "status"])
+     .where("company_id", "=", session.company_id)
+     .orderBy("scheduled_at");
+   ```
+
+   *If array is empty, render a friendly blank‑state card: “No appointments yet – convert a chat to a job to see it here.”*
+
+5. **Micro‑perf tweaks**
+
+   * Enable Next.js **automatic static optimization** for tabs that don’t need per‑request data (Stats).
+   * Use `next/dynamic` to lazy‑load heavy charts only when the Stats tab is active.
+
+---
+
+### After those 5 steps
+
+* Tabs feel instant (`getServerSideProps` sends pre‑rendered HTML).
+* Visuals use the new design tokens, so no more “random” cards.
+* Appointments tab shows real jobs or a blank‑state—no lorem.
+* Layout no longer jumps because the grid is fixed.
+
+Total effort: **\~4–6 dev hours** if you keep the Replit agent focused on repetitive refactors (card markup) and do the data wiring in Codespace.

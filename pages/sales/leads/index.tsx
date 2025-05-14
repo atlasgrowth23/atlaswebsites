@@ -4,6 +4,9 @@ import { GetServerSideProps } from 'next';
 import { query } from '../../../lib/db';
 import SalesLayout from '../../../components/sales/Layout';
 import LeadsTable from '../../../components/sales/LeadsTable';
+import SalesTabs from '../../../components/sales/SalesTabs';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '../../../components/ui/card';
+import { fetchSalesData } from '../../../lib/sales-data';
 
 // Types
 interface PipelineStage {
@@ -126,7 +129,7 @@ export default function LeadsPage({
   return (
     <SalesLayout currentUser={currentUser}>
       <Head>
-        <title>Leads Management | HVAC Sales</title>
+        <title>{`Leads Management | HVAC Sales`}</title>
       </Head>
 
       <div className="mb-8">
@@ -135,114 +138,122 @@ export default function LeadsPage({
           Viewing all {totalLeads} leads. Use filters to narrow down results.
         </p>
       </div>
+      
+      <SalesTabs activeTab="leads" />
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-              Search Companies
-            </label>
-            <input
-              type="text"
-              id="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Company name..."
-              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
+      <Card className="mb-8">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+                Search Companies
+              </label>
+              <input
+                type="text"
+                id="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Company name..."
+                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="stage" className="block text-sm font-medium text-gray-700 mb-1">
+                Pipeline Stage
+              </label>
+              <select 
+                id="stage"
+                value={selectedStage || ''}
+                onChange={(e) => setSelectedStage(e.target.value ? parseInt(e.target.value) : null)}
+                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="">All Stages</option>
+                {pipelineStages.map(stage => (
+                  <option key={stage.id} value={stage.id}>{stage.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="territory" className="block text-sm font-medium text-gray-700 mb-1">
+                Territory
+              </label>
+              <select 
+                id="territory"
+                value={selectedTerritory || ''}
+                onChange={(e) => setSelectedTerritory(e.target.value || null)}
+                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="">All Territories</option>
+                <option value="Alabama">Alabama</option>
+                <option value="Arkansas">Arkansas</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Tennessee">Tennessee</option>
+                <option value="Texas">Texas</option>
+              </select>
+            </div>
+            
+            <div>
+              <label htmlFor="assignee" className="block text-sm font-medium text-gray-700 mb-1">
+                Assigned To
+              </label>
+              <select 
+                id="assignee"
+                value={selectedAssignee || ''}
+                onChange={(e) => setSelectedAssignee(e.target.value ? parseInt(e.target.value) : null)}
+                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm"
+              >
+                <option value="">All Sales Reps</option>
+                {salesUsers.map(user => (
+                  <option key={user.id} value={user.id}>{user.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
           
-          <div>
-            <label htmlFor="stage" className="block text-sm font-medium text-gray-700 mb-1">
-              Pipeline Stage
-            </label>
-            <select 
-              id="stage"
-              value={selectedStage || ''}
-              onChange={(e) => setSelectedStage(e.target.value ? parseInt(e.target.value) : null)}
-              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          <div className="mt-4 flex justify-end">
+            <button 
+              onClick={resetFilters}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none mr-4"
             >
-              <option value="">All Stages</option>
-              {pipelineStages.map(stage => (
-                <option key={stage.id} value={stage.id}>{stage.name}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label htmlFor="territory" className="block text-sm font-medium text-gray-700 mb-1">
-              Territory
-            </label>
-            <select 
-              id="territory"
-              value={selectedTerritory || ''}
-              onChange={(e) => setSelectedTerritory(e.target.value || null)}
-              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              Reset Filters
+            </button>
+            <button 
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none"
             >
-              <option value="">All Territories</option>
-              <option value="Alabama">Alabama</option>
-              <option value="Arkansas">Arkansas</option>
-              <option value="Georgia">Georgia</option>
-              <option value="Tennessee">Tennessee</option>
-              <option value="Texas">Texas</option>
-            </select>
+              Apply Filters
+            </button>
           </div>
-          
-          <div>
-            <label htmlFor="assignee" className="block text-sm font-medium text-gray-700 mb-1">
-              Assigned To
-            </label>
-            <select 
-              id="assignee"
-              value={selectedAssignee || ''}
-              onChange={(e) => setSelectedAssignee(e.target.value ? parseInt(e.target.value) : null)}
-              className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="">All Sales Reps</option>
-              {salesUsers.map(user => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-        
-        <div className="mt-4 flex justify-end">
-          <button 
-            onClick={resetFilters}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none mr-4"
-          >
-            Reset Filters
-          </button>
-          <button 
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-          >
-            Apply Filters
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Leads Table */}
-      <div className="bg-white rounded-lg shadow mb-8">
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-medium text-gray-900">
-            All Leads 
-            {(selectedStage || selectedTerritory || selectedAssignee || searchTerm) && (
-              <span className="text-sm font-normal text-gray-500 ml-2">(Filtered)</span>
-            )}
-          </h2>
-          <div>
-            <span className="text-sm text-gray-500">
-              Showing {filteredLeads.length > 0 ? 1 : 0}-{Math.min(filteredLeads.length, 100)} of {filteredLeads.length} leads
-            </span>
+      <Card className="mb-8">
+        <CardHeader className="border-b border-gray-200">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-medium text-gray-900">
+              All Leads 
+              {(selectedStage || selectedTerritory || selectedAssignee || searchTerm) && (
+                <span className="text-sm font-normal text-gray-500 ml-2">(Filtered)</span>
+              )}
+            </CardTitle>
+            <div>
+              <span className="text-sm text-gray-500">
+                Showing {filteredLeads.length > 0 ? 1 : 0}-{Math.min(filteredLeads.length, 100)} of {filteredLeads.length} leads
+              </span>
+            </div>
           </div>
-        </div>
+        </CardHeader>
         
-        <LeadsTable leads={filteredLeads} onTrackCall={trackCall} />
+        <CardContent className="p-0">
+          <LeadsTable leads={filteredLeads} onTrackCall={trackCall} />
+        </CardContent>
         
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <CardFooter className="px-6 py-4 border-t border-gray-200">
+          <div className="w-full flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-700">
                 Showing <span className="font-medium">{filteredLeads.length > 0 ? (currentPage - 1) * 50 + 1 : 0}</span> to{' '}
@@ -300,8 +311,8 @@ export default function LeadsPage({
               </nav>
             </div>
           </div>
-        </div>
-      </div>
+        </CardFooter>
+      </Card>
       
     </SalesLayout>
   );
@@ -310,129 +321,63 @@ export default function LeadsPage({
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     // Get query parameters
-    const { page = '1', stage, territory, assignee, search } = context.query;
+    const { page = '1', stage, territory, assignee, search, user } = context.query;
     const currentPage = parseInt(page as string) || 1;
-    const pageSize = 100;
-    const offset = (currentPage - 1) * pageSize;
-    
-    // Get user context
-    const { user } = context.query;
     const userParam = typeof user === 'string' ? user : null;
     
-    // Build query filters
-    let filters = [];
-    let params = [];
+    // Fetch all data using our utility function
+    const data = await fetchSalesData('leads');
+    
+    // Apply any additional filters from query parameters
+    let filteredLeads = Array.isArray(data.leads) ? [...data.leads] : [];
     
     if (stage) {
-      filters.push(`l.stage_id = $${params.length + 1}`);
-      params.push(stage);
+      const stageId = parseInt(stage as string);
+      filteredLeads = filteredLeads.filter(lead => lead.stage_id === stageId);
     }
     
     if (territory) {
-      filters.push(`c.state = $${params.length + 1}`);
-      params.push(territory);
+      filteredLeads = filteredLeads.filter(lead => lead.state === territory);
     }
     
     if (assignee) {
-      filters.push(`l.assigned_to = $${params.length + 1}`);
-      params.push(assignee);
+      const assigneeId = parseInt(assignee as string);
+      filteredLeads = filteredLeads.filter(lead => lead.assigned_to === assigneeId);
     }
     
     if (search) {
-      filters.push(`c.name ILIKE $${params.length + 1}`);
-      params.push(`%${search}%`);
+      const searchQuery = (search as string).toLowerCase();
+      filteredLeads = filteredLeads.filter(lead => 
+        lead.company_name.toLowerCase().includes(searchQuery)
+      );
     }
     
-    // Get all pipeline stages
-    const stagesResult = await query(
-      'SELECT id, name, order_num, color FROM pipeline_stages ORDER BY order_num ASC'
-    );
-    const pipelineStages = stagesResult.rows;
-    
-    // Get all sales users
-    const usersResult = await query(
-      'SELECT id, name, email, territory, is_admin FROM sales_users'
-    );
-    const salesUsers = usersResult.rows;
-    
-    // Determine current user (default to admin if not specified)
-    let currentUser;
-    if (userParam) {
-      currentUser = salesUsers.find(u => u.name.toLowerCase() === userParam.toLowerCase());
+    // If a specific user was requested, find and use that user
+    if (userParam && data.salesUsers) {
+      const requestedUser = data.salesUsers.find(u => u.name.toLowerCase() === userParam.toLowerCase());
+      if (requestedUser) {
+        data.currentUser = requestedUser;
+        
+        // Filter leads by territory if non-admin user
+        if (!requestedUser.is_admin && requestedUser.territory) {
+          filteredLeads = filteredLeads.filter(lead => lead.state === requestedUser.territory);
+        }
+      }
     }
     
-    if (!currentUser) {
-      // Default to admin user
-      currentUser = salesUsers.find(u => u.is_admin) || salesUsers[0];
-    }
+    // Update the total leads count based on filters
+    const totalLeads = filteredLeads.length;
+    const totalPages = Math.ceil(totalLeads / 100);
     
-    // Add territory filter for non-admin users
-    if (!currentUser.is_admin && currentUser.territory) {
-      filters.push(`c.state = $${params.length + 1}`);
-      params.push(currentUser.territory);
-    }
-    
-    const whereClause = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
-    
-    // Get total count for pagination
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM leads l
-      JOIN companies c ON l.company_id = c.id
-      ${whereClause}
-    `;
-    
-    const countResult = await query(countQuery, params);
-    const totalLeads = parseInt(countResult.rows[0].total);
-    const totalPages = Math.ceil(totalLeads / pageSize);
-    
-    // Get leads with pagination
-    const leadsQuery = `
-      SELECT 
-        l.id, 
-        l.company_id, 
-        c.name as company_name,
-        c.city,
-        c.state,
-        c.phone,
-        l.assigned_to,
-        su.name as assigned_to_name,
-        l.stage_id,
-        ps.name as stage_name,
-        ps.color as stage_color,
-        l.template_shared,
-        l.template_viewed,
-        l.last_contact_date,
-        l.next_follow_up
-      FROM 
-        leads l
-      JOIN 
-        companies c ON l.company_id = c.id
-      LEFT JOIN 
-        sales_users su ON l.assigned_to = su.id
-      JOIN 
-        pipeline_stages ps ON l.stage_id = ps.id
-      ${whereClause}
-      ORDER BY 
-        l.next_follow_up ASC NULLS LAST,
-        l.last_contact_date DESC NULLS LAST
-      LIMIT ${pageSize} OFFSET ${offset}
-    `;
-    
-    const leadsResult = await query(leadsQuery, params);
-    // Convert dates to ISO strings to make them serializable
-    const leads = leadsResult.rows.map(lead => ({
-      ...lead,
-      last_contact_date: lead.last_contact_date ? lead.last_contact_date.toISOString() : null,
-      next_follow_up: lead.next_follow_up ? lead.next_follow_up.toISOString() : null
-    }));
+    // Apply pagination
+    const pageSize = 100;
+    const offset = (currentPage - 1) * pageSize;
+    filteredLeads = filteredLeads.slice(offset, offset + pageSize);
     
     return {
       props: {
-        pipelineStages,
-        salesUsers,
-        leads,
-        currentUser,
+        ...data,
+        leads: filteredLeads,
         totalLeads,
         page: currentPage,
         totalPages

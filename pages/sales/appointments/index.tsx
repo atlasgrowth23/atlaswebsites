@@ -4,7 +4,10 @@ import { GetServerSideProps } from 'next';
 import { query } from '../../../lib/db';
 import SalesLayout from '../../../components/sales/Layout';
 import AppointmentsCalendar from '../../../components/sales/AppointmentsCalendar';
+import SalesTabs from '../../../components/sales/SalesTabs';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '../../../components/ui/card';
 import { format } from 'date-fns';
+import { fetchSalesData } from '../../../lib/sales-data';
 
 interface SalesUser {
   id: number;
@@ -45,7 +48,7 @@ export default function AppointmentsPage({ appointments, currentUser }: Appointm
   return (
     <SalesLayout currentUser={currentUser}>
       <Head>
-        <title>Sales Appointments</title>
+        <title>{`Sales Appointments`}</title>
       </Head>
 
       <div className="mb-8">
@@ -54,24 +57,30 @@ export default function AppointmentsPage({ appointments, currentUser }: Appointm
           View and manage your upcoming appointments with leads.
         </p>
       </div>
+      
+      <SalesTabs activeTab="appointments" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <AppointmentsCalendar 
-            appointments={formattedAppointments}
-            onViewAppointment={(id) => {
-              const apt = appointments.find(a => a.id === id);
-              if (apt) setSelectedAppointment(apt);
-            }}
-          />
-        </div>
+        <Card className="lg:col-span-2">
+          <CardContent className="p-4">
+            <AppointmentsCalendar 
+              appointments={formattedAppointments}
+              onViewAppointment={(id) => {
+                const apt = appointments.find(a => a.id === id);
+                if (apt) setSelectedAppointment(apt);
+              }}
+            />
+          </CardContent>
+        </Card>
         
-        <div>
-          <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-medium text-gray-900">
               {selectedAppointment ? 'Appointment Details' : 'Upcoming Appointments'}
-            </h3>
-            
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent>
             {selectedAppointment ? (
               <div>
                 <h4 className="font-medium">{selectedAppointment.title || `Meeting with ${selectedAppointment.company_name}`}</h4>
@@ -88,7 +97,7 @@ export default function AppointmentsPage({ appointments, currentUser }: Appointm
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => setSelectedAppointment(null)}
-                    className="text-sm text-gray-600 hover:text-gray-900"
+                    className="text-sm text-primary hover:text-primary/90"
                   >
                     Close
                   </button>
@@ -117,8 +126,8 @@ export default function AppointmentsPage({ appointments, currentUser }: Appointm
                 )}
               </div>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </SalesLayout>
   );
@@ -126,63 +135,28 @@ export default function AppointmentsPage({ appointments, currentUser }: Appointm
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
-    // Get sales users
-    const usersResult = await query(
-      'SELECT id, name, email, territory, is_admin FROM sales_users ORDER BY name'
-    );
-    const salesUsers = usersResult.rows;
+    // Get query parameters
+    const { user } = context.query;
+    const userParam = typeof user === 'string' ? user : null;
     
-    // Determine current user (default to admin)
-    const currentUser = salesUsers.find(u => u.is_admin) || salesUsers[0];
+    // Fetch all data using our utility function
+    const data = await fetchSalesData('appointments');
     
-    // Check if the table exists
-    const tableExists = await query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'sales_appointments'
-      );
-    `);
+    // If data doesn't have appointments, provide an empty array
+    const appointments = Array.isArray(data.appointments) ? data.appointments : [];
     
-    let appointments = [];
-    
-    // Only try to query if the table exists
-    if (tableExists.rows[0].exists) {
-      const appointmentsResult = await query(`
-        SELECT 
-          a.id,
-          a.lead_id,
-          c.name as company_name,
-          a.appointment_date,
-          a.title,
-          a.notes,
-          a.user_id as created_by,
-          su.name as created_by_name,
-          a.location as appointment_type
-        FROM 
-          sales_appointments a
-        JOIN 
-          sales_leads l ON a.lead_id = l.id
-        JOIN 
-          companies c ON l.company_id = c.id
-        JOIN
-          sales_users su ON a.user_id = su.id
-        WHERE
-          a.appointment_date >= NOW()
-        ORDER BY 
-          a.appointment_date ASC
-      `);
-      
-      // Convert date strings to ISO strings to make them serializable
-      appointments = appointmentsResult.rows.map(appointment => ({
-        ...appointment,
-        appointment_date: new Date(appointment.appointment_date).toISOString()
-      }));
+    // If a specific user was requested, find and use that user
+    if (userParam && data.salesUsers) {
+      const requestedUser = data.salesUsers.find(u => u.name.toLowerCase() === userParam.toLowerCase());
+      if (requestedUser) {
+        data.currentUser = requestedUser;
+      }
     }
     
     return {
       props: {
         appointments,
-        currentUser
+        currentUser: data.currentUser
       }
     };
   } catch (error) {

@@ -208,7 +208,7 @@ export default function LeadDetail({
   return (
     <SalesLayout currentUser={currentUser}>
       <Head>
-        <title>{lead.company_name} | Lead Details</title>
+        <title>{`${lead.company_name} | Lead Details`}</title>
       </Head>
 
       {/* Back button and header */}
