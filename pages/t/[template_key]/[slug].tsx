@@ -56,7 +56,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { template_key, slug } = params;
   
   try {
-    // Get company data
+    // Get company data with additional fields for review and map display
     const result = await query(
       'SELECT * FROM companies WHERE slug = $1 LIMIT 1',
       [slug]

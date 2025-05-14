@@ -11,6 +11,10 @@ export interface Company {
   phone?: string;
   rating?: number;
   reviews?: number;
+  place_id?: string;
+  location_reviews_link?: string;
+  latitude?: number;
+  longitude?: number;
   // Added for template frames
   company_frames?: Record<string, string>;
   template_frames?: Record<string, string>;
@@ -24,4 +28,20 @@ export interface Lead {
   stage_id?: number;
   created_at?: string;
   updated_at?: string;
+}
+
+// Review type
+export interface Review {
+  name: string;
+  placeId: string;
+  text: string | null;
+  stars: number;
+  publishAt: string;
+  publishedAtDate: string;
+  responseFromOwnerText?: string | null;
+  responseFromOwnerDate?: string | null;
+  location?: {
+    lat: number;
+    lng: number;
+  };
 }
