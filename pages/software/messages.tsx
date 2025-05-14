@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/software/Layout';
 import ProtectedRoute from '@/components/software/ProtectedRoute';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 
 interface Message {
   id: number;
@@ -15,6 +21,7 @@ export default function MessagesPage() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [loading, setLoading] = useState(true);
   const [newReply, setNewReply] = useState('');
+  const { toast } = useToast();
   
   useEffect(() => {
     // In a real implementation, this would fetch from the API
@@ -78,19 +85,31 @@ export default function MessagesPage() {
     if (!newReply.trim() || !selectedMessage) return;
     
     // In a real app, would send to API
-    alert(`Reply sent to ${selectedMessage.sender}: ${newReply}`);
+    toast({
+      title: "Reply Sent",
+      description: `Message sent to ${selectedMessage.sender}`,
+      variant: "success"
+    });
     setNewReply('');
   };
   
   const createContact = () => {
     if (!selectedMessage) return;
-    alert(`Creating contact for ${selectedMessage.sender}`);
+    toast({
+      title: "Contact Created",
+      description: `Contact created for ${selectedMessage.sender}`,
+      variant: "info"
+    });
     // Would redirect to contact creation form pre-filled with sender info
   };
   
   const createJob = () => {
     if (!selectedMessage) return;
-    alert(`Creating job based on message from ${selectedMessage.sender}`);
+    toast({
+      title: "Job Created",
+      description: `Job created for ${selectedMessage.sender}`,
+      variant: "info"
+    });
     // Would redirect to job creation form with message content
   };
   
@@ -112,17 +131,19 @@ export default function MessagesPage() {
       <Layout title="Messages">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Messages</h2>
-          <div className="text-sm text-gray-500">
-            {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="py-1">
+              {unreadCount} unread message{unreadCount !== 1 ? 's' : ''}
+            </Badge>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden flex h-[calc(100vh-14rem)]">
+        <Card className="overflow-hidden flex h-[calc(100vh-14rem)]">
           {/* Message List */}
           <div className="w-1/3 border-r">
             {loading ? (
               <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                <Spinner size="lg" color="primary" />
               </div>
             ) : (
               <div className="overflow-y-auto h-full">
@@ -141,10 +162,12 @@ export default function MessagesPage() {
                         onClick={() => handleMessageSelect(message)}
                       >
                         <div className="flex justify-between items-start mb-1">
-                          <span className={`font-medium ${!message.isRead ? 'text-blue-600' : ''}`}>
-                            {message.sender}
-                            {!message.isRead && <span className="ml-2 inline-block w-2 h-2 bg-blue-600 rounded-full"></span>}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`font-medium ${!message.isRead ? 'text-blue-600' : ''}`}>
+                              {message.sender}
+                            </span>
+                            {!message.isRead && <Badge variant="secondary" className="h-5 px-1">New</Badge>}
+                          </div>
                           <span className="text-xs text-gray-500">
                             {formatDate(message.timestamp)}
                           </span>
@@ -179,40 +202,43 @@ export default function MessagesPage() {
                 
                 <div className="p-4 border-t">
                   <div className="flex">
-                    <textarea
+                    <Textarea
                       value={newReply}
                       onChange={(e) => setNewReply(e.target.value)}
                       placeholder="Type your reply here..."
-                      className="flex-grow p-2 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-grow rounded-r-none"
                       rows={2}
                     />
-                    <button
+                    <Button
                       onClick={handleSendReply}
                       disabled={!newReply.trim()}
-                      className="bg-blue-600 text-white px-4 rounded-r-md disabled:bg-blue-300"
+                      className="rounded-l-none"
                     >
                       Send
-                    </button>
+                    </Button>
                   </div>
                   
                   <div className="flex mt-4 space-x-2">
-                    <button 
+                    <Button 
                       onClick={createContact}
-                      className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                      variant="outline"
+                      size="sm"
                     >
                       Create Contact
-                    </button>
-                    <button 
+                    </Button>
+                    <Button 
                       onClick={createJob}
-                      className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                      variant="outline"
+                      size="sm"
                     >
                       Create Job
-                    </button>
-                    <button 
-                      className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      size="sm"
                     >
                       Schedule
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </>
@@ -222,7 +248,7 @@ export default function MessagesPage() {
               </div>
             )}
           </div>
-        </div>
+        </Card>
       </Layout>
     </ProtectedRoute>
   );
