@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Company, Review } from '@/types';
 import { ChevronLeft, ChevronRight, Star, ExternalLink } from 'lucide-react';
@@ -170,8 +171,7 @@ const Reviews: React.FC<ReviewsProps> = ({ company }) => {
     return null; // Don't show the section if no reviews
   }
   
-  // Always use slideshow now, regardless of review count
-  // But limit visible slides based on screen size
+  // Limit visible reviews to improve display
   const reviewsToShow = reviews.slice(0, Math.min(reviews.length, 6));
   
   return (
@@ -191,12 +191,29 @@ const Reviews: React.FC<ReviewsProps> = ({ company }) => {
           </div>
         </div>
         
-        {/* Slideshow container */}
+        {/* Redesigned Slideshow container */}
         <div 
           ref={slideshowRef}
-          className="relative max-w-6xl mx-auto overflow-hidden mb-12"
+          className="relative max-w-6xl mx-auto mb-12"
         >
-          {/* Slides container with horizontal scroll */}
+          {/* Navigation controls - absolute positioned on sides */}
+          <button 
+            onClick={prevReview}
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors z-10 opacity-80 hover:opacity-100 -ml-4 sm:ml-0"
+            aria-label="Previous review"
+          >
+            <ChevronLeft className="h-5 w-5 text-blue-600" />
+          </button>
+          
+          <button 
+            onClick={nextReview}
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors z-10 opacity-80 hover:opacity-100 -mr-4 sm:mr-0"
+            aria-label="Next review"
+          >
+            <ChevronRight className="h-5 w-5 text-blue-600" />
+          </button>
+          
+          {/* Slides container with improved layout */}
           <div 
             ref={slidesContainerRef}
             className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
@@ -205,35 +222,41 @@ const Reviews: React.FC<ReviewsProps> = ({ company }) => {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            {/* Map all reviews to create slide items */}
+            {/* Redesigned review cards for better responsiveness */}
             {reviewsToShow.map((review, index) => (
               <div 
                 key={index}
-                className="min-w-full sm:min-w-[calc(100%/2-16px)] md:min-w-[calc(100%/3-16px)] p-4 flex-shrink-0 snap-center"
+                className="min-w-full sm:min-w-[calc(100%/2)] md:min-w-[calc(100%/3)] flex-shrink-0 snap-center px-3"
               >
-                <div className="bg-white p-6 rounded-lg shadow-lg h-full flex flex-col">
-                  <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                <div className="bg-white p-5 rounded-lg shadow-md h-full flex flex-col">
+                  <div className="flex items-center mb-3">
+                    <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
                       {review.name.charAt(0)}
                     </div>
-                    <div className="ml-4">
-                      <h3 className="font-bold text-lg">{review.name}</h3>
+                    <div className="ml-3">
+                      <h3 className="font-bold text-base">{review.name}</h3>
                       <div className="flex">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <Star key={star} className="text-yellow-400 fill-yellow-400 h-4 w-4" />
+                          <Star key={star} className="text-yellow-400 fill-yellow-400 h-3 w-3" />
                         ))}
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-700 flex-grow">
-                    {review.text || "⭐️⭐️⭐️⭐️⭐️"}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">{review.publishAt}</p>
                   
+                  {/* Text with truncation and height limits */}
+                  <div className="flex-grow overflow-hidden">
+                    <p className="text-gray-700 text-sm line-clamp-4 max-h-24">
+                      {review.text || "⭐️⭐️⭐️⭐️⭐️"}
+                    </p>
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 mt-2">{review.publishAt}</p>
+                  
+                  {/* Conditional response from owner - limited height */}
                   {review.responseFromOwnerText && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <p className="font-medium text-sm">Response from {company.name}:</p>
-                      <p className="text-sm text-gray-600 mt-1">{review.responseFromOwnerText}</p>
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p className="font-medium text-xs">Response from {company.name}:</p>
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">{review.responseFromOwnerText}</p>
                     </div>
                   )}
                 </div>
@@ -241,31 +264,14 @@ const Reviews: React.FC<ReviewsProps> = ({ company }) => {
             ))}
           </div>
           
-          {/* Navigation controls - absolute positioned on sides */}
-          <button 
-            onClick={prevReview}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-colors z-10 opacity-80 hover:opacity-100"
-            aria-label="Previous review"
-          >
-            <ChevronLeft className="h-6 w-6 text-blue-600" />
-          </button>
-          
-          <button 
-            onClick={nextReview}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-3 rounded-full shadow-md hover:bg-gray-100 transition-colors z-10 opacity-80 hover:opacity-100"
-            aria-label="Next review"
-          >
-            <ChevronRight className="h-6 w-6 text-blue-600" />
-          </button>
-          
-          {/* Pagination dots */}
-          <div className="flex justify-center mt-6">
+          {/* Improved pagination dots */}
+          <div className="flex justify-center mt-5">
             {reviews.slice(0, Math.min(reviews.length, 8)).map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToSlide(index)}
-                className={`mx-1 w-3 h-3 rounded-full ${
-                  index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+                className={`mx-1 w-2.5 h-2.5 rounded-full transition-all ${
+                  index === currentIndex ? 'bg-blue-600 scale-110' : 'bg-gray-300'
                 }`}
                 aria-label={`Go to review ${index + 1}`}
               />
@@ -281,7 +287,7 @@ const Reviews: React.FC<ReviewsProps> = ({ company }) => {
           <div className="text-center">
             <button 
               onClick={handleViewAllReviews}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               View All Reviews
               <ExternalLink className="ml-2 h-4 w-4" />
