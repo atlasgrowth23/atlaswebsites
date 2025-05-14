@@ -49,16 +49,10 @@ export default function LeadsTable({ leads, onTrackCall }: LeadsTableProps) {
                   Location
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Contact
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Next Follow-up
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Assigned To
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -77,6 +71,9 @@ export default function LeadsTable({ leads, onTrackCall }: LeadsTableProps) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {lead.city || 'N/A'}, {lead.state || 'N/A'}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {lead.phone || 'N/A'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span 
                         className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
@@ -85,34 +82,14 @@ export default function LeadsTable({ leads, onTrackCall }: LeadsTableProps) {
                         {lead.stage_name}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {lead.last_contact_date ? formatDate(lead.last_contact_date) : 'Never'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {lead.next_follow_up ? (
-                        <span className="text-gray-500">
-                          {formatDate(lead.next_follow_up)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-500">Not Scheduled</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {lead.assigned_to_name || 'Unassigned'}
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex space-x-4 justify-end">
-                        <Link 
-                          href={`tel:${lead.phone}`} 
-                          className="text-green-600 hover:text-green-900"
-                          onClick={() => onTrackCall(lead.id)}
-                        >
-                          Call
-                        </Link>
-                        <Link href={`/sales/leads/${lead.id}`} className="text-blue-600 hover:text-blue-900">
-                          View
-                        </Link>
-                      </div>
+                      <Link 
+                        href={`tel:${lead.phone}`} 
+                        className="text-green-600 hover:text-green-900 mr-4"
+                        onClick={() => onTrackCall(lead.id)}
+                      >
+                        Call
+                      </Link>
                     </td>
                   </tr>
                 ))

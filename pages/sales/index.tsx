@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { GetServerSideProps } from 'next';
+import { format } from 'date-fns';
 import { query } from '../../lib/db';
 import SalesLayout from '../../components/sales/Layout';
 import LeadsTable from '../../components/sales/LeadsTable';
@@ -54,6 +55,13 @@ interface DashboardProps {
   pipelineStats: PipelineStats[];
   currentUser: SalesUser;
   totalLeads: number;
+  upcomingAppointments: Array<{
+    id: number;
+    lead_id: number;
+    company_name: string;
+    appointment_date: string;
+    title: string;
+  }>;
 }
 
 export default function SalesDashboard({ 
@@ -62,7 +70,8 @@ export default function SalesDashboard({
   leads,
   pipelineStats,
   currentUser,
-  totalLeads
+  totalLeads,
+  upcomingAppointments
 }: DashboardProps) {
   const [selectedStage, setSelectedStage] = useState<number | null>(null);
   const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
@@ -127,59 +136,21 @@ export default function SalesDashboard({
         </p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+      {/* Territory-Based Dashboard Summary */}
+      <div className="grid grid-cols-1 gap-5 mb-8">
         <div className="bg-white rounded-lg shadow p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-500">Total Leads</p>
-              <p className="text-2xl font-bold">{totalLeads}</p>
+              <p className="text-sm font-medium text-gray-500">
+                {currentUser.is_admin ? 'Total HVAC Companies' : 'Arkansas HVAC Companies'}
+              </p>
+              <p className="text-2xl font-bold">
+                {currentUser.is_admin ? totalLeads : leads.filter(lead => lead.state === 'AR').length}
+              </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">This Week's Calls</p>
-              <p className="text-2xl font-bold">24</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Scheduled Appointments</p>
-              <p className="text-2xl font-bold">8</p>
-            </div>
-            <div className="p-3 bg-indigo-100 rounded-full">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Deals Closing</p>
-              <p className="text-2xl font-bold">3</p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
           </div>
@@ -206,6 +177,42 @@ export default function SalesDashboard({
               </button>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Upcoming Appointments */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-medium text-gray-900">Upcoming Appointments</h2>
+          <Link href="/sales/appointments" className="text-sm text-blue-600 hover:underline">
+            View All
+          </Link>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          {upcomingAppointments.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {upcomingAppointments.map(appointment => (
+                <div key={appointment.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex justify-between">
+                    <div>
+                      <Link href={`/sales/leads/${appointment.lead_id}`} className="font-medium text-blue-600 hover:underline">
+                        {appointment.company_name}
+                      </Link>
+                      <p className="text-sm text-gray-600 mt-1">{appointment.title}</p>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {format(new Date(appointment.appointment_date), 'MMM d, yyyy - h:mm a')}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-4 text-center text-gray-500">
+              No upcoming appointments
+            </div>
+          )}
         </div>
       </div>
 
@@ -433,6 +440,49 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const statsResult = await query(statsQuery);
     const pipelineStats = statsResult.rows;
     
+    // Get upcoming appointments
+    let upcomingAppointments = [];
+    try {
+      // Check if the appointments table exists
+      const tableExists = await query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'sales_appointments'
+        );
+      `);
+      
+      if (tableExists.rows[0].exists) {
+        const appointmentsResult = await query(`
+          SELECT 
+            a.id,
+            a.lead_id,
+            c.name as company_name,
+            a.appointment_date,
+            a.title
+          FROM 
+            sales_appointments a
+          JOIN 
+            sales_leads l ON a.lead_id = l.id
+          JOIN 
+            companies c ON l.company_id = c.id
+          WHERE
+            a.appointment_date >= NOW()
+          ORDER BY 
+            a.appointment_date ASC
+          LIMIT 5
+        `);
+        
+        // Convert date strings to ISO strings to make them serializable
+        upcomingAppointments = appointmentsResult.rows.map(appointment => ({
+          ...appointment,
+          appointment_date: new Date(appointment.appointment_date).toISOString()
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      // Continue without appointments if there's an error
+    }
+
     return {
       props: {
         pipelineStages,
@@ -440,7 +490,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         leads,
         pipelineStats,
         currentUser,
-        totalLeads
+        totalLeads,
+        upcomingAppointments
       },
     };
   } catch (error) {
@@ -452,7 +503,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         leads: [],
         pipelineStats: [],
         currentUser: { id: 1, name: 'Admin User', email: 'admin@example.com', territory: '', is_admin: true },
-        totalLeads: 0
+        totalLeads: 0,
+        upcomingAppointments: []
       },
     };
   }

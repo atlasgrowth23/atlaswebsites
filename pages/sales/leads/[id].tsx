@@ -5,6 +5,7 @@ import { GetServerSideProps } from 'next';
 import { format } from 'date-fns';
 import { query } from '../../../lib/db';
 import SalesLayout from '../../../components/sales/Layout';
+import PipelineStageSelector from '../../../components/sales/PipelineStageSelector';
 
 // Types
 interface SalesUser {
@@ -30,7 +31,7 @@ interface LeadDetailProps {
     company_name: string;
     city: string;
     state: string;
-    zip: string;
+    postal_code: string;
     phone: string;
     website: string;
     email: string;
@@ -42,8 +43,8 @@ interface LeadDetailProps {
     stage_color: string;
     template_shared: boolean;
     template_viewed: boolean;
-    template_view_count: number;
-    template_last_viewed: string | null;
+    /* Removed field that was causing errors */
+    /* Removed template_last_viewed field */
     last_contact_date: string | null;
     next_follow_up: string | null;
     created_at: string;
@@ -83,6 +84,8 @@ export default function LeadDetail({
   const [nextFollowUp, setNextFollowUp] = useState(lead.next_follow_up || '');
   const [assignedTo, setAssignedTo] = useState(lead.assigned_to);
   const [currentStage, setCurrentStage] = useState(lead.stage_id);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   // Format date for display
   const formatDate = (dateString: string | null) => {
@@ -94,8 +97,43 @@ export default function LeadDetail({
     }
   };
 
+  // Update just the pipeline stage
+  const updateStage = async (stageId: number) => {
+    setIsSaving(true);
+    setSaveError('');
+    
+    try {
+      const response = await fetch('/api/sales/update-lead-stage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leadId: lead.id,
+          stageId,
+          userId: currentUser.id
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update stage');
+      }
+      
+      // Update local state to reflect the change
+      window.location.reload(); // Simple refresh to show updated data
+    } catch (error) {
+      console.error('Error updating stage:', error);
+      setSaveError('Failed to update stage. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Save lead changes
   const saveLead = async () => {
+    setIsSaving(true);
+    setSaveError('');
+    
     try {
       const response = await fetch(`/api/sales/leads/${lead.id}`, {
         method: 'PATCH',
@@ -355,11 +393,11 @@ export default function LeadDetail({
                       {lead.address ? (
                         <>
                           {lead.address}<br />
-                          {lead.city}, {lead.state} {lead.zip}
+                          {lead.city}, {lead.state} {lead.postal_code}
                         </>
                       ) : (
                         <>
-                          {lead.city}, {lead.state} {lead.zip}
+                          {lead.city}, {lead.state} {lead.postal_code}
                         </>
                       )}
                     </dd>
@@ -367,24 +405,55 @@ export default function LeadDetail({
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Status</dt>
                     <dd className="mt-1 text-sm text-gray-900">
-                      {editMode ? (
-                        <select 
-                          value={currentStage} 
-                          onChange={(e) => setCurrentStage(parseInt(e.target.value))}
-                          className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        >
-                          {pipelineStages.map(stage => (
-                            <option key={stage.id} value={stage.id}>{stage.name}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span 
-                          className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                          style={{ backgroundColor: lead.stage_color + '20', color: lead.stage_color }}
-                        >
-                          {lead.stage_name}
-                        </span>
-                      )}
+                      <div>
+                        {editMode ? (
+                          <div>
+                            <PipelineStageSelector
+                              stages={pipelineStages}
+                              currentStageId={currentStage}
+                              onChange={setCurrentStage}
+                              simplified={true}
+                            />
+                            <div className="mt-2 flex justify-end space-x-2">
+                              <button
+                                onClick={() => setEditMode(false)}
+                                className="text-xs text-gray-600 hover:text-gray-800"
+                                disabled={isSaving}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => {
+                                  updateStage(currentStage);
+                                  setEditMode(false);
+                                }}
+                                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                                disabled={isSaving}
+                              >
+                                {isSaving ? 'Saving...' : 'Save'}
+                              </button>
+                            </div>
+                            {saveError && (
+                              <p className="mt-1 text-xs text-red-600">{saveError}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span 
+                              className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                              style={{ backgroundColor: lead.stage_color + '20', color: lead.stage_color }}
+                            >
+                              {lead.stage_name}
+                            </span>
+                            <button
+                              onClick={() => setEditMode(true)}
+                              className="ml-2 text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              Change
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </dd>
                   </div>
                   <div>
@@ -699,20 +768,8 @@ export default function LeadDetail({
                       )}
                     </dd>
                   </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">View Count</dt>
-                    <dd className="mt-1 text-sm text-gray-900">
-                      {lead.template_view_count || 0} times
-                    </dd>
-                  </div>
-                  {lead.template_last_viewed && (
-                    <div className="sm:col-span-3">
-                      <dt className="text-sm font-medium text-gray-500">Last Viewed</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {formatDate(lead.template_last_viewed)}
-                      </dd>
-                    </div>
-                  )}
+                  {/* Removed the first viewed section */}
+                  {/* Template viewing details removed */}
                 </dl>
               </div>
             </div>
@@ -816,11 +873,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         c.name as company_name,
         c.city,
         c.state,
-        c.zip,
+        c.postal_code,
         c.phone,
-        c.website,
-        c.email,
-        c.address,
+        c.site as website,
+        c.email_1 as email,
+        c.street as address,
         l.assigned_to,
         su.name as assigned_to_name,
         l.stage_id,
@@ -828,8 +885,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         ps.color as stage_color,
         l.template_shared,
         l.template_viewed,
-        l.template_view_count,
-        l.template_last_viewed,
         l.last_contact_date,
         l.next_follow_up,
         l.created_at,
