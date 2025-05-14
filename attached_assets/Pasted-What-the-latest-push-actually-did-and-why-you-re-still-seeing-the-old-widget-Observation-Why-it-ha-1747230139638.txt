@@ -1,0 +1,60 @@
+What the latest push actually did—and why you’re still seeing the “old” widget
+Observation	Why it happens
+/pages/hvac-portal/* is gone and the matching API routes were deleted.	Good—those files are no longer part of the build.
+Modern‑Trust template still renders the original chat bubble.	The template hard‑codes a <script src="/legacy-widget.js"> tag (or an old <WidgetLegacy /> React import). You removed the HVAC‑portal pages but never removed that include. At runtime Next.js copies the old bundle from .next/static/…, so the UI looks unchanged.
+New widget files under components/widget/ aren’t visible.	They compile into the main JS bundle, but because no template imports <Widget />, nothing shows.
+
+1 Order of operations (what to build first)
+Ship the new universal widget with a stub /api/lead that simply writes to Replit DB.
+Reason: you can demo lead‑capture right away, and you’ll reuse the same endpoint when the SaaS portal is ready.
+
+Replace the hard‑coded legacy script include in Modern‑Trust (and any future template) with either:
+
+a React <Widget companySlug="atlas-hvac" />, or
+
+a new script <script src="/widget.js" data-company="atlas-hvac">.
+
+Only after the widget is live wire the back‑office “portal” pages so owners can see those leads. The widget API stays the same; you just switch its host URL later.
+
+2 Prompt for Replit AI Agent to finish the cleanup & mount the new widget
+php-template
+Copy
+Edit
+You are my Cleanup+Widget assistant. Finish these tasks:
+
+1.  REMOVE legacy widget include
+    • In pages/t/template/modern-trust/*.tsx find any
+      <script src="/legacy-widget.js" …> or <WidgetLegacy …/>
+      and delete that line.
+
+2.  IMPORT the new universal widget
+    • At top of template file add:
+        import { Widget } from "@/components/widget";
+    • At bottom of <body> (before </main>) render:
+        <Widget companySlug={company.slug}
+                primary={company.settings.brand_color}
+                accent={company.settings.accent_color} />
+
+3.  Ensure the stub API exists
+    • Create /pages/api/lead.ts if missing:
+        import db from "@/lib/db";
+        export default async (req,res)=>{ if(req.method!=="POST") return res.status(405).end();
+          const { companySlug, name, phone, email, street, service, priority } = req.body;
+          // upsert contact & job (same logic we used earlier)
+          return res.json({ok:true});
+        }
+
+4.  Delete any leftover HVAC‑portal files still in repo cache:
+      rm -rf pages/hvac-portal
+      rm -rf pages/api/hvac-portal*
+
+5.  Run dev server, visit /t/template/modern-trust
+    • Verify new widget renders (blue primary btns) and old one is gone.
+    • Submit a test lead, confirm contact & job appear in Replit DB.
+
+6.  Commit on branch widget-swap:
+      git add .
+      git commit -m "chore: remove legacy widget, mount new universal widget"
+      git push origin widget-swap
+
+Return **“NEW WIDGET LIVE – legacy removed”** when finished.

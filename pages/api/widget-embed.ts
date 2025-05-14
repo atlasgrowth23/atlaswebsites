@@ -14,12 +14,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Get parameters from query string
-  const { company, primary, accent } = req.query;
+  // Get parameters from query string and ensure they're strings
+  const companySlug = typeof req.query.company === 'string' ? req.query.company : '';
+  const primaryColor = typeof req.query.primary === 'string' ? req.query.primary : '#0066FF';
+  const accentColor = typeof req.query.accent === 'string' ? req.query.accent : '#F6AD55';
   
-  // Set default colors if not provided
-  const primaryColor = primary || '#0066FF';
-  const accentColor = accent || '#F6AD55';
+  // Get host for iframe URL
+  const host = process.env.VERCEL_URL || 
+              (typeof req.headers.host === 'string' ? req.headers.host : 'localhost:5000');
   
   // Generate embedding script with the provided parameters
   const embedScript = `
@@ -57,7 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Replace button with iframe containing widget
     container.innerHTML = '';
     const iframe = document.createElement('iframe');
-    iframe.src = 'https://${process.env.VERCEL_URL || req.headers.host}/widget?company=${company}&primary=${encodeURIComponent(primaryColor)}&accent=${encodeURIComponent(accentColor)}';
+    iframe.src = 'http://${host}/widget?company=${companySlug}&primary=${encodeURIComponent(primaryColor)}&accent=${encodeURIComponent(accentColor)}';
     iframe.style.width = '350px';
     iframe.style.height = '450px';
     iframe.style.border = 'none';
