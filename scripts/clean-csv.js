@@ -9,8 +9,8 @@ async function cleanCsvFile() {
     console.log('Starting CSV file cleanup...');
     
     // File paths
-    const inputPath = path.join(process.cwd(), 'all_companies_transformed.csv');
-    const outputPath = path.join(process.cwd(), 'all_companies_cleaned.csv');
+    const inputPath = path.join(process.cwd(), 'filtered_companies.csv');
+    const outputPath = path.join(process.cwd(), 'filtered_companies_cleaned.csv');
     
     if (!fs.existsSync(inputPath)) {
       console.error(`Input CSV file not found at ${inputPath}`);

@@ -28,7 +28,7 @@ async function importCompaniesInChunks() {
     
     // Read CSV file header
     console.log('\nReading CSV header...');
-    const csvPath = path.join(process.cwd(), 'all_companies_cleaned.csv');
+    const csvPath = path.join(process.cwd(), 'filtered_companies_cleaned.csv');
     
     if (!fs.existsSync(csvPath)) {
       console.error(`CSV file not found at ${csvPath}`);
