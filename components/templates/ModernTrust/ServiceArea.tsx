@@ -110,11 +110,15 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
             radius: 12000, // 8 miles in meters (12.8 km)
           });
           
-          // Add info window for the marker
+          // Add info window for the marker with geocoded data fallback
+          const city = company?.city || company?.geocoded_city || '';
+          const state = company?.state || company?.geocoded_state || '';
+          const locationDisplay = city && state ? `${city}, ${state}` : city || state || 'Location information not available';
+          
           const infoContent = `
             <div style="padding: 8px; max-width: 200px;">
               <h3 style="margin: 0 0 8px; font-weight: bold;">${company?.name}</h3>
-              <p style="margin: 0 0 5px;">${company?.city}, ${company?.state || ''}</p>
+              <p style="margin: 0 0 5px;">${locationDisplay}</p>
               ${company?.phone ? `<p style="margin: 0;"><a href="tel:${company?.phone}" style="color: #0066FF; text-decoration: none;">${company?.phone}</a></p>` : ''}
             </div>
           `;
@@ -177,13 +181,17 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
     return null;
   }
   
+  // Use geocoded data if regular city/state are missing
+  const cityDisplay = company.city || company.geocoded_city || 'your area';
+  const stateDisplay = company.state || company.geocoded_state || '';
+  
   return (
     <section id="service-area" className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4">Our Service Area</h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            {company.name} proudly serves {company.city} and surrounding areas with reliable heating 
+            {company.name} proudly serves {cityDisplay} {stateDisplay ? `and surrounding areas` : `area`} with reliable heating 
             and cooling services. Contact us today to see if you're in our service area.
           </p>
         </div>

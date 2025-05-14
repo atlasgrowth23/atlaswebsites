@@ -18,6 +18,11 @@ export interface Company {
   // Added for template frames
   company_frames?: Record<string, string>;
   template_frames?: Record<string, string>;
+  // Geocoded location data (fallbacks for missing city/state)
+  geocoded_city?: string;
+  geocoded_state?: string;
+  geocoded_zip?: string;
+  geocoded_country?: string;
 }
 
 // Minimal lead type
