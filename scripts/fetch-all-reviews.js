@@ -25,9 +25,10 @@ const CONFIG = {
   maxReviewsPerCompany: 0,  // Set to 0 for unlimited reviews
   delayBetweenBatches: 5000, // Delay between batches in ms
   exportCsv: true,          // Export reviews to CSV
+  consolidatedCsv: true,    // Use a single CSV file instead of individual files
   logLevel: 'verbose',      // 'verbose' or 'normal'
   limit: 0,                 // Maximum number of companies to process (0 = no limit)
-  stateFilter: null,        // Optional state filter (e.g., 'Alabama')
+  stateFilter: 'Alabama',   // Optional state filter (e.g., 'Alabama')
   skipExisting: true        // Skip companies that already have reviews
 };
 
@@ -203,6 +204,9 @@ async function saveReviewsToDatabase(company, reviews) {
   return { added, skipped };
 }
 
+// Global variable to store all reviews for consolidated CSV
+const allReviewsForCsv = [];
+
 /**
  * Export reviews to CSV
  */
@@ -212,7 +216,7 @@ async function exportReviewsToCsv(company, reviews) {
   }
   
   try {
-    // Format data for CSV
+    // Format data for CSV and add to global array
     const csvData = reviews.map(review => ({
       company_id: company.id,
       company_name: company.name,
@@ -230,8 +234,29 @@ async function exportReviewsToCsv(company, reviews) {
       review_url: review.reviewUrl || ''
     }));
     
-    // Create CSV output
-    const csvOutput = stringify(csvData, { header: true });
+    // Add to the consolidated reviews array
+    allReviewsForCsv.push(...csvData);
+    
+    log(`Added ${reviews.length} reviews to consolidated CSV data for ${company.name}`, 'verbose');
+    
+    return true;
+  } catch (err) {
+    console.error(`Error processing reviews for CSV for ${company.name}:`, err.message);
+    return null;
+  }
+}
+
+/**
+ * Write the consolidated CSV file with all reviews
+ */
+async function writeConsolidatedCsv() {
+  if (!CONFIG.exportCsv || !CONFIG.consolidatedCsv || allReviewsForCsv.length === 0) {
+    return null;
+  }
+  
+  try {
+    // Create CSV output with headers
+    const csvOutput = stringify(allReviewsForCsv, { header: true });
     
     // Create directory if it doesn't exist
     const csvDir = path.join(process.cwd(), 'reviews_csv');
@@ -239,17 +264,18 @@ async function exportReviewsToCsv(company, reviews) {
       fs.mkdirSync(csvDir);
     }
     
-    // Create safe filename
-    const safeCompanyName = company.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    const csvPath = path.join(csvDir, `${safeCompanyName}_reviews.csv`);
+    // Define the consolidated CSV filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const statePrefix = CONFIG.stateFilter ? `${CONFIG.stateFilter.toLowerCase()}_` : '';
+    const csvPath = path.join(csvDir, `${statePrefix}all_reviews_${timestamp}.csv`);
     
     // Write to file
     fs.writeFileSync(csvPath, csvOutput);
-    log(`Exported reviews to CSV: ${csvPath}`, 'verbose');
+    console.log(`\nExported ${allReviewsForCsv.length} reviews to consolidated CSV: ${csvPath}`);
     
     return csvPath;
   } catch (err) {
-    console.error(`Error exporting reviews to CSV for ${company.name}:`, err.message);
+    console.error('Error exporting consolidated CSV:', err.message);
     return null;
   }
 }
@@ -351,6 +377,11 @@ async function main() {
         log(`Waiting ${CONFIG.delayBetweenBatches}ms before next batch...`);
         await new Promise(resolve => setTimeout(resolve, CONFIG.delayBetweenBatches));
       }
+    }
+    
+    // Write consolidated CSV file if enabled
+    if (CONFIG.exportCsv && CONFIG.consolidatedCsv) {
+      await writeConsolidatedCsv();
     }
     
     // Final summary
