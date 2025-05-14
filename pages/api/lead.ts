@@ -12,10 +12,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       email, 
       phone, 
       message, 
+      initialMessage,
+      street,
+      service,
       companySlug, 
       leadType, 
       timestamp 
     } = req.body;
+    
+    // Combine message fields
+    const finalMessage = message || initialMessage || '';
 
     // Validate required fields
     if (!name || !email || !phone || !companySlug) {
@@ -61,6 +67,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             email VARCHAR(255) NOT NULL,
             phone VARCHAR(50) NOT NULL,
             message TEXT,
+            street VARCHAR(255),
+            service VARCHAR(50),
             lead_type VARCHAR(50),
             created_at TIMESTAMPTZ DEFAULT NOW(),
             status VARCHAR(50) DEFAULT 'new',
@@ -82,17 +90,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           email, 
           phone, 
           message, 
+          street,
+          service,
           lead_type, 
           created_at,
           status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
         [
           companyId,
           name,
           email,
           phone,
-          message || '',
-          leadType || 'website',
+          finalMessage,
+          street || '',
+          service || '',
+          leadType || service || 'website',
           timestamp || new Date().toISOString(),
           'new'
         ]
