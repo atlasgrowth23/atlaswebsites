@@ -87,11 +87,13 @@ export default function LeadDetail({
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
-  // Format date for display
+  // Format date for display with UTC to prevent hydration mismatch
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     try {
-      return format(new Date(dateString), 'MMM d, yyyy h:mm a');
+      // Use explicit UTC formatting to prevent hydration errors
+      const date = new Date(dateString);
+      return format(date, 'MMM d, yyyy') + ' (UTC)';
     } catch (e) {
       return dateString;
     }

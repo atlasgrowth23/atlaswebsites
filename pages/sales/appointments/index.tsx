@@ -85,7 +85,7 @@ export default function AppointmentsPage({ appointments, currentUser }: Appointm
               <div>
                 <h4 className="font-medium">{selectedAppointment.title || `Meeting with ${selectedAppointment.company_name}`}</h4>
                 <p className="text-sm text-gray-500 mt-1">
-                  {format(new Date(selectedAppointment.appointment_date), 'MMMM d, yyyy h:mm a')}
+                  {format(new Date(selectedAppointment.appointment_date), 'MMMM d, yyyy') + ' (UTC)'}
                 </p>
                 <p className="text-sm text-gray-500 mt-1">
                   Type: {selectedAppointment.appointment_type || 'Meeting'}
@@ -117,7 +117,7 @@ export default function AppointmentsPage({ appointments, currentUser }: Appointm
                       >
                         <p className="font-medium">{apt.title || `Meeting with ${apt.company_name}`}</p>
                         <p className="text-sm text-gray-500 mt-1">
-                          {format(new Date(apt.appointment_date), 'MMMM d, yyyy h:mm a')}
+                          {format(new Date(apt.appointment_date), 'MMMM d, yyyy') + ' (UTC)'}
                         </p>
                       </div>
                     ))
