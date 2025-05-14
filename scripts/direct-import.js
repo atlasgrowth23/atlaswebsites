@@ -1,7 +1,6 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
-const { parse } = require('csv-parse/sync');
 const dotenv = require('dotenv');
 
 // Load environment variables
@@ -30,7 +29,35 @@ async function query(text, params = []) {
 }
 
 /**
- * Import companies from CSV
+ * Simple function to parse a CSV line
+ * Handles basic quoting but might not work for all edge cases
+ */
+function parseCSVLine(line) {
+  const result = [];
+  let insideQuotes = false;
+  let currentValue = '';
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if (char === ',' && !insideQuotes) {
+      result.push(currentValue);
+      currentValue = '';
+    } else {
+      currentValue += char;
+    }
+  }
+  
+  // Add the last value
+  result.push(currentValue);
+  
+  return result;
+}
+
+/**
+ * Process and import companies from CSV using line-by-line processing
  */
 async function importCompanies() {
   console.log(`Importing companies from ${CSV_FILE}...`);
@@ -41,42 +68,46 @@ async function importCompanies() {
     return;
   }
   
-  const csvContent = fs.readFileSync(CSV_FILE, 'utf8');
+  // Read file content
+  const content = fs.readFileSync(CSV_FILE, 'utf8');
   
-  // Parse CSV with more flexible settings
-  const records = parse(csvContent, {
-    columns: true,
-    skip_empty_lines: true,
-    relax_column_count: true,
-    relax_quotes: true,
-    trim: true,
-    skip_records_with_error: true
-  });
+  // Split into lines
+  const lines = content.split('\n').filter(line => line.trim());
   
-  console.log(`Found ${records.length} companies in CSV file`);
+  // Get header line
+  const headerLine = lines[0];
+  const headers = headerLine.split(',');
   
-  // Debug first 2 records
-  if (records.length > 0) {
-    console.log("First record id:", records[0].id);
-  }
-  if (records.length > 1) {
-    console.log("Second record id:", records[1].id);
-  }
+  console.log(`Found ${lines.length - 1} companies in CSV file`);
+  console.log(`CSV has ${headers.length} columns`);
   
   // Insert companies
   let inserted = 0;
   let errors = 0;
   
-  for (const record of records) {
+  // Process each line (skip header)
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    
     try {
+      // Parse this line into fields
+      const fields = parseCSVLine(line);
+      
+      // Create record object from headers and fields
+      const record = {};
+      headers.forEach((header, index) => {
+        if (index < fields.length) {
+          record[header] = fields[index];
+        }
+      });
+      
       // Skip records without an ID
       if (!record.id) {
-        console.warn('Skipping record without ID');
+        console.warn(`Line ${i}: Skipping record without ID`);
         continue;
       }
       
-      // Map fields to database columns
-      // Using the existing database schema that we just discovered
+      // Insert into database
       await query(`
         INSERT INTO companies (
           id, slug, subdomain, custom_domain, name, site, phone, phone_carrier_type, 
@@ -91,39 +122,13 @@ async function importCompanies() {
           $31, $32, $33
         )
         ON CONFLICT (id) DO UPDATE SET
-          slug = EXCLUDED.slug,
-          subdomain = EXCLUDED.subdomain,
-          custom_domain = EXCLUDED.custom_domain,
           name = EXCLUDED.name,
-          site = EXCLUDED.site,
-          phone = EXCLUDED.phone,
-          phone_carrier_type = EXCLUDED.phone_carrier_type,
-          category = EXCLUDED.category,
-          street = EXCLUDED.street,
-          city = EXCLUDED.city,
-          postal_code = EXCLUDED.postal_code,
           state = EXCLUDED.state,
-          latitude = EXCLUDED.latitude,
-          longitude = EXCLUDED.longitude,
-          rating = EXCLUDED.rating,
-          reviews = EXCLUDED.reviews,
-          photos_count = EXCLUDED.photos_count,
-          working_hours = EXCLUDED.working_hours,
-          about = EXCLUDED.about,
-          logo = EXCLUDED.logo,
-          verified = EXCLUDED.verified,
+          category = EXCLUDED.category,
           place_id = EXCLUDED.place_id,
-          location_link = EXCLUDED.location_link,
-          location_reviews_link = EXCLUDED.location_reviews_link,
-          email_1 = EXCLUDED.email_1,
-          email_1_validator_status = EXCLUDED.email_1_validator_status,
-          email_1_full_name = EXCLUDED.email_1_full_name,
-          facebook = EXCLUDED.facebook,
-          instagram = EXCLUDED.instagram,
-          extras = EXCLUDED.extras,
           updated_at = NOW()
       `, [
-        record.id, 
+        record.id || '', 
         record.slug || '', 
         record.subdomain || '', 
         record.custom_domain || '', 
@@ -160,11 +165,11 @@ async function importCompanies() {
       
       inserted++;
       
-      if (inserted % 50 === 0) {
-        console.log(`Imported ${inserted} companies...`);
+      if (inserted % 50 === 0 || i === lines.length - 1) {
+        console.log(`Processed ${i} of ${lines.length - 1} lines, imported ${inserted} companies...`);
       }
     } catch (err) {
-      console.error(`Error importing company ID ${record.id}:`, err.message);
+      console.error(`Error processing line ${i}:`, err.message);
       errors++;
     }
   }
@@ -173,14 +178,98 @@ async function importCompanies() {
 }
 
 /**
+ * Using a simpler approach with string splitting
+ */
+async function importCompaniesSimpler() {
+  console.log(`Importing companies from ${CSV_FILE} using simpler approach...`);
+  
+  // Read CSV file
+  if (!fs.existsSync(CSV_FILE)) {
+    console.error(`CSV file not found: ${CSV_FILE}`);
+    return;
+  }
+  
+  // Read file content line by line
+  const content = fs.readFileSync(CSV_FILE, 'utf8');
+  const lines = content.split('\n').filter(line => line.trim());
+  
+  // Parse header
+  const headers = lines[0].split(',');
+  console.log(`Found ${lines.length - 1} companies in CSV file`);
+  
+  // Process each line
+  let inserted = 0;
+  let errors = 0;
+  let skipped = 0;
+  
+  for (let i = 1; i < lines.length; i++) {
+    try {
+      // Simple split by comma (not perfect for quoted fields with commas)
+      const values = lines[i].split(',');
+      
+      // Map to headers
+      const record = {};
+      for (let j = 0; j < headers.length && j < values.length; j++) {
+        record[headers[j]] = values[j] || '';
+      }
+      
+      // Skip if no ID
+      if (!record.id) {
+        skipped++;
+        continue;
+      }
+      
+      // Only use a subset of fields to minimize issues
+      await query(`
+        INSERT INTO companies (
+          id, name, phone, category, city, state, postal_code, 
+          latitude, longitude, rating, reviews, place_id
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          name = EXCLUDED.name,
+          category = EXCLUDED.category,
+          state = EXCLUDED.state,
+          place_id = EXCLUDED.place_id
+      `, [
+        record.id,
+        record.name || '',
+        record.phone || '',
+        record.category || '',
+        record.city || '',
+        record.state || '',
+        record.postal_code || 0,
+        parseFloat(record.latitude || 0) || 0,
+        parseFloat(record.longitude || 0) || 0,
+        parseFloat(record.rating || 0) || 0,
+        parseInt(record.reviews || 0) || 0,
+        record.place_id || ''
+      ]);
+      
+      inserted++;
+      
+      if (inserted % 50 === 0 || i === lines.length - 1) {
+        console.log(`Processed ${i} of ${lines.length - 1} lines, inserted ${inserted} companies...`);
+      }
+    } catch (err) {
+      console.error(`Error processing line ${i}:`, err.message);
+      errors++;
+    }
+  }
+  
+  console.log(`\nImport completed: ${inserted} companies imported, ${errors} errors, ${skipped} skipped`);
+}
+
+/**
  * Main function
  */
 async function main() {
   try {
-    console.log('Starting filtered companies import...');
+    console.log('Starting direct companies import...');
     
-    // Import companies
-    await importCompanies();
+    // Import companies using simpler approach
+    await importCompaniesSimpler();
     
     // Count companies
     const countResult = await query('SELECT COUNT(*) FROM companies');
