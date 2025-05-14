@@ -45,6 +45,10 @@ module.exports = {
         },
         'on-primary': "var(--on-primary)",
         'on-secondary': "var(--on-secondary)",
+        'widget': {
+          primary: "var(--widget-primary)",
+          accent: "var(--widget-accent)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

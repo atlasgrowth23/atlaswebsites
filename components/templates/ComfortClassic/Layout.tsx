@@ -14,9 +14,9 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ company }) => {
-  // Define ModernTrust color scheme 
-  const primaryColor = "#0066FF";
-  const accentColor = "#F6AD55";
+  // Define ComfortClassic color scheme
+  const primaryColor = "#004DFF";
+  const accentColor = "#FFB347";
 
   return (
     <div className="flex flex-col min-h-screen">
