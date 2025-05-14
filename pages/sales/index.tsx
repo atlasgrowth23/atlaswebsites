@@ -202,7 +202,14 @@ export default function SalesDashboard({
                       <p className="text-sm text-gray-600 mt-1">{appointment.title}</p>
                     </div>
                     <div className="text-sm text-gray-500">
-                      {format(new Date(appointment.appointment_date), 'MMM d, yyyy - h:mm a')}
+                      {new Date(appointment.appointment_date).toLocaleString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        timeZoneName: 'short'
+                      })}
                     </div>
                   </div>
                 </div>
