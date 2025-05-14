@@ -13,9 +13,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showChatPopup, setShowChatPopup] = useState(false);
 
-  // Company colors or default
-  const primaryColor = company.primary_color || '#0284c7';
-  const secondaryColor = company.secondary_color || '#0369a1';
+  // Using standardized design tokens instead of hardcoded colors
 
   useEffect(() => {
     const handleScroll = () => {
@@ -60,14 +58,13 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 />
               ) : (
                 <div 
-                  className="w-10 h-10 rounded-md flex items-center justify-center mr-3 text-white font-bold"
-                  style={{ backgroundColor: primaryColor }}
+                  className="w-10 h-10 rounded-md flex items-center justify-center mr-3 text-white font-bold bg-primary"
                 >
                   {company.name?.charAt(0) || 'H'}
                 </div>
               )}
               <div>
-                <h1 className="font-bold text-xl" style={{ color: primaryColor }}>
+                <h1 className="font-bold text-xl text-primary">
                   {company.name || 'HVAC Company'}
                 </h1>
                 <p className="text-xs text-gray-500 -mt-1 hidden sm:block">
@@ -97,8 +94,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
               {company.phone && (
                 <a 
                   href={`tel:${company.phone}`}
-                  className="flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
-                  style={{ borderColor: primaryColor, color: primaryColor }}
+                  className="flex items-center px-4 py-2 border border-primary text-primary rounded-md hover:bg-primary/10 transition-colors font-medium"
                 >
                   <Phone size={16} className="mr-2" />
                   {company.phone}
@@ -107,8 +103,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
               
               <button
                 onClick={handleChatClick}
-                className="flex items-center px-4 py-2 text-white rounded-md shadow-sm hover:shadow-md transition-all"
-                style={{ backgroundColor: primaryColor }}
+                className="flex items-center px-4 py-2 bg-primary text-white rounded-md shadow-sm hover:bg-primary/90 hover:shadow-md transition-all"
               >
                 <MessageCircle size={16} className="mr-2" />
                 Quick Chat
@@ -120,8 +115,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
               {company.phone && (
                 <a 
                   href={`tel:${company.phone}`}
-                  className="mr-2 p-2 rounded-full"
-                  style={{ color: primaryColor }}
+                  className="mr-2 p-2 rounded-full text-primary"
                   aria-label="Call us"
                 >
                   <Phone size={20} />
@@ -175,8 +169,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                     setMobileMenuOpen(false);
                     handleChatClick();
                   }}
-                  className="flex items-center justify-center w-full px-4 py-2 mt-2 text-white rounded-md"
-                  style={{ backgroundColor: primaryColor }}
+                  className="flex items-center justify-center w-full px-4 py-2 mt-2 text-white bg-primary rounded-md"
                 >
                   <MessageCircle size={16} className="mr-2" />
                   Quick Chat
@@ -191,8 +184,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
       {showChatPopup && (
         <div className="fixed bottom-4 right-4 z-50 w-80 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
           <div 
-            className="px-4 py-3 flex items-center justify-between"
-            style={{ backgroundColor: primaryColor }}
+            className="px-4 py-3 flex items-center justify-between bg-primary"
           >
             <h3 className="text-white font-medium flex items-center">
               <MessageCircle size={18} className="mr-2" />
@@ -246,8 +238,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
               <div className="flex gap-2 pt-1">
                 <button
                   type="submit"
-                  className="flex-1 py-2 px-4 text-white font-medium rounded-md"
-                  style={{ backgroundColor: primaryColor }}
+                  className="flex-1 py-2 px-4 text-white font-medium rounded-md bg-primary"
                 >
                   Send Message
                 </button>

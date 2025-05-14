@@ -278,7 +278,7 @@ export default function LeadsPage({
                       onClick={() => setCurrentPage(pageNum)}
                       className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                         currentPage === pageNum
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                          ? 'z-10 bg-primary/10 border-primary text-primary'
                           : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                       }`}
                     >

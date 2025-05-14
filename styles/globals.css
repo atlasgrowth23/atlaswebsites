@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --radius-card: 0.75rem;
+  --color-primary: #0066FF;
+  --color-accent : #F6AD55;
+  font-family: 'Inter', sans-serif;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -79,31 +89,6 @@
 
 /* Sales Dashboard Styling */
 
-/* Dashboard Container */
-.sales-dashboard {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 1.5rem;
-  background-color: #f8fafc;
-  min-height: 100vh;
-}
-
-/* Header Section */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 1rem;
-}
-
-.dashboard-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
 /* Pipeline Stats Cards */
 .pipeline-stats {
   display: grid;
@@ -112,55 +97,7 @@
   margin-bottom: 2rem;
 }
 
-.stat-card {
-  background-color: white;
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 5px;
-  height: 100%;
-  background-color: var(--stat-color, #6366F1);
-}
-
-.stat-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 0.5rem;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.stat-action {
-  font-size: 0.75rem;
-  color: #3b82f6;
-  margin-top: 0.5rem;
-  display: inline-block;
-  cursor: pointer;
-}
-
-.stat-action:hover {
-  text-decoration: underline;
-}
+/* Stat styles now using Tailwind utilities */
 
 /* Filter Section */
 .filters-section {

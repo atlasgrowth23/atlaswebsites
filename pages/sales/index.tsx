@@ -293,21 +293,21 @@ export default function SalesDashboard({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Link
             href="/sales/leads/new"
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90"
           >
             Add New Lead
           </Link>
           
           <Link
             href="/sales/appointments/schedule"
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90"
           >
             Schedule Appointment
           </Link>
           
           <Link
             href="/sales/templates"
-            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+            className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent hover:bg-accent/90"
           >
             Browse Templates
           </Link>
