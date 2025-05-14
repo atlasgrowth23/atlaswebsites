@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import DashboardLayout from '@/components/dashboard/Layout';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  MessageSquare, 
+  Users, 
+  Calendar, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle2,
+  ArrowRight
+} from 'lucide-react';
 
 // Dashboard main page that serves as a hub for the admin area
 export default function Dashboard() {
@@ -14,160 +26,212 @@ export default function Dashboard() {
         <title>HVAC Business Dashboard</title>
       </Head>
       
-      <div className="px-4 py-6 sm:px-0">
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Messages Card */}
-            <div 
-              className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
-              onClick={() => router.push('/dashboard/messages')}
-            >
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                    <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Messages
-                      </dt>
-                      <dd>
-                        <div className="text-lg font-medium text-gray-900">
-                          View customer messages
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* Quick Access Cards */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-8">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/messages')}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Messages</CardTitle>
+            <MessageSquare className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">12</div>
+            <p className="text-xs text-muted-foreground">3 unread messages</p>
+          </CardContent>
+          <CardFooter className="pt-0">
+            <Button variant="ghost" size="sm" className="gap-1 px-0 text-blue-600">
+              View all messages <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardFooter>
+        </Card>
 
-            {/* Contacts Card */}
-            <div 
-              className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
-              onClick={() => router.push('/dashboard/contacts')}
-            >
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
-                    <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Contacts & Equipment
-                      </dt>
-                      <dd>
-                        <div className="text-lg font-medium text-gray-900">
-                          Manage customer information
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/contacts')}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Contacts</CardTitle>
+            <Users className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">48</div>
+            <p className="text-xs text-muted-foreground">2 new customers this week</p>
+          </CardContent>
+          <CardFooter className="pt-0">
+            <Button variant="ghost" size="sm" className="gap-1 px-0 text-green-600">
+              Manage contacts <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardFooter>
+        </Card>
 
-            {/* Schedule Card */}
-            <div 
-              className="bg-white overflow-hidden shadow rounded-lg cursor-pointer hover:shadow-md transition-shadow border border-gray-200"
-              onClick={() => router.push('/dashboard/schedule')}
-            >
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 bg-purple-500 rounded-md p-3">
-                    <svg className="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        Schedule
-                      </dt>
-                      <dd>
-                        <div className="text-lg font-medium text-gray-900">
-                          Manage jobs and appointments
-                        </div>
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/schedule')}>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Schedule</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-muted-foreground">Upcoming jobs this week</p>
+          </CardContent>
+          <CardFooter className="pt-0">
+            <Button variant="ghost" size="sm" className="gap-1 px-0 text-purple-600">
+              View schedule <ArrowRight className="h-4 w-4" />
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
 
-          {/* Recent Activity Section */}
-          <div className="mt-8">
-            <h2 className="text-lg font-medium text-gray-900">Recent Activity</h2>
-            <div className="mt-4 bg-white shadow overflow-hidden sm:rounded-md border border-gray-200">
-              <ul className="divide-y divide-gray-200">
-                <li>
-                  <div className="px-4 py-4 sm:px-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Activity Section */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+              <CardDescription>Your latest customer interactions and jobs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="bg-blue-100 text-blue-700 p-2 rounded-full">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-blue-600 truncate">
-                        New message from John Smith
-                      </p>
-                      <div className="ml-2 flex-shrink-0 flex">
-                        <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          New
-                        </p>
-                      </div>
+                      <p className="text-sm font-semibold text-blue-700">New message from John Smith</p>
+                      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">New</Badge>
                     </div>
-                    <div className="mt-2 sm:flex sm:justify-between">
-                      <div className="sm:flex">
-                        <p className="flex items-center text-sm text-gray-500">
-                          AC not cooling properly
-                        </p>
-                      </div>
-                      <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                        <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
-                        <p>
-                          Just now
-                        </p>
-                      </div>
+                    <p className="text-sm text-gray-600">AC not cooling properly</p>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="mr-1 h-3 w-3" />
+                      Just now
                     </div>
                   </div>
-                </li>
-                <li>
-                  <div className="px-4 py-4 sm:px-6">
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="bg-purple-100 text-purple-700 p-2 rounded-full">
+                    <Calendar className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-blue-600 truncate">
-                        Job scheduled for Sarah Johnson
-                      </p>
-                      <div className="ml-2 flex-shrink-0 flex">
-                        <p className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                          Scheduled
-                        </p>
-                      </div>
+                      <p className="text-sm font-semibold text-purple-700">Job scheduled for Sarah Johnson</p>
+                      <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Scheduled</Badge>
                     </div>
-                    <div className="mt-2 sm:flex sm:justify-between">
-                      <div className="sm:flex">
-                        <p className="flex items-center text-sm text-gray-500">
-                          Furnace maintenance
-                        </p>
-                      </div>
-                      <div className="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                        <svg className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                        </svg>
-                        <p>
-                          Tomorrow at 2:00 PM
-                        </p>
-                      </div>
+                    <p className="text-sm text-gray-600">Furnace maintenance</p>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="mr-1 h-3 w-3" />
+                      Tomorrow at 2:00 PM
                     </div>
                   </div>
-                </li>
-              </ul>
-            </div>
-          </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="bg-yellow-100 text-yellow-700 p-2 rounded-full">
+                    <AlertCircle className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-yellow-700">Emergency call from David Wilson</p>
+                      <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Urgent</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600">Water leaking from ceiling</p>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="mr-1 h-3 w-3" />
+                      2 hours ago
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-start space-x-4">
+                  <div className="bg-green-100 text-green-700 p-2 rounded-full">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-green-700">Job completed for Michael Brown</p>
+                      <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600">Thermostat replacement</p>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="mr-1 h-3 w-3" />
+                      Yesterday
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button variant="outline" size="sm" className="ml-auto">
+                View all activity
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+        
+        {/* Quick Actions Card */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Common tasks and operations</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button className="w-full justify-start" size="lg">
+                <Users className="mr-2 h-5 w-5" />
+                Add New Contact
+              </Button>
+              <Button className="w-full justify-start" size="lg">
+                <Calendar className="mr-2 h-5 w-5" />
+                Schedule New Job
+              </Button>
+              <Button className="w-full justify-start" size="lg">
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Send Message
+              </Button>
+            </CardContent>
+          </Card>
+          
+          {/* Recent Customers Card */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Recent Customers</CardTitle>
+              <CardDescription>Newest customers added to your system</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800">
+                        {/* First letter of first name and last name */}
+                        JS
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">John Smith</p>
+                      <p className="text-xs text-gray-500">Added May 10, 2025</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-800">
+                        SJ
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Sarah Johnson</p>
+                      <p className="text-xs text-gray-500">Added May 8, 2025</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon">
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </DashboardLayout>

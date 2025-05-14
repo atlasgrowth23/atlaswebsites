@@ -1,6 +1,21 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar } from "@/components/ui/avatar";
+import { 
+  LayoutDashboard, 
+  MessageSquare, 
+  Users, 
+  Calendar, 
+  Bell, 
+  Menu, 
+  X,
+  ChevronDown
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,93 +24,144 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, title }: DashboardLayoutProps) {
   const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Determine which navigation item is active
+  // Navigation items
+  const navItems = [
+    { name: 'Overview', href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5 mr-2" /> },
+    { name: 'Messages', href: '/dashboard/messages', icon: <MessageSquare className="h-5 w-5 mr-2" /> },
+    { name: 'Contacts', href: '/dashboard/contacts', icon: <Users className="h-5 w-5 mr-2" /> },
+    { name: 'Schedule', href: '/dashboard/schedule', icon: <Calendar className="h-5 w-5 mr-2" /> },
+  ];
+  
+  // Determine if nav item is active
   const isActive = (path: string) => {
-    return router.pathname.startsWith(path) ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white';
+    return router.pathname === path || 
+      (path !== '/dashboard' && router.pathname.startsWith(path));
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-white font-bold text-xl">HVAC Dashboard</span>
-              </div>
-              <div className="hidden md:block">
-                <div className="ml-10 flex items-baseline space-x-4">
-                  <Link href="/dashboard" 
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard')} ${router.pathname === '/dashboard' ? 'bg-gray-900 text-white' : ''}`}>
-                    Overview
-                  </Link>
-                  <Link href="/dashboard/messages" 
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard/messages')}`}>
-                    Messages
-                  </Link>
-                  <Link href="/dashboard/contacts" 
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard/contacts')}`}>
-                    Contacts
-                  </Link>
-                  <Link href="/dashboard/schedule" 
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${isActive('/dashboard/schedule')}`}>
-                    Schedule
-                  </Link>
+              <Link href="/dashboard" className="flex items-center">
+                <div className="bg-blue-600 text-white p-2 rounded-md mr-2">
+                  <LayoutDashboard className="h-5 w-5" />
                 </div>
-              </div>
+                <span className="text-xl font-semibold text-gray-900">HVAC Dashboard</span>
+              </Link>
             </div>
-            <div className="hidden md:block">
-              <div className="ml-4 flex items-center md:ml-6">
-                <button className="bg-gray-800 p-1 rounded-full text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
-                  <span className="sr-only">View notifications</span>
-                  <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                </button>
-
-                {/* Profile dropdown */}
-                <div className="ml-3 relative">
-                  <div>
-                    <button className="max-w-xs bg-gray-800 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
-                      <span className="sr-only">Open user menu</span>
-                      <div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-white">
+            
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex space-x-1">
+              {navItems.map((item) => (
+                <Button
+                  key={item.name}
+                  variant={isActive(item.href) ? "default" : "ghost"}
+                  size="sm"
+                  className={cn(
+                    "h-9 gap-1",
+                    isActive(item.href) 
+                      ? "bg-gray-900 text-white" 
+                      : "text-gray-600 hover:text-gray-900"
+                  )}
+                  onClick={() => router.push(item.href)}
+                >
+                  {item.icon}
+                  {item.name}
+                </Button>
+              ))}
+            </nav>
+            
+            {/* User and Notifications */}
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" className="text-gray-500 relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
+                  3
+                </span>
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="p-1">
+                    <Avatar className="h-8 w-8 border border-gray-200">
+                      <div className="bg-gray-100 h-8 w-8 rounded-full flex items-center justify-center text-gray-600 font-medium">
                         A
                       </div>
-                    </button>
-                  </div>
-                </div>
+                    </Avatar>
+                    <ChevronDown className="ml-2 h-4 w-4 text-gray-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">Settings</DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer text-red-600">Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {/* Mobile menu button */}
+              <div className="md:hidden">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-gray-500"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  {mobileMenuOpen ? 
+                    <X className="h-6 w-6" /> : 
+                    <Menu className="h-6 w-6" />
+                  }
+                </Button>
               </div>
             </div>
-            <div className="-mr-2 flex md:hidden">
-              {/* Mobile menu button */}
-              <button className="bg-gray-800 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white">
-                <span className="sr-only">Open main menu</span>
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                <svg className="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
           </div>
-        </div>
-      </nav>
-
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {title || 'Dashboard'}
-          </h1>
+          
+          {/* Mobile Navigation Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-gray-200 py-2">
+              <nav className="flex flex-col space-y-1 px-2 pb-3 pt-2">
+                {navItems.map((item) => (
+                  <Button
+                    key={item.name}
+                    variant={isActive(item.href) ? "default" : "ghost"}
+                    className={cn(
+                      "justify-start",
+                      isActive(item.href) 
+                        ? "bg-gray-900 text-white" 
+                        : "text-gray-600 hover:text-gray-900"
+                    )}
+                    onClick={() => {
+                      router.push(item.href);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    {item.icon}
+                    {item.name}
+                  </Button>
+                ))}
+              </nav>
+            </div>
+          )}
         </div>
       </header>
       
-      <main>
-        <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          {children}
+      <div className="flex-1">
+        <div className="py-6 px-4 sm:px-6 lg:px-8">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {title || 'Dashboard'}
+            </h1>
+          </div>
+          
+          <div className="w-full">
+            {children}
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
