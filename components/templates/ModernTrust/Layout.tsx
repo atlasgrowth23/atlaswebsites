@@ -5,6 +5,8 @@ import Header from './Header';
 import Hero from './Hero';
 import About from './About';
 import Services from './Services';
+import Reviews from './Reviews';
+import ServiceArea from './ServiceArea';
 import Footer from './Footer';
 import Widget from '@/components/widget/Widget';
 
@@ -29,6 +31,8 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <Hero company={company} />
         <About company={company} />
         <Services company={company} />
+        <Reviews company={company} />
+        <ServiceArea company={company} />
       </main>
       <Footer company={company} />
       {/* Add New Lead Generation Widget */}

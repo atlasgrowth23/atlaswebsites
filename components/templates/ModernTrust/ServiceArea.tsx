@@ -1,6 +1,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Company } from '@/types';
 
+// Skip TypeScript checking for Google Maps
+// @ts-ignore
+declare global {
+  interface Window {
+    google: any;
+    initMap: () => void;
+  }
+}
+
 interface ServiceAreaProps {
   company: Company;
 }
@@ -17,7 +26,7 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
     // Function to initialize Google Maps
     const initMap = async () => {
       // Make sure the Google Maps JavaScript API is loaded
-      if (!window.google || !window.google.maps) {
+      if (typeof window !== 'undefined' && (!window.google || !window.google.maps)) {
         // Load Google Maps API
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
@@ -39,7 +48,7 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
     
     // Function to render the map once API is loaded
     const renderMap = () => {
-      if (!mapRef.current) return;
+      if (!mapRef.current || !window.google) return;
       
       const mapOptions = {
         center: { lat: company.latitude!, lng: company.longitude! },
@@ -55,18 +64,18 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
         ]
       };
       
-      const map = new google.maps.Map(mapRef.current, mapOptions);
+      const map = new window.google.maps.Map(mapRef.current, mapOptions);
       
       // Create marker for company location
-      const marker = new google.maps.Marker({
+      const marker = new window.google.maps.Marker({
         position: { lat: company.latitude!, lng: company.longitude! },
         map,
         title: company.name,
-        animation: google.maps.Animation.DROP,
+        animation: window.google.maps.Animation.DROP,
       });
       
       // Create a circle to show approximate service area (8 mile radius)
-      const serviceAreaCircle = new google.maps.Circle({
+      const serviceAreaCircle = new window.google.maps.Circle({
         strokeColor: '#0066FF',
         strokeOpacity: 0.8,
         strokeWeight: 2,
@@ -86,7 +95,7 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
         </div>
       `;
       
-      const infoWindow = new google.maps.InfoWindow({
+      const infoWindow = new window.google.maps.InfoWindow({
         content: infoContent,
       });
       

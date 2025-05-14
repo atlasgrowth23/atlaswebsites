@@ -41,6 +41,7 @@ const nextConfig = {
   // Environment variables made available to the browser
   env: {
     PRIMARY_DOMAIN: process.env.PRIMARY_DOMAIN || 'yourdomain.com',
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
   },
   
   // Allow deployment for cross-origin requests
