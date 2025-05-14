@@ -62,8 +62,12 @@ export default async function handler(
       }
     }
     
-    // If no company found for this domain, return to homepage
-    res.redirect(302, '/');
+    // If no company found for this domain, return 404 instead of redirecting to homepage
+    // This prevents redirect loops
+    res.status(404).json({
+      success: false,
+      message: 'No company found for this domain'
+    });
     return;
   } catch (error: any) {
     console.error('Error in domain handler:', error);
