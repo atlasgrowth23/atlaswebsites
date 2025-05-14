@@ -79,10 +79,10 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       [company.id]
     );
 
-    // Get default frames - use the frames table as we don't have a template_frames table
+    // Get default frames for this specific template
     const templateFramesResult = await query(
-      'SELECT slug as frame_key, default_url as image_url FROM frames',
-      []
+      'SELECT slug as frame_key, default_url as image_url FROM frames WHERE template_key = $1',
+      [template_key]
     );
 
     // Convert to objects for easier lookup
