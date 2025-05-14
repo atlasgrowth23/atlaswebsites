@@ -91,6 +91,11 @@ export default function SalesDashboard({
     return new Date(dateString).toLocaleDateString();
   };
 
+  // Get template URL
+  const getTemplateUrl = (company: string) => {
+    return `/t/moderntrust/${company.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+  };
+
   // Track call activity
   const trackCall = async (leadId: number) => {
     try {
@@ -123,23 +128,17 @@ export default function SalesDashboard({
   return (
     <div className="container mx-auto px-4 py-8">
       <Head>
-        <title>Sales Dashboard</title>
+        <title>Sales Pipeline</title>
       </Head>
 
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Sales Dashboard</h1>
+        <h1 className="text-3xl font-bold">HVAC Sales Pipeline</h1>
         <div className="flex space-x-4">
           <Link 
-            href="/sales/calendar" 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            href="/"
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
           >
-            Calendar
-          </Link>
-          <Link 
-            href="/sales/activity" 
-            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
-          >
-            Activity Log
+            Main Site
           </Link>
         </div>
       </div>
@@ -211,16 +210,17 @@ export default function SalesDashboard({
 
       {/* Leads Table */}
       <div className="bg-white shadow overflow-hidden rounded-lg">
-        <div className="px-4 py-5 sm:px-6 flex justify-between">
+        <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900">
-            Leads ({filteredLeads.length})
+            HVAC Businesses ({filteredLeads.length})
           </h2>
-          <Link 
-            href="/sales/leads/new"
-            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-          >
-            Add Lead
-          </Link>
+          <div>
+            {currentUser.is_admin && (
+              <span className="bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded">
+                Admin View
+              </span>
+            )}
+          </div>
         </div>
         <div className="border-t border-gray-200">
           <div className="overflow-x-auto">
@@ -243,12 +243,12 @@ export default function SalesDashboard({
                     Last Contact
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Follow Up
+                    Next Follow-up
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Assigned To
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -263,7 +263,7 @@ export default function SalesDashboard({
                         </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {lead.city}, {lead.state}
+                        {lead.city || 'N/A'}, {lead.state || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span 
@@ -285,9 +285,13 @@ export default function SalesDashboard({
                             </span>
                           )
                         ) : (
-                          <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
-                            Not Shared
-                          </span>
+                          <Link 
+                            href={getTemplateUrl(lead.company_name)} 
+                            target="_blank"
+                            className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 hover:bg-blue-200"
+                          >
+                            Preview
+                          </Link>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -312,16 +316,17 @@ export default function SalesDashboard({
                         {lead.assigned_to_name || 'Unassigned'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-2 justify-end">
+                          <Link 
+                            href={`tel:${lead.phone}`} 
+                            className="text-green-600 hover:text-green-900"
+                            onClick={() => trackCall(lead.id)}
+                          >
+                            Call
+                          </Link>
                           <Link href={`/sales/leads/${lead.id}`} className="text-blue-600 hover:text-blue-900">
                             View
                           </Link>
-                          <button 
-                            onClick={() => trackCall(lead.id)}
-                            className="text-green-600 hover:text-green-900"
-                          >
-                            Call
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -344,25 +349,46 @@ export default function SalesDashboard({
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
-    // For now, we'll assume admin access - would need authentication logic in real app
+    // Check if request is from Jared or Admin based on query params
+    // In a real app, this would be based on authentication
+    const { user } = context.query;
+    const isJared = user === 'jared';
+    
     const currentUser = {
-      id: 1,
-      name: 'Admin User',
-      email: 'admin@example.com',
-      territory: 'All States',
-      is_admin: true
+      id: isJared ? 2 : 1,
+      name: isJared ? 'Jared' : 'Admin User',
+      email: isJared ? 'jared@example.com' : 'admin@example.com',
+      territory: isJared ? 'Arkansas' : 'All States',
+      is_admin: !isJared
     };
     
-    // Get pipeline stages
-    const stagesResult = await query('SELECT * FROM pipeline_stages ORDER BY order_num');
+    // Get pipeline stages (only the fields we need)
+    const stagesResult = await query(`
+      SELECT 
+        id, 
+        name, 
+        order_num, 
+        color
+      FROM pipeline_stages 
+      ORDER BY order_num
+    `);
     const pipelineStages = stagesResult.rows;
     
-    // Get sales users
-    const usersResult = await query('SELECT * FROM sales_users ORDER BY name');
+    // Get sales users (only the fields we need)
+    const usersResult = await query(`
+      SELECT 
+        id, 
+        name, 
+        email, 
+        territory, 
+        is_admin
+      FROM sales_users 
+      ORDER BY name
+    `);
     const salesUsers = usersResult.rows;
     
-    // Get leads with company and stage information
-    const leadsQuery = `
+    // Build query based on territory
+    let leadsQuery = `
       SELECT 
         sl.id, 
         sl.company_id,
@@ -377,24 +403,41 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         ps.color as stage_color,
         sl.template_shared,
         sl.template_viewed,
-        sl.last_contact_date,
-        sl.next_follow_up
+        CASE 
+          WHEN sl.last_contact_date IS NOT NULL 
+          THEN TO_CHAR(sl.last_contact_date, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') 
+          ELSE NULL 
+        END as last_contact_date,
+        CASE 
+          WHEN sl.next_follow_up IS NOT NULL 
+          THEN TO_CHAR(sl.next_follow_up, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') 
+          ELSE NULL 
+        END as next_follow_up
       FROM sales_leads sl
       JOIN companies c ON sl.company_id = c.id
       LEFT JOIN pipeline_stages ps ON sl.stage_id = ps.id
       LEFT JOIN sales_users su ON sl.assigned_to = su.id
+    `;
+    
+    // Add territory filter for Jared
+    if (isJared) {
+      leadsQuery += ` WHERE c.state = 'Arkansas'`;
+    }
+    
+    // Add sorting
+    leadsQuery += `
       ORDER BY 
         CASE WHEN sl.next_follow_up < NOW() THEN 0 ELSE 1 END,
         sl.next_follow_up ASC NULLS LAST,
-        sl.updated_at DESC
+        c.name ASC
       LIMIT 100
     `;
     
     const leadsResult = await query(leadsQuery);
     const leads = leadsResult.rows;
     
-    // Get pipeline stats
-    const statsQuery = `
+    // Get pipeline stats (filtered by territory for Jared)
+    let statsQuery = `
       SELECT 
         ps.id as stage_id,
         ps.name as stage_name,
@@ -402,6 +445,16 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         COUNT(sl.id) as count
       FROM pipeline_stages ps
       LEFT JOIN sales_leads sl ON ps.id = sl.stage_id
+    `;
+    
+    if (isJared) {
+      statsQuery += `
+        LEFT JOIN companies c ON sl.company_id = c.id
+        WHERE c.state = 'Arkansas' OR c.state IS NULL
+      `;
+    }
+    
+    statsQuery += `
       GROUP BY ps.id, ps.name, ps.color
       ORDER BY ps.order_num
     `;
@@ -426,7 +479,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         salesUsers: [],
         leads: [],
         pipelineStats: [],
-        currentUser: null,
+        currentUser: {
+          id: 1,
+          name: 'Admin User',
+          email: 'admin@example.com',
+          territory: 'All States',
+          is_admin: true
+        },
         error: 'Failed to load dashboard data'
       }
     };
