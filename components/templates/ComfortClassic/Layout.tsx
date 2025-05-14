@@ -6,16 +6,12 @@ import Hero from './Hero';
 import About from './About';
 import Services from './Services';
 import Footer from './Footer';
-import Widget from '@/components/widget/Widget';
 
 interface LayoutProps {
   company: Company;
 }
 
 const Layout: React.FC<LayoutProps> = ({ company }) => {
-  // Define ComfortClassic color scheme
-  const primaryColor = "#004DFF";
-  const accentColor = "#FFB347";
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -31,12 +27,6 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <Services company={company} />
       </main>
       <Footer company={company} />
-      {/* Add New Lead Generation Widget */}
-      <Widget 
-        companySlug={company?.slug || ''} 
-        primaryColor={primaryColor}
-        accentColor={accentColor}
-      />
     </div>
   );
 };
