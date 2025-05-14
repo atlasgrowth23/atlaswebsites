@@ -202,14 +202,7 @@ export default function SalesDashboard({
                       <p className="text-sm text-gray-600 mt-1">{appointment.title}</p>
                     </div>
                     <div className="text-sm text-gray-500">
-                      {new Date(appointment.appointment_date).toLocaleString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        timeZoneName: 'short'
-                      })}
+                      {'Scheduled: ' + appointment.appointment_date.substring(0, 10)}
                     </div>
                   </div>
                 </div>
@@ -479,7 +472,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           LIMIT 5
         `);
         
-        // Convert date strings to ISO strings to make them serializable
+        // Ensure dates are properly serialized for Next.js props
         upcomingAppointments = appointmentsResult.rows.map(appointment => ({
           ...appointment,
           appointment_date: new Date(appointment.appointment_date).toISOString()

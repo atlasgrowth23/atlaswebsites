@@ -1,0 +1,54 @@
+Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <MyApp pageProps={{...}} __N_SSP={true} Component={function SalesDashboard} err={undefined} ...>
+      <SalesDashboard pipelineStages={[...]} salesUsers={[...]} leads={[...]} pipelineStats={[...]} ...>
+        <SalesLayout currentUser={{id:1,name:"Adm...", ...}}>
+          <div className="min-h-scre...">
+            <nav>
+            <div>
+            <main className="max-w-7xl ...">
+              <Head>
+              <div>
+              <div>
+              <div>
+              <div className="mb-8">
+                <div>
+                <div className="bg-white r...">
+                  <div className="divide-y d...">
+                    <div className="p-4 hover:...">
+                      <div className="flex justi...">
+                        <div>
+                        <div className="text-sm text-gray-500">
++                         May 15, 2025, 5:00 AM CDT
+-                         May 15, 2025, 10:00 AM UTC
+                    ...
+              ...
+    ...
+
+    at throwOnHydrationMismatch (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:4431:11)
+    at prepareToHydrateHostInstance (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:4527:21)
+    at completeWork (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:11297:15)
+    at runWithFiberInDEV (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:1520:30)
+    at completeUnitOfWork (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:15269:19)
+    at performUnitOfWork (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:15150:11)
+    at workLoopSync (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:14957:41)
+    at renderRootSync (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:14937:11)
+    at performWorkOnRoot (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:14420:13)
+    at performWorkOnRootViaSchedulerTask (webpack-internal:///(pages-dir-browser)/./node_modules/react-dom/cjs/react-dom-client.development.js:16217:7)
+    at MessagePort.performWorkUntilDeadline (webpack-internal:///(pages-dir-browser)/./node_modules/scheduler/cjs/scheduler.development.js:45:48)
+    at div (<anonymous>)
+    at eval (webpack-internal:///(pages-dir-browser)/./pages/sales/index.tsx:308:120)
+    at Array.map (<anonymous>)
+    at SalesDashboard (webpack-internal:///(pages-dir-browser)/./pages/sales/index.tsx:278:60)
+    at MyApp (webpack-internal:///(pages-dir-browser)/./pages/_app.tsx:13:87)
