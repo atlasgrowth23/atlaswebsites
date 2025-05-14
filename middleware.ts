@@ -16,8 +16,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // For portal access, always pass through
-  if (pathname.startsWith('/hvacportal') || pathname.startsWith('/api/')) {
+  // For portal access and sales dashboard, always pass through
+  if (pathname.startsWith('/hvacportal') || 
+      pathname.startsWith('/api/') || 
+      pathname.startsWith('/sales')) {
     return NextResponse.next();
   }
   

@@ -37,7 +37,8 @@ export default async function handler(
       const templateKey = company.site || 'moderntrust';
       
       // Rewrite the request to the template path
-      return res.redirect(302, `/t/${templateKey}/${company.slug}${requestPath === '/' ? '' : requestPath}`);
+      res.redirect(302, `/t/${templateKey}/${company.slug}${requestPath === '/' ? '' : requestPath}`);
+      return;
     }
     
     // Check if it might be a subdomain
@@ -56,12 +57,14 @@ export default async function handler(
         const templateKey = company.site || 'moderntrust';
         
         // Rewrite the request to the template path
-        return res.redirect(302, `/t/${templateKey}/${company.slug}${requestPath === '/' ? '' : requestPath}`);
+        res.redirect(302, `/t/${templateKey}/${company.slug}${requestPath === '/' ? '' : requestPath}`);
+        return;
       }
     }
     
     // If no company found for this domain, return to homepage
-    return res.redirect(302, '/');
+    res.redirect(302, '/');
+    return;
   } catch (error: any) {
     console.error('Error in domain handler:', error);
     
