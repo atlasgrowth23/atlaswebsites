@@ -10,7 +10,7 @@ import {
   Clock,
   MapPin,
   User,
-  Tool,
+  Wrench,
   Filter,
   Plus,
   ChevronLeft,
@@ -178,8 +178,10 @@ export default function Schedule() {
     });
   };
   
-  // Get all unique tech names from jobs
-  const techNames = [...new Set(jobs.map(job => job.tech_name))];
+  // Get all unique tech names from jobs without using Set
+  const techNames = jobs
+    .map(job => job.tech_name)
+    .filter((name, index, array) => array.indexOf(name) === index);
   
   // Get all jobs for current selected day
   const selectedDayJobs = weekDates[selectedDay] ? 
