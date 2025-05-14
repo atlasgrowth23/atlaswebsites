@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { Company } from '@/types';
 import { getPhotoUrl } from '@/lib/photo';
@@ -12,76 +11,142 @@ const About: React.FC<AboutProps> = ({ company }) => {
   // Get about image URL using the photo helper
   const aboutImage = getPhotoUrl(company, 'about_img', 'moderntrust');
   
+  // Refs for animated elements
+  const sectionRef = useRef<HTMLElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const featureRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)];
+  
+  // Scroll animation
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate-fade-in');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    
+    // Observe elements
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    if (imageRef.current) observer.observe(imageRef.current);
+    if (contentRef.current) observer.observe(contentRef.current);
+    featureRefs.forEach(ref => {
+      if (ref.current) observer.observe(ref.current);
+    });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+  
   return (
-    <div className="py-20 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            About {company.name}
-          </h2>
-          <div className="w-16 h-1 bg-blue-600 mx-auto"></div>
-        </div>
+    <section 
+      id="about" 
+      ref={sectionRef}
+      className="py-20 bg-white opacity-0 transition-opacity duration-1000"
+    >
+      <div className="container mx-auto px-6">
+        {/* Company-specific heading */}
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
+          <span className="text-blue-600">About</span> <span className="text-gray-900">{company.name}</span>
+        </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-          <div className="relative h-64 md:h-full md:aspect-square">
-            <Image 
-              src={aboutImage || '/stock/moderntrust/about_img.svg'} 
-              alt={`About ${company.name}`}
-              fill
-              className="object-cover rounded-lg shadow-lg"
-            />
+        {/* Main content - clean two column layout */}
+        <div className="flex flex-col md:flex-row md:items-center md:space-x-10">
+          
+          {/* Left column - Image with animation */}
+          <div 
+            ref={imageRef}
+            className="md:w-1/2 mb-10 md:mb-0 opacity-0 translate-x-[-20px] transition-all duration-1000 delay-300"
+          >
+            <div className="relative rounded-lg overflow-hidden aspect-[4/3] shadow-lg">
+              <Image 
+                src={aboutImage || '/stock/moderntrust/about_img.svg'} 
+                alt={`${company.name} services`}
+                fill
+                className="object-cover"
+              />
+            </div>
           </div>
           
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              Our Commitment to Quality
-            </h3>
-            <p className="text-gray-700 mb-6">
-              At {company.name}, we're dedicated to providing superior HVAC solutions tailored to meet your specific needs. 
-              We pride ourselves on delivering high-quality service and creating comfortable environments for our customers.
+          {/* Right column - Text content with animations */}
+          <div 
+            ref={contentRef}
+            className="md:w-1/2 opacity-0 translate-x-[20px] transition-all duration-1000 delay-300"
+          >
+            <p className="text-lg text-gray-700 mb-8">
+              We provide quality heating and cooling services to keep your home comfortable all year round. Our experienced team is dedicated to delivering reliable solutions tailored to your needs.
             </p>
             
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-blue-100 rounded-full p-2 mr-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+            {/* Three simple feature blocks with staggered animations */}
+            <div className="space-y-8">
+              <div 
+                ref={featureRefs[0]}
+                className="flex items-start opacity-0 translate-y-[10px] transition-all duration-700 delay-500"
+              >
+                <div className="flex-shrink-0 mr-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center transform transition-transform hover:scale-110">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900">Certified Technicians</h4>
-                  <p className="text-gray-700">Our team of certified technicians ensures quality service every time.</p>
+                  <h3 className="text-xl font-semibold mb-2">Rapid Response</h3>
+                  <p className="text-gray-600">Quick service when you need it most, with same-day appointments available for urgent needs.</p>
                 </div>
               </div>
               
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-blue-100 rounded-full p-2 mr-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+              <div 
+                ref={featureRefs[1]}
+                className="flex items-start opacity-0 translate-y-[10px] transition-all duration-700 delay-700"
+              >
+                <div className="flex-shrink-0 mr-4">
+                  <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center transform transition-transform hover:scale-110">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900">Energy-Efficient Solutions</h4>
-                  <p className="text-gray-700">We use only top-quality, energy-efficient equipment for all installations.</p>
+                  <h3 className="text-xl font-semibold mb-2">Certified Experts</h3>
+                  <p className="text-gray-600">Professional technicians with the training and expertise to solve any HVAC challenge.</p>
                 </div>
               </div>
               
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-blue-100 rounded-full p-2 mr-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+              <div 
+                ref={featureRefs[2]}
+                className="flex items-start opacity-0 translate-y-[10px] transition-all duration-700 delay-900"
+              >
+                <div className="flex-shrink-0 mr-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center transform transition-transform hover:scale-110">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
                 </div>
                 <div>
-                  <h4 className="text-lg font-semibold text-gray-900">Customer Satisfaction</h4>
-                  <p className="text-gray-700">Your comfort is our priority. We're not satisfied until you are.</p>
+                  <h3 className="text-xl font-semibold mb-2">Honest Pricing</h3>
+                  <p className="text-gray-600">Clear, upfront quotes with no surprises or hidden charges when the work is done.</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      
+      {/* Add CSS for animations */}
+      <style jsx global>{`
+        .animate-fade-in {
+          opacity: 1 !important;
+          transform: translate(0, 0) !important;
+        }
+      `}</style>
+    </section>
   );
 };
 
