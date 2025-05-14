@@ -22,14 +22,15 @@ const APIFY_ENDPOINT = `https://api.apify.com/v2/acts/compass~google-maps-review
 // Configuration
 const CONFIG = {
   batchSize: 10,            // Number of companies to process in each batch
-  maxReviewsPerCompany: 0,  // Set to 0 for unlimited reviews
+  maxReviewsPerCompany: 300, // Max reviews per company, matching our filter criteria (5-300)
   delayBetweenBatches: 5000, // Delay between batches in ms
   exportCsv: true,          // Export reviews to CSV
   consolidatedCsv: true,    // Use a single CSV file instead of individual files
   logLevel: 'verbose',      // 'verbose' or 'normal'
   limit: 0,                 // Maximum number of companies to process (0 = no limit)
-  stateFilter: 'Alabama',   // Optional state filter (e.g., 'Alabama')
-  skipExisting: true        // Skip companies that already have reviews
+  stateFilter: null,        // Optional state filter (e.g., 'Alabama') - set to null to process all states
+  skipExisting: true,       // Skip companies that already have reviews
+  minReviews: 5             // Minimum reviews matching our filter criteria
 };
 
 /**
@@ -43,20 +44,73 @@ function log(message, level = 'normal') {
 }
 
 /**
- * Get companies with place_ids
+ * Get companies with place_ids from our filtered list
  */
 async function getCompaniesWithPlaceIds() {
+  // Create the filtered_companies table if it doesn't exist yet
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS filtered_companies (
+        company_id TEXT PRIMARY KEY,
+        place_id TEXT,
+        added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+  } catch (err) {
+    console.error('Error creating filtered_companies table:', err.message);
+  }
+  
+  // Try to populate filtered_companies table if it's empty
+  try {
+    const countResult = await pool.query('SELECT COUNT(*) FROM filtered_companies');
+    if (parseInt(countResult.rows[0].count) === 0) {
+      console.log('Filtered companies table is empty. Loading from combined CSV file...');
+      
+      // Check if the combined file exists
+      const fs = require('fs');
+      const path = require('path');
+      const combinedFile = path.join(process.cwd(), 'combined_filtered_hvac.csv');
+      
+      if (fs.existsSync(combinedFile)) {
+        // Parse the combined file
+        const { parse } = require('csv-parse/sync');
+        const combinedContent = fs.readFileSync(combinedFile, 'utf8');
+        const records = parse(combinedContent, { columns: true, skip_empty_lines: true });
+        
+        console.log(`Found ${records.length} companies in combined file. Adding to filtered_companies table...`);
+        
+        // Add records to filtered_companies table
+        for (const record of records) {
+          if (record.id && record.place_id) {
+            await pool.query(
+              'INSERT INTO filtered_companies (company_id, place_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+              [record.id, record.place_id]
+            );
+          }
+        }
+        
+        console.log('Added companies to filtered_companies table');
+      } else {
+        console.log(`Combined file not found: ${combinedFile}`);
+      }
+    }
+  } catch (err) {
+    console.error('Error populating filtered_companies table:', err.message);
+  }
+  
+  // Get only companies that are in our filtered list
   let query = `
-    SELECT id, name, place_id, state, city
-    FROM companies
-    WHERE place_id IS NOT NULL AND place_id != ''
+    SELECT c.id, c.name, c.place_id, c.state, c.city
+    FROM companies c
+    JOIN filtered_companies fc ON c.id = fc.company_id
+    WHERE c.place_id IS NOT NULL AND c.place_id != ''
   `;
   
   const params = [];
   
   // Add state filter if specified
   if (CONFIG.stateFilter) {
-    query += ' AND state = $1';
+    query += ' AND c.state = $1';
     params.push(CONFIG.stateFilter);
   }
   
@@ -67,6 +121,7 @@ async function getCompaniesWithPlaceIds() {
   }
   
   const result = await pool.query(query, params);
+  console.log(`Found ${result.rows.length} companies from our filtered list with place_ids`);
   return result.rows;
 }
 
