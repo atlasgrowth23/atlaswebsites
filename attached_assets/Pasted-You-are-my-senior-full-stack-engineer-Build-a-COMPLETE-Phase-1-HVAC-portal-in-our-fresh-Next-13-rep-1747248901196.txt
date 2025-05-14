@@ -1,0 +1,63 @@
+You are my senior full‑stack engineer. Build a COMPLETE Phase‑1 HVAC portal in our fresh Next 13 repo using the DB schema that now includes companies, company_users, company_contacts, company_messages, company_jobs, company_equipment, frames, and company_frames.
+
+● 0.  ONBOARDING WIZARD (runs on first login only)
+    –  Step 1  Brand colour picker → stores brand_color & accent_color in companies.
+    –  Step 2  “How many field techs?”  (Just me · 2‑5 · 6+) → sets multi_tech boolean & pre‑creates empty tech rows in company_users.
+    –  Step 3  “Where is your schedule today?”  (Google, Outlook, Paper/Other) → stores companies.settings.schedule_origin.
+    Wizard writes a flag to localStorage so it never shows again.
+
+● 1.  SIDEBAR LAYOUT (`src/app/[company]/portal/layout.tsx`)
+    –  Tabs: Messages • Contacts • Schedule • Settings.
+    –  Brand tint: use CSS vars --color-primary & --color-accent pulled from companies.
+    –  Dark‑mode auto if OS prefers‑color‑scheme: dark.
+
+● 2.  MESSAGES PAGE
+    –  Live feed from company_messages via React Query + WebSocket.
+    –  Button “Convert to Contact & Job” creates company_contacts + company_jobs(status=NEW, service_type or 'custom') then jumps to Schedule tab.
+
+● 3.  CONTACTS PAGE
+    –  List company_contacts; clicking opens side‑drawer with equipment list and last 3 jobs.
+    –  Inline “+ Equipment” drawer (brand & model fields only) inserts into company_equipment.
+
+● 4.  SCHEDULE PAGE
+    –  Drag‑and‑drop calendar:
+          • If multi_tech=false → single column titled “My Schedule”.
+          • If multi_tech=true  → one column per tech (initials avatar).
+    –  Color logic:
+          • brand‑tint background for normal jobs.
+          • red #E53E3E for priority='emergency'.
+          • amber #F6AD55 while status='PROGRESS'.
+          • green #48BB78 & 50 % opacity after status='DONE' for 24 h.
+    –  Outbound ICS link per tech: `/ics/{tech_uuid}.ics?token=jwt`.
+
+● 5.  SETTINGS PAGE
+    –  Sections: Business Profile (logo upload), Team (invite/remove users if multi_tech), Notifications (email on new lead), Widget Buttons (editable array stored in companies.settings.buttons), hidden Twilio / QuickBooks stubs.
+
+● 6.  UNIVERSAL CHAT WIDGET (`src/components/widget/Widget.tsx`)
+    –  Bubble bottom‑right uses brand‑primary background.
+    –  Panel Step 1: 4 buttons rendered from companies.settings.buttons plus free‑text input.
+    –  Panel Step 2: mini‑form (name*, phone*, email?, street?).
+    –  Submit → POST /api/lead → upsert contact, insert message (direction='in'), create job(status=NEW, service_type or 'custom').
+    –  Closes panel, shows toast “Thanks {Name}, we’ll confirm soon”.
+
+● 7.  API ROUTES
+    –  `/api/lead` (described above).
+    –  `/api/auth/demo`  returns 30‑day JWT for companies.plan='prospect'.
+    –  `/api/ws`  WebSocket endpoint broadcasting new messages/jobs to the portal.
+
+● 8.  IMAGE HANDLING
+    –  Add `lib/getFrame.ts` helper: select company_frames.url OR frames.default_url.
+    –  Replace hero & about images in Modern‑Trust and Comfort‑Classic templates with `<Image src={getFrame(company,'hero-bg')} …/>`.
+
+● 9.  SEEDING
+    –  For every row in companies, insert one owner into company_users and random techs if multi_tech=true.
+    –  Insert default frames for hero-bg, about-photo-1, service-card-1.
+
+● 10.  POLISH
+    –  Use shadcn Card, Tabs, Dialog, Toast for all UI.
+    –  Add Framer‑Motion fade‑in when a tab mounts.
+    –  Lighthouse score ≥ 90 on desktop.
+
+Commit all work on branch **phase1-complete** with message “feat: full Phase‑1 HVAC portal (wizard, widget, messages, contacts, schedule, settings)” and push.  When `npm run build` passes and `/atlas-hvac/portal/demo` works end‑to‑end, reply ONLY:
+
+PHASE‑1 PORTAL COMPLETE
