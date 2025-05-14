@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "directories": {
+    "doc": "docs",
     "lib": "lib"
   },
   "scripts": {
@@ -15,7 +16,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "A comprehensive platform for HVAC contractors to manage their business website, customer contacts, and messaging.",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
     "@neondatabase/serverless": "^1.0.0",
@@ -33,13 +34,16 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "csv-parse": "^5.6.0",
+    "csv-parser": "^3.2.0",
     "csv-stringify": "^6.5.2",
+    "csv-writer": "^1.6.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "eslint-config-prettier": "^10.1.2",
     "lucide-react": "^0.507.0",
     "next": "^15.3.1",
     "node-fetch": "^3.3.2",
+    "p-limit": "^6.2.0",
     "pdfkit": "^0.17.1",
     "pg": "^8.15.6",
     "postcss": "^8.4.23",
