@@ -18,93 +18,154 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
-    // Skip if no coordinates are available
-    if (!company?.latitude || !company?.longitude) {
+    // Skip if no coordinates are available or if we're not in the browser
+    if (typeof window === 'undefined') return;
+    
+    // Ensure we have valid coordinates
+    const latitude = parseFloat(String(company?.latitude));
+    const longitude = parseFloat(String(company?.longitude));
+    
+    if (isNaN(latitude) || isNaN(longitude)) {
+      console.log('Invalid coordinates:', company?.latitude, company?.longitude);
       return;
     }
     
-    // Function to initialize Google Maps
-    const initMap = async () => {
-      // Make sure the Google Maps JavaScript API is loaded
-      if (typeof window !== 'undefined' && (!window.google || !window.google.maps)) {
-        // Load Google Maps API
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        document.head.appendChild(script);
-        
-        return new Promise<void>((resolve) => {
-          script.onload = () => {
-            renderMap();
-            resolve();
-          };
-        });
-      } else {
-        renderMap();
-        return Promise.resolve();
-      }
+    // Use a simple static map as a fallback option (doesn't require JavaScript)
+    const createStaticMap = () => {
+      if (!mapRef.current) return;
+      
+      const width = mapRef.current.clientWidth;
+      const height = mapRef.current.clientHeight;
+      
+      // Create an image element with a static map
+      const img = document.createElement('img');
+      img.src = `https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=12&size=${width}x${height}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&markers=color:red|${latitude},${longitude}`;
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.alt = `Map showing ${company?.name} location`;
+      
+      // Clear the loading message and append the image
+      mapRef.current.innerHTML = '';
+      mapRef.current.appendChild(img);
     };
     
-    // Function to render the map once API is loaded
-    const renderMap = () => {
-      if (!mapRef.current || !window.google) return;
-      
-      const mapOptions = {
-        center: { lat: company.latitude!, lng: company.longitude! },
-        zoom: 11,
-        mapTypeControl: false,
-        streetViewControl: false,
-        styles: [
-          {
-            featureType: 'poi',
-            elementType: 'labels',
-            stylers: [{ visibility: 'off' }]
+    // Function to initialize Google Maps - using best practices with loading=async
+    const initMap = () => {
+      // Create a global callback that will run when the Google Maps script loads
+      window.initMap = () => {
+        if (!mapRef.current || !window.google || !window.google.maps) return;
+        
+        try {
+          const mapOptions = {
+            center: { lat: latitude, lng: longitude },
+            zoom: 11,
+            mapTypeControl: false,
+            streetViewControl: false,
+            styles: [
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }]
+              }
+            ]
+          };
+          
+          const map = new window.google.maps.Map(mapRef.current, mapOptions);
+          
+          // Use AdvancedMarkerElement if available, fall back to Marker if not
+          let marker;
+          if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
+            // Create a simple HTML content for the marker
+            const markerContent = document.createElement('div');
+            markerContent.innerHTML = `
+              <div style="background-color: #0066FF; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3)"></div>
+            `;
+            
+            marker = new window.google.maps.marker.AdvancedMarkerElement({
+              map,
+              position: { lat: latitude, lng: longitude },
+              title: company?.name,
+              content: markerContent
+            });
+          } else {
+            // Fall back to regular Marker
+            marker = new window.google.maps.Marker({
+              position: { lat: latitude, lng: longitude },
+              map,
+              title: company?.name,
+              animation: window.google.maps.Animation.DROP,
+            });
           }
-        ]
+          
+          // Create a circle to show approximate service area (8 mile radius)
+          const serviceAreaCircle = new window.google.maps.Circle({
+            strokeColor: '#0066FF',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#0066FF',
+            fillOpacity: 0.1,
+            map,
+            center: { lat: latitude, lng: longitude },
+            radius: 12000, // 8 miles in meters (12.8 km)
+          });
+          
+          // Add info window for the marker
+          const infoContent = `
+            <div style="padding: 8px; max-width: 200px;">
+              <h3 style="margin: 0 0 8px; font-weight: bold;">${company?.name}</h3>
+              <p style="margin: 0 0 5px;">${company?.city}, ${company?.state || ''}</p>
+              ${company?.phone ? `<p style="margin: 0;"><a href="tel:${company?.phone}" style="color: #0066FF; text-decoration: none;">${company?.phone}</a></p>` : ''}
+            </div>
+          `;
+          
+          const infoWindow = new window.google.maps.InfoWindow({
+            content: infoContent,
+          });
+          
+          // Use the appropriate listener based on marker type
+          if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
+            marker.addListener('click', () => {
+              infoWindow.open(map, marker);
+            });
+          } else if (marker.addListener) {
+            marker.addListener('click', () => {
+              infoWindow.open(map, marker);
+            });
+          }
+          
+          // Initially open the info window
+          infoWindow.open(map, marker);
+        } catch (error) {
+          console.error('Error rendering map:', error);
+          // Fall back to static map if dynamic map fails
+          createStaticMap();
+        }
       };
       
-      const map = new window.google.maps.Map(mapRef.current, mapOptions);
+      // Check if the API is already loaded
+      if (window.google && window.google.maps) {
+        window.initMap();
+        return;
+      }
       
-      // Create marker for company location
-      const marker = new window.google.maps.Marker({
-        position: { lat: company.latitude!, lng: company.longitude! },
-        map,
-        title: company.name,
-        animation: window.google.maps.Animation.DROP,
-      });
+      // Load the Google Maps API with the async attribute and callback
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
       
-      // Create a circle to show approximate service area (8 mile radius)
-      const serviceAreaCircle = new window.google.maps.Circle({
-        strokeColor: '#0066FF',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
-        fillColor: '#0066FF',
-        fillOpacity: 0.1,
-        map,
-        center: { lat: company.latitude!, lng: company.longitude! },
-        radius: 12000, // 8 miles in meters (12.8 km)
-      });
+      // Set a timeout to fall back to static map if the dynamic map doesn't load
+      const timeout = setTimeout(() => {
+        if (!window.google || !window.google.maps) {
+          console.warn('Google Maps API failed to load, falling back to static map');
+          createStaticMap();
+        }
+      }, 5000);
       
-      // Add info window for the marker
-      const infoContent = `
-        <div style="padding: 8px; max-width: 200px;">
-          <h3 style="margin: 0 0 8px; font-weight: bold;">${company.name}</h3>
-          <p style="margin: 0 0 5px;">${company.city}, ${company.state || ''}</p>
-          ${company.phone ? `<p style="margin: 0;"><a href="tel:${company.phone}" style="color: #0066FF; text-decoration: none;">${company.phone}</a></p>` : ''}
-        </div>
-      `;
-      
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: infoContent,
-      });
-      
-      marker.addListener('click', () => {
-        infoWindow.open(map, marker);
-      });
-      
-      // Initially open the info window
-      infoWindow.open(map, marker);
+      // Clean up timeout
+      return () => clearTimeout(timeout);
     };
     
     initMap();
