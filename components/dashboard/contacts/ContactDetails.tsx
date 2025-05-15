@@ -1,162 +1,131 @@
 import React from 'react';
+import {
+  X,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  MessageSquare,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Mail, MapPin, Edit2, Settings, Info } from 'lucide-react';
-import ContactEquipmentList from './ContactEquipmentList';
-
-interface Contact {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  street: string;
-  city: string;
-  notes: string;
-  equipment: any[];
-}
+import { Contact } from '@/types/contact';
 
 interface ContactDetailsProps {
-  contact: Contact | null;
-  onEditContact: (contact: Contact) => void;
-  onAddEquipment: (contactId: string) => void;
+  contact: Contact;
+  onClose: () => void;
+  formatDate: (date: string) => string;
+  getInitials: (name: string) => string;
 }
 
-const ContactDetails: React.FC<ContactDetailsProps> = ({
+export function ContactDetails({
   contact,
-  onEditContact,
-  onAddEquipment
-}) => {
-  if (!contact) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center py-10 px-4">
-          <p className="text-lg font-medium">No contact selected</p>
-          <p className="text-gray-500">Select a contact from the list to view details</p>
-        </div>
-      </div>
-    );
-  }
-
+  onClose,
+  formatDate,
+  getInitials
+}: ContactDetailsProps) {
   return (
-    <Tabs defaultValue="details" className="h-full flex flex-col">
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h2 className="text-xl font-semibold">{contact.name}</h2>
-          <p className="text-gray-500">{contact.city}</p>
+    <div className="bg-white border border-gray-200 rounded-md overflow-hidden h-full">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+        <div className="px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-gray-600">
+              {getInitials(contact.name)}
+            </div>
+            <div className="ml-4">
+              <h2 className="text-lg font-medium text-gray-900">{contact.name}</h2>
+              <p className="text-sm text-gray-500">Customer since {formatDate(contact.customer_since)}</p>
+            </div>
+          </div>
+          <div className="lg:hidden">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="ml-2"
+              onClick={onClose}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onEditContact(contact)}
-          >
-            <Edit2 className="h-4 w-4 mr-1" />
-            Edit
+        
+        <div className="flex space-x-3 px-6 mb-4">
+          <Button variant="outline" size="sm" className="text-gray-700 h-9">
+            <Phone className="h-4 w-4 mr-2" />
+            Call
           </Button>
-          <Button variant="outline" size="sm">
-            <Settings className="h-4 w-4 mr-1" />
-            More
+          <Button variant="outline" size="sm" className="text-gray-700 h-9">
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Message
+          </Button>
+          <Button variant="outline" size="sm" className="text-gray-700 h-9">
+            <Calendar className="h-4 w-4 mr-2" />
+            Schedule
           </Button>
         </div>
       </div>
       
-      <TabsList className="mb-4">
-        <TabsTrigger value="details">Contact Details</TabsTrigger>
-        <TabsTrigger value="equipment">Equipment ({contact.equipment.length})</TabsTrigger>
-      </TabsList>
-      
-      <div className="flex-grow overflow-auto">
-        <TabsContent value="details" className="h-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Contact Information */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 mb-3">Contact Information</h3>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <Phone className="h-4 w-4 mr-3 text-gray-400" />
-                  <div>
-                    <p>{contact.phone}</p>
-                    <p className="text-xs text-gray-500">Primary</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Mail className="h-4 w-4 mr-3 text-gray-400" />
-                  <div>
-                    <p>{contact.email}</p>
-                    <p className="text-xs text-gray-500">Primary</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <MapPin className="h-4 w-4 mr-3 mt-0.5 text-gray-400" />
-                  <div>
-                    <p>{contact.street}</p>
-                    <p>{contact.city}</p>
-                  </div>
+      <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+        <div className="space-y-6">
+          {/* Contact Information */}
+          <div>
+            <h3 className="text-base font-medium text-gray-900 mb-4">Contact Information</h3>
+            <div className="space-y-3">
+              <div>
+                <div className="text-sm font-medium text-gray-500">Phone</div>
+                <div className="mt-1 flex items-center">
+                  <a href={`tel:${contact.phone}`} className="text-gray-900 hover:text-blue-600">
+                    {contact.phone}
+                  </a>
                 </div>
               </div>
-            </div>
-            
-            {/* Notes Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-500">Notes</h3>
-                <Button variant="ghost" size="sm" className="h-8 px-2">
-                  <Edit2 className="h-3.5 w-3.5" />
-                </Button>
+              <div>
+                <div className="text-sm font-medium text-gray-500">Email</div>
+                <div className="mt-1">
+                  <a href={`mailto:${contact.email}`} className="text-gray-900 hover:text-blue-600">
+                    {contact.email}
+                  </a>
+                </div>
               </div>
-              <div className="p-3 bg-gray-50 rounded-md min-h-[120px]">
-                {contact.notes || 'No notes added yet.'}
+              <div>
+                <div className="text-sm font-medium text-gray-500">Address</div>
+                <div className="mt-1">
+                  <a 
+                    href={`https://maps.google.com/?q=${encodeURIComponent(contact.address)}`} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-900 hover:text-blue-600 flex items-start"
+                  >
+                    <MapPin className="h-4 w-4 mt-0.5 mr-2 flex-shrink-0 text-gray-400" />
+                    <span>{contact.address}</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
           
-          {/* Recent Activity */}
-          <div className="mt-8">
-            <h3 className="text-sm font-medium text-gray-500 mb-3">Recent Activity</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 border rounded-md">
-                <div className="flex items-center">
-                  <div className="bg-purple-100 p-2 rounded-full mr-3">
-                    <Settings className="h-4 w-4 text-purple-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Maintenance Visit</p>
-                    <p className="text-xs text-gray-500">May 5, 2025</p>
-                  </div>
+          {/* Other details */}
+          <div>
+            <h3 className="text-base font-medium text-gray-900 mb-4">Other Details</h3>
+            <div className="space-y-3">
+              <div>
+                <div className="text-sm font-medium text-gray-500">Type</div>
+                <div className="mt-1">
+                  <Badge variant="outline" className="capitalize">
+                    {contact.type}
+                  </Badge>
                 </div>
-                <Button variant="ghost" size="sm">
-                  <Info className="h-4 w-4" />
-                </Button>
               </div>
-              
-              <div className="flex items-center justify-between p-3 border rounded-md">
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-2 rounded-full mr-3">
-                    <Mail className="h-4 w-4 text-blue-700" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Email Sent</p>
-                    <p className="text-xs text-gray-500">Apr 28, 2025</p>
-                  </div>
+              <div>
+                <div className="text-sm font-medium text-gray-500">Customer Since</div>
+                <div className="mt-1 text-gray-900">
+                  {formatDate(contact.customer_since)}
                 </div>
-                <Button variant="ghost" size="sm">
-                  <Info className="h-4 w-4" />
-                </Button>
               </div>
             </div>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="equipment" className="h-full">
-          <ContactEquipmentList 
-            equipment={contact.equipment} 
-            onAddEquipment={() => onAddEquipment(contact.id)} 
-          />
-        </TabsContent>
+        </div>
       </div>
-    </Tabs>
+    </div>
   );
-};
-
-export default ContactDetails;
+}
