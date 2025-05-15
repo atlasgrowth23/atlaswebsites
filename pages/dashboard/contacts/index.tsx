@@ -652,8 +652,10 @@ export default function ContactsPage() {
                     </Button>
                   </div>
                 </div>
-                
-                <Tabs defaultValue="details" className="px-6">
+              </div>
+              
+              <Tabs defaultValue="details" className="w-full">
+                <div className="sticky top-[73px] z-[5] bg-white border-b border-gray-200 px-6">
                   <TabsList className="w-full justify-start bg-transparent p-0 border-0">
                     <TabsTrigger 
                       value="details" 
@@ -674,11 +676,10 @@ export default function ContactsPage() {
                       Service History
                     </TabsTrigger>
                   </TabsList>
-                </Tabs>
-              </div>
+                </div>
               
-              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 150px)' }}>
-                <TabsContent value="details" className="mt-0 p-0">
+                <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 150px)' }}>
+                  <TabsContent value="details" className="mt-0 p-0">
                   <div className="space-y-6">
                     {/* Contact Information */}
                     <div>
