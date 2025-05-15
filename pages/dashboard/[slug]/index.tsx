@@ -79,9 +79,9 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
   }
 
   return (
-    <MainLayout title={company.name}>
+    <MainLayout title={`${company.name} Dashboard`}>
       <Head>
-        <title>{company.name} Dashboard - HVAC Pro</title>
+        <title>{`${company.name} Dashboard - HVAC Pro`}</title>
         <meta name="description" content={`Dashboard for ${company.name}`} />
       </Head>
       
