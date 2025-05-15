@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import axios from 'axios';
 import {
   Plus,
   Search,
@@ -24,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Contact } from '@/types/contact';
-import { queryMany } from '@/lib/db';
+import { AddContactDialog } from '@/components/dashboard/contacts/AddContactDialog';
 
 export default function ContactsPage() {
   const router = useRouter();
@@ -46,37 +47,13 @@ export default function ContactsPage() {
         setLoading(true);
         
         // First, get the company ID from the slug
-        const companies = await queryMany(`
-          SELECT id, name FROM companies WHERE slug = $1 LIMIT 1
-        `, [slug]);
-        
-        if (companies.length === 0) {
-          console.error(`No company found with slug: ${slug}`);
-          setLoading(false);
-          return;
-        }
-        
-        const companyData = companies[0];
+        const companyResponse = await axios.get(`/api/companies/by-slug?slug=${slug}`);
+        const companyData = companyResponse.data;
         setCompany(companyData);
         
         // Then, fetch the contacts for this company
-        const contactsData = await queryMany(`
-          SELECT 
-            id, company_id, name, phone, email, street, city, notes, 
-            COALESCE(created_at, NOW()) as created_at
-          FROM company_contacts 
-          WHERE company_id = $1
-          ORDER BY name
-        `, [companyData.id]);
-        
-        // Process the contacts to match our interface
-        const processedContacts = contactsData.map((contact: any) => ({
-          ...contact,
-          customer_since: new Date(contact.created_at).toISOString().split('T')[0],
-          type: contact.notes?.includes('commercial') ? 'commercial' : 'residential' // Default to residential
-        }));
-        
-        setContacts(processedContacts);
+        const contactsResponse = await axios.get(`/api/contacts?company_id=${companyData.id}`);
+        setContacts(contactsResponse.data);
       } catch (error) {
         console.error('Error fetching company contacts:', error);
       } finally {
@@ -103,7 +80,8 @@ export default function ContactsPage() {
   });
   
   // Format date helper function
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -112,13 +90,29 @@ export default function ContactsPage() {
   };
   
   // Get initials for avatar
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | undefined) => {
+    if (!name) return 'NA';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
   
   // Navigate to contact detail page
   const handleSelectContact = (id: string) => {
     router.push(`/dashboard/contacts/${id}`);
+  };
+  
+  // Add Contact functionality
+  const [isAddContactOpen, setIsAddContactOpen] = useState(false);
+  
+  const handleAddContact = () => {
+    if (!company) {
+      console.error('No company selected');
+      return;
+    }
+    setIsAddContactOpen(true);
+  };
+  
+  const handleContactAdded = (newContact: Contact) => {
+    setContacts(prev => [...prev, newContact]);
   };
 
   return (
@@ -145,12 +139,26 @@ export default function ContactsPage() {
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filter
             </Button>
-            <Button className="bg-gray-900 hover:bg-gray-800 h-9 text-white">
+            <Button 
+              className="bg-gray-900 hover:bg-gray-800 h-9 text-white"
+              onClick={handleAddContact}
+              disabled={!company}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
             </Button>
           </div>
         </div>
+        
+        {/* Add Contact Dialog */}
+        {company && (
+          <AddContactDialog
+            isOpen={isAddContactOpen}
+            onClose={() => setIsAddContactOpen(false)}
+            companyId={company.id}
+            onContactAdded={handleContactAdded}
+          />
+        )}
         
         {/* Search */}
         <div className="mb-5 flex">
