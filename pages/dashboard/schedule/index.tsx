@@ -16,7 +16,8 @@ import {
   CalendarDays,
   CalendarIcon,
   Calendar as CalendarRange,
-  MoreHorizontal
+  MoreHorizontal,
+  Search
 } from 'lucide-react';
 import MainLayout from '@/components/dashboard/layout/MainLayout';
 import { Button } from '@/components/ui/button';
