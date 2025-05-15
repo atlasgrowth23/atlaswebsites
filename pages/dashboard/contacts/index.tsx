@@ -30,6 +30,13 @@ import { AddContactDialog } from '@/components/dashboard/contacts/AddContactDial
 export default function ContactsPage() {
   const router = useRouter();
   const { slug } = router.query;
+  
+  // Redirect to company selector if no slug is provided
+  useEffect(() => {
+    if (router.isReady && !slug) {
+      router.push('/dashboard');
+    }
+  }, [router.isReady, slug, router]);
   const [company, setCompany] = useState<{ id: string; name: string } | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);

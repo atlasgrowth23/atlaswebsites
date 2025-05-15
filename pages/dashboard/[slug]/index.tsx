@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import axios from 'axios';
 import {
   Building2,
   Users,
@@ -12,7 +13,8 @@ import {
   DollarSign,
   Clock,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Loader2
 } from 'lucide-react';
 import MainLayout from '@/components/dashboard/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,11 +36,36 @@ interface CompanyDashboardProps {
   company: Company | null;
 }
 
+interface CompanyStats {
+  totalContacts: number;
+  todayJobs: number;
+  completedTodayJobs: number;
+  upcomingTodayJobs: number;
+  openTickets: number;
+  urgentTickets: number;
+  standardTickets: number;
+}
+
+interface ActivityItem {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  contact_id?: string;
+  contact_name?: string;
+  scheduled_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export default function CompanyDashboardPage({ company: initialCompany }: CompanyDashboardProps) {
   const router = useRouter();
   const { slug } = router.query;
   const [company, setCompany] = useState<Company | null>(initialCompany);
   const [loading, setLoading] = useState(!initialCompany);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [stats, setStats] = useState<CompanyStats | null>(null);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   
   // Load company data if not provided through props
   useEffect(() => {
@@ -54,6 +81,27 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
     console.error('Company data should have been provided via getServerSideProps');
     setLoading(false);
   }, [company, slug]);
+  
+  // Load company stats
+  useEffect(() => {
+    if (!company?.id) return;
+    
+    setStatsLoading(true);
+    
+    axios.get(`/api/companies/stats?companyId=${company.id}`)
+      .then(response => {
+        if (response.data.success) {
+          setStats(response.data.data.stats);
+          setRecentActivity(response.data.data.activity);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching company stats:', error);
+      })
+      .finally(() => {
+        setStatsLoading(false);
+      });
+  }, [company]);
   
   // Navigation functions
   const navigateToSection = (section: string) => {
@@ -124,52 +172,73 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
         
         {/* Stats overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Today's Jobs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5</div>
-              <div className="flex justify-between mt-2">
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                  3 Completed
-                </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  2 Upcoming
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Open Tickets</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <div className="flex justify-between mt-2">
-                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                  2 Urgent
-                </Badge>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  10 Standard
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Revenue This Month</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$24,500</div>
-              <div className="flex items-center mt-2 text-green-600 text-sm">
-                <TrendingUp className="h-4 w-4 mr-1" /> 
-                <span>+12% from last month</span>
-              </div>
-            </CardContent>
-          </Card>
+          {statsLoading ? (
+            <>
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <CardHeader className="pb-2">
+                    <div className="h-5 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-8 bg-gray-200 rounded animate-pulse w-1/4 mb-2"></div>
+                    <div className="flex justify-between mt-2">
+                      <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                      <div className="h-6 bg-gray-200 rounded animate-pulse w-1/3"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-500">Today's Jobs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.todayJobs || 0}</div>
+                  <div className="flex justify-between mt-2">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      {stats?.completedTodayJobs || 0} Completed
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      {stats?.upcomingTodayJobs || 0} Upcoming
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-500">Open Tickets</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.openTickets || 0}</div>
+                  <div className="flex justify-between mt-2">
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                      {stats?.urgentTickets || 0} Urgent
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      {stats?.standardTickets || 0} Standard
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-500">Contacts</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats?.totalContacts || 0}</div>
+                  <div className="flex items-center mt-2 text-blue-600 text-sm">
+                    <Users className="h-4 w-4 mr-1" /> 
+                    <span>Total customer contacts</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
         
         {/* Main navigation cards */}
@@ -222,34 +291,73 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
             <CardTitle>Latest Updates</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                <div>
-                  <p className="font-medium">Job #1234 completed</p>
-                  <p className="text-sm text-gray-500">AC repair at John Smith's residence</p>
-                  <p className="text-xs text-gray-400 mt-1">Today, 2:15 PM</p>
-                </div>
+            {statsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="h-5 w-5 bg-gray-200 rounded-full animate-pulse"></div>
+                    <div className="w-full">
+                      <div className="h-5 bg-gray-200 rounded animate-pulse w-1/3 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded animate-pulse w-1/4"></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-blue-500 mt-0.5" />
-                <div>
-                  <p className="font-medium">New appointment scheduled</p>
-                  <p className="text-sm text-gray-500">Annual maintenance for Oakridge Office Complex</p>
-                  <p className="text-xs text-gray-400 mt-1">Today, 11:30 AM</p>
-                </div>
+            ) : recentActivity.length > 0 ? (
+              <div className="space-y-4">
+                {recentActivity.map((activity) => {
+                  const date = new Date(activity.updated_at);
+                  const formattedDate = new Intl.DateTimeFormat('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  }).format(date);
+                  
+                  // Determine icon based on status
+                  let Icon = Clock;
+                  let iconColor = 'text-blue-500';
+                  
+                  if (activity.status === 'completed') {
+                    Icon = CheckCircle;
+                    iconColor = 'text-green-500';
+                  } else if (activity.status === 'emergency' || activity.status === 'urgent') {
+                    Icon = AlertTriangle;
+                    iconColor = 'text-yellow-500';
+                  }
+                  
+                  // Format the title based on status
+                  let title = activity.title;
+                  if (activity.status === 'completed') {
+                    title = `Job completed: ${activity.title}`;
+                  } else if (activity.status === 'emergency' || activity.status === 'urgent') {
+                    title = `Emergency request: ${activity.title}`;
+                  } else {
+                    title = `Job scheduled: ${activity.title}`;
+                  }
+                  
+                  return (
+                    <div key={activity.id} className="flex items-start gap-3">
+                      <Icon className={`h-5 w-5 ${iconColor} mt-0.5`} />
+                      <div>
+                        <p className="font-medium">{title}</p>
+                        <p className="text-sm text-gray-500">
+                          {activity.description || 'No description provided'}
+                          {activity.contact_name && ` - Customer: ${activity.contact_name}`}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">{formattedDate}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
-                <div>
-                  <p className="font-medium">Emergency service request</p>
-                  <p className="text-sm text-gray-500">Water heater leak at David Wilson's home</p>
-                  <p className="text-xs text-gray-400 mt-1">Yesterday, 8:45 PM</p>
-                </div>
+            ) : (
+              <div className="text-center py-6 text-gray-500">
+                No recent activity found
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

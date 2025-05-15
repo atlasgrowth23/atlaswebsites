@@ -1,102 +1,119 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { query, queryMany } from '@/lib/db';
+import { query, queryOne } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { method } = req;
 
-  try {
-    switch (method) {
-      case 'GET': {
-        // Get company_id from query params
-        const { company_id } = req.query;
+  switch (method) {
+    case 'GET':
+      try {
+        const { companyId } = req.query;
         
-        if (!company_id) {
-          return res.status(400).json({ error: 'company_id is required' });
+        if (!companyId) {
+          return res.status(400).json({ success: false, message: 'Company ID is required' });
         }
-        
-        // Fetch jobs for this company with contact information
-        const jobs = await queryMany(`
-          SELECT 
-            j.id, j.company_id, j.contact_id, j.tech_id, j.service_type, 
-            j.status, j.priority, j.scheduled_at, j.notes,
-            c.name as contact_name,
-            c.street, c.city
-          FROM company_jobs j
-          LEFT JOIN company_contacts c ON j.contact_id = c.id
-          WHERE j.company_id = $1
-          ORDER BY j.scheduled_at DESC
-        `, [company_id]);
-        
-        // Process the jobs to add UI-specific fields
-        const processedJobs = jobs.map((job: any) => ({
-          ...job,
-          address: job.street && job.city ? `${job.street}, ${job.city}` : 'No address'
-        }));
-        
-        return res.status(200).json(processedJobs);
+
+        const jobs = await query(
+          'SELECT j.*, c.name as contact_name FROM company_jobs j LEFT JOIN company_contacts c ON j.contact_id = c.id WHERE j.company_id = $1 ORDER BY j.scheduled_date DESC',
+          [companyId]
+        );
+
+        return res.status(200).json({ success: true, data: jobs.rows });
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error' });
       }
-      
-      case 'POST': {
-        // Create a new job
+    
+    case 'POST':
+      try {
         const { 
-          company_id, contact_id, tech_id, service_type,
-          status, priority, scheduled_at, notes 
+          title, 
+          description,
+          type, 
+          status, 
+          scheduledDate,
+          estimatedHours,
+          contactId,
+          companyId 
         } = req.body;
         
-        if (!company_id || !contact_id || !service_type || !scheduled_at) {
+        if (!title || !companyId || !scheduledDate) {
           return res.status(400).json({ 
-            error: 'company_id, contact_id, service_type, and scheduled_at are required' 
+            success: false, 
+            message: 'Title, scheduled date, and company ID are required' 
           });
         }
         
-        // Insert the new job
-        const result = await query(`
-          INSERT INTO company_jobs (
-            id, company_id, contact_id, tech_id, service_type,
-            status, priority, scheduled_at, notes
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-          RETURNING *
-        `, [
-          uuidv4(), 
-          company_id, 
-          contact_id, 
-          tech_id || null, 
-          service_type,
-          status || 'scheduled',
-          priority || 'normal',
-          scheduled_at,
-          notes || null
-        ]);
+        // Check if company exists
+        const company = await queryOne(
+          'SELECT id FROM companies WHERE id = $1',
+          [companyId]
+        );
         
-        if (result.rowCount === 0) {
-          throw new Error('Failed to create job');
+        if (!company) {
+          return res.status(404).json({ 
+            success: false, 
+            message: 'Company not found' 
+          });
         }
         
-        // Get the contact information for the job
-        const contacts = await queryMany(`
-          SELECT name, street, city FROM company_contacts WHERE id = $1
-        `, [contact_id]);
+        // Check if contact exists if provided
+        if (contactId) {
+          const contact = await queryOne(
+            'SELECT id FROM company_contacts WHERE id = $1 AND company_id = $2',
+            [contactId, companyId]
+          );
+          
+          if (!contact) {
+            return res.status(404).json({ 
+              success: false, 
+              message: 'Contact not found or does not belong to this company' 
+            });
+          }
+        }
         
-        const contactInfo = contacts.length > 0 ? contacts[0] : null;
+        // Generate a new job ID
+        const jobId = uuidv4();
         
-        const newJob = {
-          ...result.rows[0],
-          contact_name: contactInfo?.name,
-          address: contactInfo?.street && contactInfo?.city ? 
-            `${contactInfo.street}, ${contactInfo.city}` : 'No address'
-        };
+        // Insert the new job
+        const result = await query(
+          `INSERT INTO company_jobs (
+            id, company_id, contact_id, title, description, type, status, 
+            scheduled_date, estimated_hours, created_at, updated_at
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()
+          ) RETURNING *`,
+          [
+            jobId,
+            companyId,
+            contactId || null,
+            title,
+            description || null,
+            type || 'maintenance',
+            status || 'scheduled',
+            scheduledDate,
+            estimatedHours || null
+          ]
+        );
         
-        return res.status(201).json(newJob);
+        const newJob = result.rows[0];
+        
+        return res.status(201).json({ 
+          success: true, 
+          data: newJob,
+          message: 'Job scheduled successfully' 
+        });
+      } catch (error) {
+        console.error('Error scheduling job:', error);
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Internal server error' 
+        });
       }
       
-      default:
-        res.setHeader('Allow', ['GET', 'POST']);
-        return res.status(405).json({ error: `Method ${method} Not Allowed` });
-    }
-  } catch (error: any) {
-    console.error('API error:', error.message);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    default:
+      res.setHeader('Allow', ['GET', 'POST']);
+      res.status(405).end(`Method ${method} Not Allowed`);
   }
 }

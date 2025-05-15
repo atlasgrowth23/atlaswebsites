@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
+import axios from 'axios';
 import {
   ChevronLeft,
   ChevronRight,
@@ -19,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { ScheduleJobDialog } from '@/components/dashboard/jobs/ScheduleJobDialog';
 
 // Types for job entries
 interface Job {
@@ -77,91 +80,84 @@ const isToday = (date: Date) => {
 };
 
 export default function SchedulePage() {
+  const router = useRouter();
+  const { slug } = router.query;
+  
+  // Redirect to company selector if no slug is provided
+  useEffect(() => {
+    if (router.isReady && !slug) {
+      router.push('/dashboard');
+    }
+  }, [router.isReady, slug, router]);
+  
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekDays, setWeekDays] = useState<Date[]>([]);
   const [selectedDay, setSelectedDay] = useState<number>(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [company, setCompany] = useState<any>(null);
+  const [isScheduleJobOpen, setIsScheduleJobOpen] = useState(false);
+  
+  // First, get the company information
+  useEffect(() => {
+    if (slug && typeof slug === 'string') {
+      // Fetch the company information
+      axios.get(`/api/companies/by-slug?slug=${slug}`)
+        .then(response => {
+          if (response.data.success) {
+            setCompany(response.data.data);
+          } else {
+            console.error('Error fetching company:', response.data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching company:', error);
+        });
+    }
+  }, [slug]);
   
   // Initialize week days and fetch jobs
   useEffect(() => {
     setWeekDays(getWeekDays(new Date(currentDate)));
     
-    setTimeout(() => {
-      // Mock data - would be replaced with API call
-      const mockJobs: Job[] = [
-        {
-          id: '1',
-          contact_id: '1',
-          contact_name: 'John Smith',
-          tech_id: 'T1',
-          tech_name: 'Mike Johnson',
-          service_type: 'AC Repair',
-          status: 'scheduled',
-          priority: 'normal',
-          scheduled_at: '2025-05-14T14:00:00',
-          address: '123 Main St, Anytown, CA',
-          notes: 'AC not cooling properly. Customer will be home after 2PM.'
-        },
-        {
-          id: '2',
-          contact_id: '2',
-          contact_name: 'Sarah Johnson',
-          tech_id: 'T2',
-          tech_name: 'David Miller',
-          service_type: 'Furnace Maintenance',
-          status: 'scheduled',
-          priority: 'low',
-          scheduled_at: '2025-05-14T10:00:00',
-          address: '456 Oak Ave, Springfield, IL',
-          notes: 'Annual maintenance check-up.'
-        },
-        {
-          id: '3',
-          contact_id: '3',
-          contact_name: 'David Wilson',
-          tech_id: 'T1',
-          tech_name: 'Mike Johnson',
-          service_type: 'Water Heater Leak',
-          status: 'emergency',
-          priority: 'emergency',
-          scheduled_at: '2025-05-15T09:00:00',
-          address: '789 Pine St, Lakeside, MI',
-          notes: 'Water heater leaking in basement, customer reports water on floor.'
-        },
-        {
-          id: '4',
-          contact_id: '4',
-          contact_name: 'Emily Davis',
-          tech_id: 'T3',
-          tech_name: 'Sarah Lee',
-          service_type: 'Air Filter Replacement',
-          status: 'in_progress',
-          priority: 'normal',
-          scheduled_at: '2025-05-14T15:30:00',
-          address: '101 Cedar Rd, Riverdale, NY',
-          notes: 'Customer on maintenance plan. Home has 3 return air vents.'
-        },
-        {
-          id: '5',
-          contact_id: '5',
-          contact_name: 'Michael Brown',
-          tech_id: 'T2',
-          tech_name: 'David Miller',
-          service_type: 'Thermostat Installation',
-          status: 'completed',
-          priority: 'normal',
-          scheduled_at: '2025-05-13T13:00:00',
-          address: '202 Elm St, Oakridge, TX',
-          notes: 'Installing new Nest thermostat. Customer has existing wiring compatible with system.'
-        }
-      ];
-      
-      setJobs(mockJobs);
+    if (company?.id) {
+      setLoading(true);
+      // Fetch jobs from the API
+      axios.get(`/api/jobs?companyId=${company.id}`)
+        .then(response => {
+          if (response.data.success) {
+            // Map API job data to our Job interface
+            const fetchedJobs = response.data.data.map((job: any) => ({
+              id: job.id,
+              contact_id: job.contact_id || '',
+              contact_name: job.contact_name || 'No Contact',
+              tech_id: job.tech_id || '',
+              tech_name: job.tech_name || 'Unassigned',
+              service_type: job.title,
+              status: job.status,
+              priority: job.priority || 'normal',
+              scheduled_at: job.scheduled_date,
+              address: job.address || 'No Address',
+              notes: job.description || ''
+            }));
+            
+            setJobs(fetchedJobs);
+          } else {
+            console.error('Error fetching jobs:', response.data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching jobs:', error);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else if (!slug) {
+      // If no company is selected, just show empty state
       setLoading(false);
-    }, 800);
-  }, [currentDate]);
+    }
+  }, [currentDate, company]);
 
   // Navigate to previous or next week
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -197,11 +193,15 @@ export default function SchedulePage() {
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Schedule</h1>
             <p className="mt-1 text-sm text-gray-500">
-              Manage service appointments
+              Manage service appointments for {company?.name || 'your company'}
             </p>
           </div>
           <div className="mt-3 sm:mt-0">
-            <Button className="bg-gray-900 hover:bg-gray-800 h-9">
+            <Button 
+              className="bg-gray-900 hover:bg-gray-800 h-9"
+              onClick={() => setIsScheduleJobOpen(true)}
+              disabled={!company}
+            >
               <Plus className="h-4 w-4 mr-2" />
               New Job
             </Button>
@@ -395,6 +395,34 @@ export default function SchedulePage() {
             )}
           </div>
         </div>
+        
+        {/* Schedule Job Dialog */}
+        {company && (
+          <ScheduleJobDialog
+            isOpen={isScheduleJobOpen}
+            onClose={() => setIsScheduleJobOpen(false)}
+            companyId={company.id}
+            onJobScheduled={(newJob) => {
+              // Convert the new job to match our Job interface
+              const formattedJob: Job = {
+                id: newJob.id,
+                contact_id: newJob.contactId || '',
+                contact_name: 'New Contact', // We'll need to fetch this or update the list
+                tech_id: '',
+                tech_name: 'Unassigned',
+                service_type: newJob.title,
+                status: newJob.status as any,
+                priority: 'normal',
+                scheduled_at: newJob.scheduledDate,
+                address: '',
+                notes: newJob.description || ''
+              };
+              
+              // Add the new job to our list
+              setJobs(prevJobs => [formattedJob, ...prevJobs]);
+            }}
+          />
+        )}
       </div>
     </MainLayout>
   );
