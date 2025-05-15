@@ -47,14 +47,14 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
     (path !== '/dashboard' && router.pathname.startsWith(path));
 
   return (
-    <div className="h-screen flex overflow-hidden bg-gray-100">
+    <div className="h-screen flex overflow-hidden bg-gray-50">
       {/* Sidebar for desktop */}
       <div className="hidden md:flex md:flex-shrink-0">
         <div className="flex flex-col w-64">
           {/* Sidebar component */}
           <div className="flex flex-col flex-grow bg-white pt-5 pb-4 overflow-y-auto border-r border-gray-200">
             <div className="flex items-center flex-shrink-0 px-4">
-              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+              <div className="h-8 w-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold">
                 H
               </div>
               <span className="ml-2 text-xl font-semibold text-gray-800">HVAC Pro</span>
@@ -67,15 +67,15 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
                     href={item.href}
                     className={cn(
                       isActive(item.href)
-                        ? 'bg-gray-100 text-blue-600'
+                        ? 'bg-gray-50 text-gray-900 border-l-4 border-gray-900'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                      'group flex items-center px-2 py-2 text-sm font-medium rounded-md'
+                      'group flex items-center px-3 py-2 text-sm font-medium rounded-r-md'
                     )}
                   >
                     <item.icon
                       className={cn(
                         isActive(item.href)
-                          ? 'text-blue-600'
+                          ? 'text-gray-900'
                           : 'text-gray-400 group-hover:text-gray-500',
                         'mr-3 flex-shrink-0 h-5 w-5'
                       )}
@@ -91,15 +91,15 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
                 href="/dashboard/settings"
                 className={cn(
                   isActive('/dashboard/settings')
-                    ? 'bg-gray-100 text-blue-600'
+                    ? 'bg-gray-50 text-gray-900 border-l-4 border-gray-900'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                  'group flex items-center px-2 py-2 text-sm font-medium rounded-md'
+                  'group flex items-center px-3 py-2 text-sm font-medium rounded-r-md'
                 )}
               >
                 <Settings
                   className={cn(
                     isActive('/dashboard/settings')
-                      ? 'text-blue-600'
+                      ? 'text-gray-900'
                       : 'text-gray-400 group-hover:text-gray-500',
                     'mr-3 flex-shrink-0 h-5 w-5'
                   )}
@@ -171,7 +171,7 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
           {/* Mobile sidebar content */}
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center px-4">
-              <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold">
+              <div className="h-8 w-8 rounded bg-gray-800 flex items-center justify-center text-white font-bold">
                 H
               </div>
               <span className="ml-2 text-xl font-semibold text-gray-800">HVAC Pro</span>
@@ -183,16 +183,16 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
                   href={item.href}
                   className={cn(
                     isActive(item.href)
-                      ? 'bg-gray-100 text-blue-600'
+                      ? 'bg-gray-50 text-gray-900 border-l-4 border-gray-900'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
-                    'group flex items-center px-2 py-2 text-base font-medium rounded-md'
+                    'group flex items-center px-3 py-2 text-base font-medium rounded-r-md'
                   )}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon
                     className={cn(
                       isActive(item.href)
-                        ? 'text-blue-600'
+                        ? 'text-gray-900'
                         : 'text-gray-400 group-hover:text-gray-500',
                       'mr-4 flex-shrink-0 h-6 w-6'
                     )}
@@ -227,10 +227,10 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
 
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
         {/* Top header */}
-        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow">
+        <div className="relative z-10 flex-shrink-0 flex h-16 bg-white shadow-sm">
           <button
             type="button"
-            className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 md:hidden"
+            className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 md:hidden"
             onClick={() => setSidebarOpen(true)}
           >
             <span className="sr-only">Open sidebar</span>
@@ -239,7 +239,7 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
           <div className="flex-1 px-4 flex justify-between">
             <div className="flex-1 flex">
               <div className="flex items-center">
-                <h1 className="text-2xl font-semibold text-gray-800">{title || 'Dashboard'}</h1>
+                <h1 className="text-xl font-semibold text-gray-800">{title || 'Dashboard'}</h1>
               </div>
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-4">
@@ -251,14 +251,14 @@ export default function MainLayout({ children, title }: MainLayoutProps) {
                 <Input
                   type="search"
                   placeholder="Search..."
-                  className="pl-10 h-10 w-60"
+                  className="pl-10 h-9 w-60 rounded-md border-gray-300 bg-gray-50"
                 />
               </div>
               
               {/* Notification button */}
               <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-6 w-6 text-gray-400" />
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+                <Bell className="h-5 w-5 text-gray-500" />
+                <span className="absolute top-1 right-1 block h-1.5 w-1.5 rounded-full bg-red-500 ring-1 ring-white" />
               </Button>
 
               {/* Profile dropdown */}
