@@ -27,7 +27,7 @@ interface Company {
   city?: string;
   state?: string;
   website?: string;
-  logo_url?: string;
+  logo?: string;
 }
 
 interface CompanyDashboardProps {
@@ -45,23 +45,14 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
     // If company was provided through props or already loaded, skip
     if (company || !slug) return;
     
-    // In a real implementation, this would be a database query
+    // We should never reach here as the company data is now fetched server-side
+    // This is just a fallback in case somehow the company prop is null
     setLoading(true);
     
-    // Simulating API call to fetch company details
-    setTimeout(() => {
-      const mockCompany: Company = {
-        id: '1',
-        name: 'Comfort Heating & Cooling',
-        slug: slug as string,
-        city: 'Springfield',
-        state: 'IL',
-        website: 'www.comforthvac.example.com'
-      };
-      
-      setCompany(mockCompany);
-      setLoading(false);
-    }, 500);
+    // In a real implementation, we would make an API call here to fetch the company
+    // For now, we'll just display an error since we expect the data to come from getServerSideProps
+    console.error('Company data should have been provided via getServerSideProps');
+    setLoading(false);
   }, [company, slug]);
   
   // Navigation functions
@@ -97,19 +88,26 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
       <div>
         {/* Company header */}
         <div className="mb-8 flex flex-wrap justify-between items-start gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
-            <p className="text-gray-600 mt-1">
-              {company.city && company.state 
-                ? `${company.city}, ${company.state}`
-                : company.city || company.state || 'Location not specified'}
-            </p>
+          <div className="flex items-center gap-4">
+            {company.logo && (
+              <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                <img src={company.logo} alt={`${company.name} logo`} className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
+              <p className="text-gray-600 mt-1">
+                {company.city && company.state 
+                  ? `${company.city}, ${company.state}`
+                  : company.city || company.state || 'Location not specified'}
+              </p>
+            </div>
           </div>
           
           <div className="flex gap-3">
             <Button 
               variant="outline" 
-              onClick={() => window.open(`https://${company.website}`, '_blank')}
+              onClick={() => window.open(`${company.website}`, '_blank')}
               disabled={!company.website}
             >
               View Website
@@ -259,33 +257,31 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
   );
 }
 
-// In a real implementation, this would fetch the company data from the database
+// Fetch the company data from the database based on slug
 export async function getServerSideProps({ params }: { params: { slug: string } }) {
   try {
-    // This would be a database query to get the company by slug
-    // For now, we're returning null to simulate the client-side fetching
-    return {
-      props: {
-        company: null
-      }
-    };
-    
-    // Commented out example of what this would look like with a real DB query:
-    /*
+    // Database query to get the company by slug
     const companies = await queryMany(`
-      SELECT id, name, slug, city, state, website, logo_url 
+      SELECT id, name, slug, city, state, site as website, logo
       FROM companies 
-      WHERE slug = $1
+      WHERE slug = $1 LIMIT 1
     `, [params.slug]);
+    
+    // Log the found company for debugging
+    if (companies.length > 0) {
+      console.log(`Found company: ${companies[0].name} for slug: ${params.slug}`);
+    } else {
+      console.log(`No company found for slug: ${params.slug}`);
+    }
     
     return {
       props: {
         company: companies.length > 0 ? companies[0] : null
       }
     };
-    */
   } catch (err) {
     console.error('Error fetching company:', err);
+    console.error(err);
     return {
       props: {
         company: null
