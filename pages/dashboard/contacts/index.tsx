@@ -9,7 +9,8 @@ import {
   Mail,
   MoreHorizontal,
   Edit,
-  Trash
+  Trash,
+  MapPin
 } from 'lucide-react';
 import MainLayout from '@/components/dashboard/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -23,68 +24,68 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Contact } from '@/types/contact';
+import { queryMany } from '@/lib/db';
 
 export default function ContactsPage() {
   const router = useRouter();
+  const { slug } = router.query;
+  const [company, setCompany] = useState<{ id: string; name: string } | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Load mock data
+  // Fetch company information and contacts
   useEffect(() => {
-    setTimeout(() => {
-      const mockContacts: Contact[] = [
-        {
-          id: '1',
-          name: 'John Smith',
-          phone: '(555) 123-4567',
-          email: 'john.smith@example.com',
-          address: '123 Main St, Anytown, CA 95012',
-          customer_since: '2020-03-15',
-          type: 'residential'
-        },
-        {
-          id: '2',
-          name: 'Sarah Johnson',
-          phone: '(555) 987-6543',
-          email: 'sarah.j@example.com',
-          address: '456 Oak Ave, Springfield, IL 62701',
-          customer_since: '2021-07-22',
-          type: 'residential'
-        },
-        {
-          id: '3',
-          name: 'David Wilson',
-          phone: '(555) 456-7890',
-          email: 'dwilson@example.com',
-          address: '789 Pine St, Lakeside, MI 49456',
-          customer_since: '2018-05-30',
-          type: 'residential'
-        },
-        {
-          id: '4',
-          name: 'Jennifer Garcia',
-          phone: '(555) 234-5678',
-          email: 'jgarcia@example.com',
-          address: '321 Maple Rd, Riverside, CA 92501',
-          customer_since: '2022-01-15',
-          type: 'residential'
-        },
-        {
-          id: '5',
-          name: 'Oakridge Office Complex',
-          phone: '(555) 876-5432',
-          email: 'manager@oakridgeoffices.com',
-          address: '555 Cedar Ln, Oakville, TX 78570',
-          customer_since: '2019-11-03',
-          type: 'commercial'
+    if (!slug) {
+      // If we don't have a slug yet, wait for it to be available
+      return;
+    }
+    
+    const fetchCompanyAndContacts = async () => {
+      try {
+        setLoading(true);
+        
+        // First, get the company ID from the slug
+        const companies = await queryMany(`
+          SELECT id, name FROM companies WHERE slug = $1 LIMIT 1
+        `, [slug]);
+        
+        if (companies.length === 0) {
+          console.error(`No company found with slug: ${slug}`);
+          setLoading(false);
+          return;
         }
-      ];
-      
-      setContacts(mockContacts);
-      setLoading(false);
-    }, 800);
-  }, []);
+        
+        const companyData = companies[0];
+        setCompany(companyData);
+        
+        // Then, fetch the contacts for this company
+        const contactsData = await queryMany(`
+          SELECT 
+            id, company_id, name, phone, email, street, city, notes, 
+            COALESCE(created_at, NOW()) as created_at
+          FROM company_contacts 
+          WHERE company_id = $1
+          ORDER BY name
+        `, [companyData.id]);
+        
+        // Process the contacts to match our interface
+        const processedContacts = contactsData.map((contact: any) => ({
+          ...contact,
+          customer_since: new Date(contact.created_at).toISOString().split('T')[0],
+          type: contact.notes?.includes('commercial') ? 'commercial' : 'residential' // Default to residential
+        }));
+        
+        setContacts(processedContacts);
+      } catch (error) {
+        console.error('Error fetching company contacts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchCompanyAndContacts();
+  }, [slug]);
   
   // Filter contacts based on search term
   const filteredContacts = contacts.filter(contact => {
@@ -93,10 +94,11 @@ export default function ContactsPage() {
     const searchLower = searchTerm.toLowerCase();
     return (
       contact.name.toLowerCase().includes(searchLower) ||
-      contact.email.toLowerCase().includes(searchLower) ||
-      contact.phone.includes(searchTerm) ||
-      contact.address.toLowerCase().includes(searchLower) ||
-      contact.type.toLowerCase().includes(searchLower)
+      (contact.email && contact.email.toLowerCase().includes(searchLower)) ||
+      (contact.phone && contact.phone.includes(searchTerm)) ||
+      (contact.street && contact.street.toLowerCase().includes(searchLower)) ||
+      (contact.city && contact.city.toLowerCase().includes(searchLower)) ||
+      (contact.type && contact.type.toLowerCase().includes(searchLower))
     );
   });
   
