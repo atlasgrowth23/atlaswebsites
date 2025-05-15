@@ -1,22 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Head from 'next/head';
 import {
   Plus,
   Search,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Phone,
+  Mail,
+  MoreHorizontal,
+  Edit,
+  Trash
 } from 'lucide-react';
 import MainLayout from '@/components/dashboard/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ContactTable } from '@/components/dashboard/contacts/ContactTable';
-import { ContactDetailsTabs } from '@/components/dashboard/contacts/ContactDetailsTabs';
-import { Contact, Equipment, ServiceHistory } from '@/types/contact';
+import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Contact } from '@/types/contact';
 
 export default function ContactsPage() {
+  const router = useRouter();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   
   // Load mock data
   useEffect(() => {
@@ -74,6 +86,20 @@ export default function ContactsPage() {
     }, 800);
   }, []);
   
+  // Filter contacts based on search term
+  const filteredContacts = contacts.filter(contact => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      contact.name.toLowerCase().includes(searchLower) ||
+      contact.email.toLowerCase().includes(searchLower) ||
+      contact.phone.includes(searchTerm) ||
+      contact.address.toLowerCase().includes(searchLower) ||
+      contact.type.toLowerCase().includes(searchLower)
+    );
+  });
+  
   // Format date helper function
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -88,70 +114,10 @@ export default function ContactsPage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
   
-  // Handle contact selection
+  // Navigate to contact detail page
   const handleSelectContact = (id: string) => {
-    setSelectedContactId(id);
+    router.push(`/dashboard/contacts/${id}`);
   };
-  
-  // Handle contact panel close
-  const handleContactClose = () => {
-    setSelectedContactId(null);
-  };
-  
-  // Get selected contact
-  const selectedContact = selectedContactId 
-    ? contacts.find(contact => contact.id === selectedContactId) 
-    : null;
-    
-  // Mock equipment data for the selected contact
-  const equipmentData: Equipment[] = [
-    {
-      id: 'e1',
-      name: 'Central AC Unit',
-      model: 'Carrier Comfort 14',
-      serial: 'AC1425367',
-      installed: '2020-07-15',
-      last_service: '2023-04-10',
-      status: 'active'
-    },
-    {
-      id: 'e2',
-      name: 'Gas Furnace',
-      model: 'Trane XC95m',
-      serial: 'TF9523476',
-      installed: '2020-07-15',
-      last_service: '2023-04-10',
-      status: 'maintenance'
-    }
-  ];
-  
-  // Mock service history data
-  const serviceHistoryData: ServiceHistory[] = [
-    {
-      id: 's1',
-      date: '2023-04-10',
-      type: 'Maintenance',
-      description: 'Annual maintenance check. Replaced air filter, cleaned coils, checked refrigerant levels.',
-      technician: 'Mike Johnson',
-      cost: '$149.00'
-    },
-    {
-      id: 's2',
-      date: '2022-08-22',
-      type: 'Repair',
-      description: 'Repaired condensate drain line leak. Replaced damaged section.',
-      technician: 'David Miller',
-      cost: '$210.00'
-    },
-    {
-      id: 's3',
-      date: '2022-05-05',
-      type: 'Maintenance',
-      description: 'Spring tune-up. Cleaned condenser unit, checked electrical connections.',
-      technician: 'Mike Johnson',
-      cost: '$129.00'
-    }
-  ];
 
   return (
     <MainLayout title="Contacts">
@@ -177,7 +143,7 @@ export default function ContactsPage() {
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filter
             </Button>
-            <Button className="bg-gray-900 hover:bg-gray-800 h-9">
+            <Button className="bg-gray-900 hover:bg-gray-800 h-9 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
             </Button>
@@ -197,30 +163,94 @@ export default function ContactsPage() {
           </div>
         </div>
         
-        {/* Main content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-7">
-            <ContactTable 
-              contacts={contacts}
-              loading={loading}
-              onSelectContact={handleSelectContact}
-              formatDate={formatDate}
-              getInitials={getInitials}
-            />
-          </div>
-          
-          {/* Contact Detail Side Panel */}
-          {selectedContact && (
-            <div className="lg:col-span-5">
-              <ContactDetailsTabs
-                contact={selectedContact}
-                equipment={equipmentData}
-                serviceHistory={serviceHistoryData}
-                onClose={handleContactClose}
-                formatDate={formatDate}
-                getInitials={getInitials}
-              />
+        {/* Contacts table */}
+        <div className="bg-white border border-gray-200 rounded-md overflow-hidden">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-800"></div>
             </div>
+          ) : (
+            <>
+              {/* Table header */}
+              <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-gray-200 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <div className="col-span-4 sm:col-span-4">Contact</div>
+                <div className="col-span-4 sm:col-span-4">Contact Info</div>
+                <div className="col-span-3 sm:col-span-3">Type</div>
+                <div className="col-span-1 sm:col-span-1 text-right">Actions</div>
+              </div>
+              
+              {/* Table body */}
+              <div className="divide-y divide-gray-200 bg-white">
+                {filteredContacts.length === 0 ? (
+                  <div className="px-6 py-10 text-center text-gray-500">
+                    No contacts found matching your search.
+                  </div>
+                ) : (
+                  filteredContacts.map(contact => (
+                    <div
+                      key={contact.id}
+                      className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => handleSelectContact(contact.id)}
+                    >
+                      <div className="col-span-4 sm:col-span-4 flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-gray-600">
+                          {getInitials(contact.name)}
+                        </div>
+                        <div className="ml-4">
+                          <div className="font-medium text-gray-900">{contact.name}</div>
+                          <div className="text-sm text-gray-500">Since {formatDate(contact.customer_since)}</div>
+                        </div>
+                      </div>
+                      <div className="col-span-4 sm:col-span-4">
+                        <div className="flex items-center text-sm text-gray-700">
+                          <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                          {contact.phone}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-700 mt-1">
+                          <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                          {contact.email}
+                        </div>
+                      </div>
+                      <div className="col-span-3 sm:col-span-3 flex items-center">
+                        <Badge variant="outline" className="capitalize">
+                          {contact.type}
+                        </Badge>
+                      </div>
+                      <div className="col-span-1 sm:col-span-1 flex justify-end items-center">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <span className="sr-only">Open menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleSelectContact(contact.id);
+                            }}>
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
