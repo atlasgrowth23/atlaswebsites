@@ -36,14 +36,14 @@ interface CompanyDashboardProps {
 
 export default function CompanyDashboardPage({ company: initialCompany }: CompanyDashboardProps) {
   const router = useRouter();
-  const { company: companySlug } = router.query;
+  const { slug } = router.query;
   const [company, setCompany] = useState<Company | null>(initialCompany);
   const [loading, setLoading] = useState(!initialCompany);
   
   // Load company data if not provided through props
   useEffect(() => {
     // If company was provided through props or already loaded, skip
-    if (company || !companySlug) return;
+    if (company || !slug) return;
     
     // In a real implementation, this would be a database query
     setLoading(true);
@@ -53,7 +53,7 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
       const mockCompany: Company = {
         id: '1',
         name: 'Comfort Heating & Cooling',
-        slug: companySlug as string,
+        slug: slug as string,
         city: 'Springfield',
         state: 'IL',
         website: 'www.comforthvac.example.com'
@@ -62,11 +62,11 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
       setCompany(mockCompany);
       setLoading(false);
     }, 500);
-  }, [company, companySlug]);
+  }, [company, slug]);
   
   // Navigation functions
   const navigateToSection = (section: string) => {
-    router.push(`/dashboard/${companySlug}/${section}`);
+    router.push(`/dashboard/${slug}/${section}`);
   };
   
   if (loading) {
@@ -260,7 +260,7 @@ export default function CompanyDashboardPage({ company: initialCompany }: Compan
 }
 
 // In a real implementation, this would fetch the company data from the database
-export async function getServerSideProps({ params }: { params: { company: string } }) {
+export async function getServerSideProps({ params }: { params: { slug: string } }) {
   try {
     // This would be a database query to get the company by slug
     // For now, we're returning null to simulate the client-side fetching
@@ -276,7 +276,7 @@ export async function getServerSideProps({ params }: { params: { company: string
       SELECT id, name, slug, city, state, website, logo_url 
       FROM companies 
       WHERE slug = $1
-    `, [params.company]);
+    `, [params.slug]);
     
     return {
       props: {

@@ -37,7 +37,7 @@ import { Label } from "@/components/ui/label";
 
 export default function ContactsPage() {
   const router = useRouter();
-  const { company } = router.query;
+  const { slug } = router.query;
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -154,7 +154,7 @@ export default function ContactsPage() {
   
   // Navigate to contact detail page
   const handleSelectContact = (id: string) => {
-    router.push(`/dashboard/${company}/contacts/${id}`);
+    router.push(`/dashboard/${slug}/contacts/${id}`);
   };
   
   // Handle contact deletion

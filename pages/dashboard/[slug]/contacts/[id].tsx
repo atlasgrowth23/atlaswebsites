@@ -47,7 +47,7 @@ interface Note {
 
 export default function ContactDetailPage() {
   const router = useRouter();
-  const { company, id } = router.query;
+  const { slug, id } = router.query;
   
   const [contact, setContact] = useState<Contact | null>(null);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -177,7 +177,7 @@ export default function ContactDetailPage() {
   
   // Go back to contacts list
   const handleBack = () => {
-    router.push(`/dashboard/${company}/contacts`);
+    router.push(`/dashboard/${slug}/contacts`);
   };
   
   // Delete equipment
