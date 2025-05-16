@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-export default function DashboardRedirect() {
+export default function DashboardCatchAllRedirect() {
   const router = useRouter();
 
   useEffect(() => {
