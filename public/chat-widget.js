@@ -260,16 +260,44 @@
     // Add user message to chat
     addMessageToChat(message, true);
     
-    // Increment message count
-    messageCount++;
-    
-    // Show contact form after 2 messages if contact info hasn't been collected
-    if (messageCount >= 2 && !contactCollected) {
+    // If contact info hasn't been collected yet, show the form immediately
+    if (!contactCollected) {
+      // Show a specific response based on their inquiry
+      let responseText = "";
+      
+      if (message.toLowerCase().includes("quote")) {
+        responseText = "I'd be happy to help you get a quote for a new HVAC system. To connect you with our team, please provide your contact information below:";
+      } else if (message.toLowerCase().includes("maintenance")) {
+        responseText = "Regular maintenance is essential for your HVAC system. To schedule a maintenance visit, please share your contact details below:";
+      } else if (message.toLowerCase().includes("repair") || message.toLowerCase().includes("isn't working")) {
+        responseText = "I'm sorry to hear you're having issues. To get help with repairs, please provide your contact information below:";
+      } else {
+        responseText = "Thank you for your message. To help you better, please share your contact information below:";
+      }
+      
+      // Add system response
+      addMessageToChat(responseText, false);
+      
+      // Store message in database
+      fetch(`/api/messages/${companySlug}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          name: 'Website Visitor', 
+          email: null, 
+          phone: null, 
+          message: message
+        })
+      });
+      
+      // Show contact form
       showContactForm();
       return;
     }
     
-    // Send message to API
+    // If we already have contact info, send message to API for AI response
     sendMessageToAPI(message);
   }
   
@@ -442,15 +470,61 @@
         contactId = data.contact_id;
       }
       
-      // Thank the user and show chat input again
-      addMessageToChat(`Thanks ${name}! Now, how can we help you today?`, false);
+      // Thank the user and prompt for additional details
+      addMessageToChat(`Thanks ${name}! Is there anything specific we should know about your HVAC needs to better assist you?`, false);
+      
+      // Show the chat input again
       showChatInput();
+      
+      // Hide quick buttons - we want them to provide more details now
+      document.getElementById('hvac-quick-buttons').style.display = 'none';
+      
+      // Add event listener for the next message
+      const messageForm = document.getElementById('hvac-message-form');
+      const originalSubmit = messageForm.onsubmit;
+      
+      messageForm.onsubmit = function(event) {
+        event.preventDefault();
+        
+        const messageInput = document.getElementById('hvac-input-message');
+        const additionalDetails = messageInput.value.trim();
+        
+        if (!additionalDetails) return;
+        
+        // Add user message to chat
+        addMessageToChat(additionalDetails, true);
+        messageInput.value = '';
+        
+        // Store the additional details
+        fetch(`/api/messages/${companySlug}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            name, 
+            email, 
+            phone, 
+            message: additionalDetails 
+          })
+        });
+        
+        // Show final message
+        addMessageToChat(`Thank you for providing those details. A member of our team will contact you shortly to discuss your HVAC needs. If you have any urgent questions, please call us at ${companySlug === 'temperaturepro' ? '(555) 123-4567' : '(555) 987-6543'}.`, false);
+        
+        // Replace input with a message
+        document.getElementById('hvac-chat-input-area').innerHTML = `
+          <div style="text-align: center; padding: 10px; color: #666; font-size: 14px;">
+            Chat session complete. You can close this window.
+          </div>
+        `;
+      };
     })
     .catch(error => {
       console.error('Error creating contact:', error);
       
-      // Still thank the user and continue
-      addMessageToChat(`Thanks ${name}! Now, how can we help you today?`, false);
+      // Still thank the user and prompt them
+      addMessageToChat(`Thanks ${name}! Is there anything specific we should know about your HVAC needs to better assist you?`, false);
       showChatInput();
     });
   }
