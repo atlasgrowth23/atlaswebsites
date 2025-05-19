@@ -12,7 +12,25 @@ export const portalDb = {
   
   async getPreviewUser(slug: string): Promise<any | null> {
     // Get a preview user from the preview_users table
-    return queryOne('SELECT username, password_hash, expires_at FROM preview_users WHERE company_slug = $1', [slug]);
+    return queryOne('SELECT * FROM preview_users WHERE company_slug = $1', [slug]);
+  },
+  
+  async verifyCredentials(slug: string, password: string): Promise<boolean> {
+    const user = await this.getPreviewUser(slug);
+    if (!user) return false;
+    
+    try {
+      // For debug purposes, log useful information
+      console.log(`Verifying credentials for ${slug}, password provided: ${password ? 'yes' : 'no'}`);
+      
+      // Compare the provided password with the hashed one in the database
+      const isValid = await bcrypt.compare(password, user.password_hash);
+      console.log(`Password validation result: ${isValid}`);
+      return isValid;
+    } catch (error) {
+      console.error('Error verifying credentials:', error);
+      return false;
+    }
   },
   
   async setPreviewUser(slug: string, userData: { username: string, passwordHash: string, expires: number }): Promise<void> {
