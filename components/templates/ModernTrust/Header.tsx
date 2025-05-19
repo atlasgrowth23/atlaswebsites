@@ -53,6 +53,12 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 {item}
               </Link>
             ))}
+            <Link 
+              href={`/p/${company.slug}`}
+              className="text-lg font-medium text-white hover:text-blue-200 transition-colors bg-blue-600/40 px-4 py-2 rounded-lg"
+            >
+              Portal Login
+            </Link>
           </nav>
 
           {/* Rating/Reviews Section - conditionally displayed */}

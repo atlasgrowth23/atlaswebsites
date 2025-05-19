@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Head from 'next/head';
 import { Company } from '@/types';
 import Header from './Header';
@@ -8,12 +8,39 @@ import Services from './Services';
 import Reviews from './Reviews';
 import ServiceArea from './ServiceArea';
 import Footer from './Footer';
+import Script from 'next/script';
 
 interface LayoutProps {
   company: Company;
 }
 
 const Layout: React.FC<LayoutProps> = ({ company }) => {
+  // Add chat widget initialization
+  useEffect(() => {
+    // Load chat widget from public folder
+    const script = document.createElement('script');
+    script.src = '/chat-widget.js';
+    script.async = true;
+    script.onload = () => {
+      // Initialize chat widget with company info after loading
+      if (typeof window !== 'undefined' && window['HVACChatWidget']) {
+        // Use bracket notation to avoid TypeScript errors
+        const chatWidget = window['HVACChatWidget'] as any;
+        chatWidget.init({
+          slug: company.slug,
+          name: company.name
+        });
+      }
+    };
+    document.body.appendChild(script);
+
+    // Cleanup function to remove script when component unmounts
+    return () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
+  }, [company]);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -31,6 +58,9 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <ServiceArea company={company} />
       </main>
       <Footer company={company} />
+      
+      {/* Login reminder */}
+      <div className="hidden">Chat widget loaded</div>
     </div>
   );
 };
