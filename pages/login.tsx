@@ -15,23 +15,20 @@ export default function LoginPage({ slug, username, companyName, password }: Pro
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [error, setError] = useState("");
   
-  // Auto-login when page loads
+  // Auto-login when page loads - simpler version
   useEffect(() => {
     const autoLogin = async () => {
       if (!isLoggingIn) {
         setIsLoggingIn(true);
         
         try {
+          // For preview accounts, we just need to send the slug
           const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              slug,
-              username,
-              password 
-            }),
+            body: JSON.stringify({ slug }),
           });
           
           if (response.redirected) {
@@ -50,8 +47,9 @@ export default function LoginPage({ slug, username, companyName, password }: Pro
       }
     };
     
+    // Run auto-login when component mounts
     autoLogin();
-  }, [slug, username, password, isLoggingIn]);
+  }, [slug, isLoggingIn]);
   
   return (
     <>
