@@ -1,7 +1,7 @@
 // pages/login.tsx
 import { GetServerSideProps } from "next";
 import Head from "next/head";
-import { db } from "../lib/replitDb";
+import { portalDb } from "../lib/portalDb";
 
 interface Props {
   slug: string;
@@ -39,12 +39,11 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const slug = query.slug as string;
   if (!slug) return { notFound: true };
 
-  const preview = await db.get<{ username: string; passwordHash: string }>(
-    `previewUser:${slug}`
-  );
+  const preview = await portalDb.getPreviewUser(slug);
   if (!preview) return { notFound: true };
 
-  // For actual use, replace this with password: query.pwd
+  // For security, we only include password from the query parameter
+  // and never store it in our server-side code
   const password = query.pwd as string || ""; 
   
   return { props: { slug, username: preview.username, password } };

@@ -1,6 +1,6 @@
 // pages/api/auth/login.ts
 import { NextApiRequest, NextApiResponse } from "next";
-import { db } from "../../../lib/replitDb";
+import { portalDb } from "../../../lib/portalDb";
 import bcrypt from "bcryptjs";
 import { serialize } from "cookie";
 import crypto from "crypto";
@@ -12,16 +12,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     slug: string; username: string; password: string;
   };
 
-  const preview = await db.get<{
-    username: string; passwordHash: string; expires: number;
-  }>(`previewUser:${slug}`);
+  const preview = await portalDb.getPreviewUser(slug);
 
-  if (!preview || Date.now() > preview.expires)
+  if (!preview || new Date() > new Date(preview.expires_at))
     return res.status(403).send("Preview expired");
 
   const ok =
     username === preview.username &&
-    (await bcrypt.compare(password, preview.passwordHash));
+    (await bcrypt.compare(password, preview.password_hash));
 
   if (!ok) return res.status(401).send("Bad credentials");
 

@@ -9,17 +9,34 @@ export function middleware(req: NextRequest) {
   const slug = req.nextUrl.pathname.split("/")[2] || "";
   const session = parse(req.headers.get("cookie") || "").session || "";
 
-  const [val, sig] = Buffer.from(session, "base64").toString().split(".");
-  const good =
-    val === slug &&
-    crypto
-      .createHmac("sha256", process.env.SESSION_SECRET!)
-      .update(val)
-      .digest("hex") === sig;
+  if (!session) {
+    return NextResponse.redirect(
+      new URL(`/login?slug=${slug}`, req.nextUrl.origin)
+    );
+  }
 
-  if (!good) {
+  try {
+    const [val, sig] = Buffer.from(session, "base64").toString().split(".");
+    const good =
+      val === slug &&
+      crypto
+        .createHmac("sha256", process.env.SESSION_SECRET!)
+        .update(val)
+        .digest("hex") === sig;
+
+    if (!good) {
+      return NextResponse.redirect(
+        new URL(`/login?slug=${slug}`, req.nextUrl.origin)
+      );
+    }
+  } catch (error) {
+    // If there's any error parsing the session, redirect to login
     return NextResponse.redirect(
       new URL(`/login?slug=${slug}`, req.nextUrl.origin)
     );
   }
 }
+
+export const config = {
+  matcher: ['/portal/:path*']
+};

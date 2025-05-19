@@ -2,15 +2,29 @@
 import { GetServerSideProps } from "next";
 import { parse } from "cookie";
 import crypto from "crypto";
-import { db } from "../../../lib/replitDb";
+import { portalDb } from "../../../lib/portalDb";
 
-interface Props { companyName: string; slug: string; }
+interface Props { 
+  companyName: string; 
+  slug: string;
+  companyData: any;
+}
 
-export default function Portal({ companyName }: Props) {
+export default function Portal({ companyName, companyData }: Props) {
   return (
     <main style={{ fontFamily: "sans-serif", padding: 40 }}>
       <h1>🏠 {companyName} – Dashboard Portal</h1>
       <p>✅ You are authenticated. Welcome to your HVAC business dashboard.</p>
+      
+      <div style={{ marginTop: 40 }}>
+        <h2>Company Information</h2>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          <li><strong>Location:</strong> {companyData.city}, {companyData.state}</li>
+          <li><strong>Phone:</strong> {companyData.phone || 'N/A'}</li>
+          <li><strong>Rating:</strong> {companyData.rating} ({companyData.reviews} reviews)</li>
+          <li><strong>Website:</strong> {companyData.site || 'N/A'}</li>
+        </ul>
+      </div>
     </main>
   );
 }
@@ -30,6 +44,23 @@ export const getServerSideProps: GetServerSideProps = async ({ req, params }) =>
     return { redirect: { destination: `/login?slug=${slug}`, permanent: false } };
   }
 
-  const company = await db.get<{ name: string }>(`company:${slug}`);
-  return { props: { companyName: company?.name || slug, slug } };
+  const company = await portalDb.getCompany(slug);
+  if (!company) {
+    return { notFound: true };
+  }
+  
+  return { 
+    props: { 
+      companyName: company.name || slug, 
+      slug,
+      companyData: {
+        city: company.city || 'N/A',
+        state: company.state || 'N/A',
+        phone: company.phone || 'N/A',
+        rating: company.rating || 0,
+        reviews: company.reviews || 0,
+        site: company.site || ''
+      }
+    } 
+  };
 };
