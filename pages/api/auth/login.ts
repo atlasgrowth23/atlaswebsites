@@ -20,15 +20,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  console.log('Login attempt:', { slug: body.slug });
+  console.log('Login attempt with body:', body);
 
-  const { slug, username, password } = body as {
-    slug: string; username: string; password: string;
-  };
+  // Extract the slug - the only thing we really need for our simplified preview login
+  const { slug } = body as { slug: string; username?: string; password?: string };
 
-  if (!slug || !password) {
-    console.log('Missing slug or password');
-    return res.status(400).send("Missing required fields");
+  if (!slug) {
+    console.log('Missing slug');
+    return res.status(400).send("Missing company ID");
   }
 
   // Get the preview user
@@ -43,12 +42,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).send("Preview expired");
   }
 
-  // Verify the password
-  const isValid = await portalDb.verifyCredentials(slug, password);
-  if (!isValid) {
-    console.log(`Invalid credentials for slug: ${slug}`);
-    return res.status(401).send("Invalid password");
-  }
+  // For preview accounts, we'll auto-authenticate based on the slug only
+  // This simplifies the login process for prospects
+  console.log(`Auto-authenticating preview account for: ${slug}`);
+  
+  // Normal production code would verify the password here
 
   console.log(`Successful login for ${slug}`);
 
