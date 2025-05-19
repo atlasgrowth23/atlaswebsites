@@ -292,8 +292,8 @@
       return;
     }
     
-    // If we already have contact info, send message to API for AI response
-    sendMessageToAPI(message);
+    // After contact info is collected, just show a simple response instead of using AI
+    addMessageToChat("Thank you for your message. A member of our team will contact you shortly.", false);
   }
   
   // Add message to chat UI
@@ -316,40 +316,9 @@
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
   
-  // Send message to API and get AI response
+  // Send message to server for record keeping
   function sendMessageToAPI(message) {
-    // Add loading indicator
-    const messagesContainer = document.getElementById('hvac-messages');
-    const loadingId = 'loading-' + Date.now();
-    messagesContainer.innerHTML += `
-      <div id="${loadingId}" style="
-        background-color: #f1f1f1;
-        padding: 10px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        max-width: 80%;
-      ">
-        <div style="display: flex; gap: 4px; align-items: center;">
-          <div style="width: 8px; height: 8px; background-color: #999; border-radius: 50%; animation: pulse 1s infinite;"></div>
-          <div style="width: 8px; height: 8px; background-color: #999; border-radius: 50%; animation: pulse 1s infinite 0.2s;"></div>
-          <div style="width: 8px; height: 8px; background-color: #999; border-radius: 50%; animation: pulse 1s infinite 0.4s;"></div>
-        </div>
-      </div>
-    `;
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    // Create loading animation
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @keyframes pulse {
-        0% { opacity: 0.4; }
-        50% { opacity: 1; }
-        100% { opacity: 0.4; }
-      }
-    `;
-    document.head.appendChild(style);
-    
-    // First, store the user message
+    // Store the user message in database
     fetch(`/api/messages/${companySlug}`, {
       method: 'POST',
       headers: {
@@ -365,55 +334,12 @@
     })
     .then(response => {
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        console.error('Failed to send message to server');
       }
       return response.json();
-    })
-    .then(data => {
-      console.log('Message sent successfully:', data);
-      
-      // Then, get AI response
-      return fetch('/api/ai-chat-response', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          message,
-          companySlug,
-          contactId
-        })
-      });
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('AI response received:', data);
-      
-      // Remove loading indicator
-      const loadingElement = document.getElementById(loadingId);
-      if (loadingElement) {
-        loadingElement.remove();
-      }
-      
-      // Add AI response to chat
-      addMessageToChat(data.reply, false);
     })
     .catch(error => {
-      console.error('Error in chat flow:', error);
-      
-      // Remove loading indicator
-      const loadingElement = document.getElementById(loadingId);
-      if (loadingElement) {
-        loadingElement.remove();
-      }
-      
-      // Add error message
-      addMessageToChat('Sorry, I\'m having trouble responding right now. Please try again or leave your contact info so our team can help you.', false);
+      console.error('Error storing message:', error);
     });
   }
   
