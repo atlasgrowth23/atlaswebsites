@@ -22,9 +22,26 @@ interface Props {
   companyData: any;
 }
 
+interface Message {
+  id: string;
+  company_id: string;
+  contact_id: string | null;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  message: string;
+  is_from_website: boolean;
+  is_read: boolean;
+  created_at: string;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+}
+
 export default function PortalPage({ companyName, slug, companyData }: Props) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
@@ -260,6 +277,22 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                   }}
                 >
                   Contacts
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="#" 
+                  onClick={(e) => { e.preventDefault(); setActiveTab('messages'); }}
+                  style={{ 
+                    display: 'block',
+                    padding: '12px 20px',
+                    color: 'white',
+                    textDecoration: 'none',
+                    backgroundColor: activeTab === 'messages' ? '#2c4f9c' : 'transparent',
+                    borderLeft: activeTab === 'messages' ? '4px solid white' : '4px solid transparent',
+                  }}
+                >
+                  Messages
                 </a>
               </li>
             </ul>
