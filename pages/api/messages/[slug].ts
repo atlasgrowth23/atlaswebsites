@@ -72,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           `INSERT INTO company_messages (id, company_id, contact_id, body, direction, service_type, ts) 
            VALUES ($1, $2, $3, $4, $5, $6, NOW()) 
            RETURNING *`,
-          [messageId, companyId, contactId, message, 'inbound', 'website_chat']
+          [messageId, companyId, contactId, message, 'in', 'website_chat']
         );
         
         return res.status(201).json(newMessage);

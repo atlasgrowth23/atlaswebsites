@@ -1,0 +1,71 @@
+   at async handler (pages/api/messages/[slug].ts:71:27)
+  91 | async function retryQuery<T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promise<T> {
+  92 |   try {
+> 93 |     return await fn();
+     |           ^
+  94 |   } catch (error) {
+  95 |     if (retries <= 0) throw error;
+  96 |      {
+  length: 418,
+  severity: 'ERROR',
+  code: '23514',
+  detail: 'Failing row contains (0575febf-24ae-4a39-ae4c-fcb5ac764226, bb3a79ac-5329-4fcd-a243-1bbd1e804081, 0009465d-0319-4312-a475-bfb90cd2968d, inbound, c, website_chat, 2025-05-19 23:07:29.019463+00).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'company_messages',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'company_messages_direction_check',
+  file: 'execMain.c',
+  line: '2058',
+  routine: 'ExecConstraints'
+}
+ POST /api/messages/temperaturepro 201 in 3111ms
+Query failed, retrying... (1/3)
+Query failed, retrying... (2/3)
+Query failed, retrying... (3/3)
+Database query error: error: new row for relation "company_messages" violates check constraint "company_messages_direction_check"
+    at async retryQuery (lib/db.ts:93:11)
+    at async query (lib/db.ts:109:11)
+    at async queryOne (lib/db.ts:120:19)
+    at async handler (pages/api/messages/[slug].ts:71:27)
+  91 | async function retryQuery<T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promise<T> {
+  92 |   try {
+> 93 |     return await fn();
+     |           ^
+  94 |   } catch (error) {
+  95 |     if (retries <= 0) throw error;
+  96 |      {
+  length: 418,
+  severity: 'ERROR',
+  code: '23514',
+  detail: 'Failing row contains (1b7e1602-0d16-4da2-8986-292ea240fa67, bb3a79ac-5329-4fcd-a243-1bbd1e804081, 6331d772-45e6-4a26-b3e3-b10b075c5441, inbound, c, website_chat, 2025-05-19 23:07:51.203597+00).',
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'company_messages',
+  column: undefined,
+  dataType: undefined,
+  constraint: 'company_messages_direction_check',
+  file: 'execMain.c',
+  line: '2058',
+  routine: 'ExecConstraints'
+}
+ POST /api/messages/temperaturepro 201 in 2952ms
+Portal access for TemperaturePro
+ GET /_next/data/development/p/temperaturepro.json?slug=temperaturepro 200 in 588ms
+Tracked portal view for temperaturepro
+ POST /api/track-view?slug=temperaturepro 200 in 391ms
+Tracked portal view for temperaturepro
+ POST /api/track-view?slug=temperaturepro 200 in 414ms
+ GET /api/messages/temperaturepro 200 in 105ms
+ ✓ Compiled /api/contacts/[slug] in 116ms (166 modules)
+ GET /api/contacts/temperaturepro 200 in 531ms
+ GET /api/messages/temperaturepro 304 in 87ms

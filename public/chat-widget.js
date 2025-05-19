@@ -1,11 +1,18 @@
 /**
- * Simple HVAC Website Chat Widget
- * This widget can be added to any website to provide a chat interface for potential customers.
+ * Advanced HVAC Website Chat Widget with AI Integration
+ * This widget provides an interactive chat interface with smart buttons,
+ * free-form questions, and AI-powered responses.
  */
 (function() {
   // Configuration
   let companySlug = '';
   let companyName = '';
+  
+  // State
+  let contactId = null;
+  let contactCollected = false;
+  let messagesHistory = [];
+  let messageCount = 0;
   
   // Initialize widget
   function init(config) {
@@ -72,7 +79,7 @@
           align-items: center;
         ">
           <div>Chat with ${companyName}</div>
-          <div id="hvac-close-chat" style="cursor: pointer;">×</div>
+          <div id="hvac-close-chat" style="cursor: pointer; font-size: 20px;">×</div>
         </div>
         
         <!-- Chat area -->
@@ -92,11 +99,76 @@
           </div>
         </div>
         
-        <!-- Contact form -->
-        <div style="
+        <!-- Quick buttons -->
+        <div id="hvac-quick-buttons" style="
+          padding: 0 15px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 10px;
+        ">
+          <button class="hvac-quick-button" data-message="I need a quote for a new HVAC system" style="
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+          ">Get Quote</button>
+          
+          <button class="hvac-quick-button" data-message="I need maintenance for my HVAC system" style="
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+          ">Maintenance</button>
+          
+          <button class="hvac-quick-button" data-message="My AC isn't working properly" style="
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+          ">Repair Service</button>
+        </div>
+        
+        <!-- Chat input -->
+        <div id="hvac-chat-input-area" style="
           padding: 15px;
           border-top: 1px solid #eee;
         ">
+          <form id="hvac-message-form" style="
+            display: flex;
+            gap: 8px;
+          ">
+            <input type="text" id="hvac-input-message" placeholder="Type your message..." style="
+              flex: 1;
+              padding: 10px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+            ">
+            <button type="submit" style="
+              background-color: #1e3a8a;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              padding: 8px 15px;
+              cursor: pointer;
+            ">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </form>
+        </div>
+        
+        <!-- Contact form (initially hidden) -->
+        <div id="hvac-contact-form-area" style="display: none; padding: 15px; border-top: 1px solid #eee;">
+          <p style="margin-top: 0; margin-bottom: 10px; font-size: 14px;">Please share your contact info so we can help you better:</p>
           <form id="hvac-contact-form">
             <div style="margin-bottom: 8px;">
               <label style="display: block; margin-bottom: 3px; font-size: 12px;">Name *</label>
@@ -108,26 +180,32 @@
               <input type="email" id="hvac-email" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
             
-            <div style="margin-bottom: 8px;">
+            <div style="margin-bottom: 10px;">
               <label style="display: block; margin-bottom: 3px; font-size: 12px;">Phone</label>
               <input type="tel" id="hvac-phone" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
             
-            <div style="margin-bottom: 10px;">
-              <label style="display: block; margin-bottom: 3px; font-size: 12px;">Message *</label>
-              <textarea id="hvac-message" required rows="2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="hvac-skip-contact" style="
+                flex: 1;
+                background-color: #f5f5f5;
+                border: 1px solid #ddd;
+                padding: 8px;
+                border-radius: 4px;
+                cursor: pointer;
+              ">Skip</button>
+              
+              <button type="submit" style="
+                flex: 2;
+                background-color: #1e3a8a;
+                color: white;
+                border: none;
+                padding: 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: bold;
+              ">Continue</button>
             </div>
-            
-            <button type="submit" style="
-              width: 100%;
-              background-color: #1e3a8a;
-              color: white;
-              border: none;
-              padding: 10px;
-              border-radius: 4px;
-              cursor: pointer;
-              font-weight: bold;
-            ">Send Message</button>
           </form>
         </div>
       </div>
@@ -137,7 +215,18 @@
     // Add event listeners
     document.getElementById('hvac-chat-button').addEventListener('click', toggleChat);
     document.getElementById('hvac-close-chat').addEventListener('click', toggleChat);
-    document.getElementById('hvac-contact-form').addEventListener('submit', submitForm);
+    document.getElementById('hvac-message-form').addEventListener('submit', handleMessage);
+    document.getElementById('hvac-contact-form').addEventListener('submit', submitContactInfo);
+    document.getElementById('hvac-skip-contact').addEventListener('click', skipContactInfo);
+    
+    // Add event listeners to quick buttons
+    const quickButtons = document.querySelectorAll('.hvac-quick-button');
+    quickButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const message = this.getAttribute('data-message');
+        sendUserMessage(message);
+      });
+    });
     
     console.log("Chat widget initialized successfully");
   }
@@ -153,27 +242,47 @@
     }
   }
   
-  // Handle form submission
-  function submitForm(e) {
+  // Handle user message submission
+  function handleMessage(e) {
     e.preventDefault();
     
-    // Get form values
-    const name = document.getElementById('hvac-name').value;
-    const email = document.getElementById('hvac-email').value;
-    const phone = document.getElementById('hvac-phone').value;
-    const message = document.getElementById('hvac-message').value;
+    const messageInput = document.getElementById('hvac-input-message');
+    const message = messageInput.value.trim();
     
-    console.log("Form submitted:", { name, email, phone, message });
+    if (!message) return;
     
+    sendUserMessage(message);
+    messageInput.value = '';
+  }
+  
+  // Send user message to API and display in chat
+  function sendUserMessage(message) {
     // Add user message to chat
+    addMessageToChat(message, true);
+    
+    // Increment message count
+    messageCount++;
+    
+    // Show contact form after 2 messages if contact info hasn't been collected
+    if (messageCount >= 2 && !contactCollected) {
+      showContactForm();
+      return;
+    }
+    
+    // Send message to API
+    sendMessageToAPI(message);
+  }
+  
+  // Add message to chat UI
+  function addMessageToChat(message, isUser) {
     const messagesContainer = document.getElementById('hvac-messages');
     messagesContainer.innerHTML += `
       <div style="
-        background-color: #e3f0ff;
+        background-color: ${isUser ? '#e3f0ff' : '#f1f1f1'};
         padding: 10px;
         border-radius: 8px;
         margin-bottom: 10px;
-        margin-left: auto;
+        margin-left: ${isUser ? 'auto' : '0'};
         max-width: 80%;
       ">
         ${message}
@@ -182,14 +291,53 @@
     
     // Scroll to bottom
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+  
+  // Send message to API and get AI response
+  function sendMessageToAPI(message) {
+    // Add loading indicator
+    const messagesContainer = document.getElementById('hvac-messages');
+    const loadingId = 'loading-' + Date.now();
+    messagesContainer.innerHTML += `
+      <div id="${loadingId}" style="
+        background-color: #f1f1f1;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        max-width: 80%;
+      ">
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <div style="width: 8px; height: 8px; background-color: #999; border-radius: 50%; animation: pulse 1s infinite;"></div>
+          <div style="width: 8px; height: 8px; background-color: #999; border-radius: 50%; animation: pulse 1s infinite 0.2s;"></div>
+          <div style="width: 8px; height: 8px; background-color: #999; border-radius: 50%; animation: pulse 1s infinite 0.4s;"></div>
+        </div>
+      </div>
+    `;
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
     
-    // Send message to API
+    // Create loading animation
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes pulse {
+        0% { opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { opacity: 0.4; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    // First, store the user message
     fetch(`/api/messages/${companySlug}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ name, email, phone, message })
+      body: JSON.stringify({ 
+        name: 'Website Visitor', 
+        email: null, 
+        phone: null, 
+        message 
+      })
     })
     .then(response => {
       if (!response.ok) {
@@ -200,44 +348,118 @@
     .then(data => {
       console.log('Message sent successfully:', data);
       
-      // Add response message
-      messagesContainer.innerHTML += `
-        <div style="
-          background-color: #f1f1f1;
-          padding: 10px;
-          border-radius: 8px;
-          margin-bottom: 10px;
-          max-width: 80%;
-        ">
-          Thank you for your message! We'll get back to you as soon as possible.
-        </div>
-      `;
+      // Then, get AI response
+      return fetch('/api/ai-chat-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          message,
+          companySlug,
+          contactId
+        })
+      });
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('AI response received:', data);
       
-      // Clear form
-      document.getElementById('hvac-contact-form').reset();
+      // Remove loading indicator
+      const loadingElement = document.getElementById(loadingId);
+      if (loadingElement) {
+        loadingElement.remove();
+      }
       
-      // Scroll to bottom
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      // Add AI response to chat
+      addMessageToChat(data.reply, false);
     })
     .catch(error => {
-      console.error('Error sending message:', error);
+      console.error('Error in chat flow:', error);
+      
+      // Remove loading indicator
+      const loadingElement = document.getElementById(loadingId);
+      if (loadingElement) {
+        loadingElement.remove();
+      }
       
       // Add error message
-      messagesContainer.innerHTML += `
-        <div style="
-          background-color: #f1f1f1;
-          padding: 10px;
-          border-radius: 8px;
-          margin-bottom: 10px;
-          max-width: 80%;
-        ">
-          Sorry, there was an error sending your message. Please try again later.
-        </div>
-      `;
-      
-      // Scroll to bottom
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      addMessageToChat('Sorry, I\'m having trouble responding right now. Please try again or leave your contact info so our team can help you.', false);
     });
+  }
+  
+  // Show contact form
+  function showContactForm() {
+    document.getElementById('hvac-chat-input-area').style.display = 'none';
+    document.getElementById('hvac-quick-buttons').style.display = 'none';
+    document.getElementById('hvac-contact-form-area').style.display = 'block';
+  }
+  
+  // Show chat input
+  function showChatInput() {
+    document.getElementById('hvac-contact-form-area').style.display = 'none';
+    document.getElementById('hvac-chat-input-area').style.display = 'block';
+    document.getElementById('hvac-quick-buttons').style.display = 'flex';
+  }
+  
+  // Submit contact form
+  function submitContactInfo(e) {
+    e.preventDefault();
+    
+    // Get form values
+    const name = document.getElementById('hvac-name').value;
+    const email = document.getElementById('hvac-email').value;
+    const phone = document.getElementById('hvac-phone').value;
+    
+    console.log("Contact info submitted:", { name, email, phone });
+    
+    // Mark contact as collected
+    contactCollected = true;
+    
+    // Create contact in database
+    fetch(`/api/messages/${companySlug}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        name, 
+        email, 
+        phone, 
+        message: `Contact info submitted: ${name}, ${email || 'No email'}, ${phone || 'No phone'}`
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Contact created:', data);
+      
+      if (data.contact_id) {
+        contactId = data.contact_id;
+      }
+      
+      // Thank the user and show chat input again
+      addMessageToChat(`Thanks ${name}! Now, how can we help you today?`, false);
+      showChatInput();
+    })
+    .catch(error => {
+      console.error('Error creating contact:', error);
+      
+      // Still thank the user and continue
+      addMessageToChat(`Thanks ${name}! Now, how can we help you today?`, false);
+      showChatInput();
+    });
+  }
+  
+  // Skip contact form
+  function skipContactInfo() {
+    contactCollected = true; // Mark as collected so we don't show the form again
+    addMessageToChat('No problem! How can we help you today?', false);
+    showChatInput();
   }
   
   // Expose public API
