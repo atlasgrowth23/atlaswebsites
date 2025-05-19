@@ -25,11 +25,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case 'GET':
         // Get all messages for this company
         const messages = await queryMany(
-          `SELECT m.*, c.name as contact_name, c.email as contact_email, c.phone as contact_phone 
+          `SELECT m.id, m.company_id, m.contact_id, m.body as message, 
+                 m.direction, m.service_type, m.ts,
+                 c.name as contact_name, c.email as contact_email, c.phone as contact_phone 
            FROM company_messages m
            LEFT JOIN company_contacts c ON m.contact_id = c.id
            WHERE m.company_id = $1 
-           ORDER BY m.created_at DESC`,
+           ORDER BY m.ts DESC`,
           [companyId]
         );
         return res.status(200).json(messages);
@@ -67,10 +69,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Store the message
         const messageId = uuidv4();
         const newMessage = await queryOne(
-          `INSERT INTO company_messages (id, company_id, contact_id, name, email, phone, message, is_from_website, is_read) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+          `INSERT INTO company_messages (id, company_id, contact_id, body, direction, service_type, ts) 
+           VALUES ($1, $2, $3, $4, $5, $6, NOW()) 
            RETURNING *`,
-          [messageId, companyId, contactId, name, email || null, phone || null, message, true, false]
+          [messageId, companyId, contactId, message, 'inbound', 'website_chat']
         );
         
         return res.status(201).json(newMessage);

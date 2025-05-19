@@ -26,13 +26,10 @@ interface Message {
   id: string;
   company_id: string;
   contact_id: string | null;
-  name: string;
-  email: string | null;
-  phone: string | null;
   message: string;
-  is_from_website: boolean;
-  is_read: boolean;
-  created_at: string;
+  direction: string;
+  service_type: string;
+  ts: string;
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
