@@ -13,11 +13,15 @@
   let contactCollected = false;
   let messagesHistory = [];
   let messageCount = 0;
+  let sessionId = null;
   
   // Initialize widget
   function init(config) {
     companySlug = config.slug || '';
     companyName = config.name || 'HVAC Company';
+    
+    // Generate a unique session ID for this chat conversation
+    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     
     console.log("Chat widget initializing for: ", companyName, companySlug);
     
@@ -288,7 +292,8 @@
           name: 'Website Visitor', 
           email: null, 
           phone: null, 
-          message: message
+          message: message,
+          session_id: sessionId
         })
       });
       
@@ -361,10 +366,11 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        name: 'Website Visitor', 
+        name: contactCollected ? '' : 'Website Visitor', 
         email: null, 
         phone: null, 
-        message 
+        message,
+        session_id: sessionId
       })
     })
     .then(response => {

@@ -46,6 +46,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // Check if contact exists
         let contactId = null;
+        let isNewContact = false;
+        
         if (email || phone) {
           const existingContact = await queryOne(
             'SELECT id FROM company_contacts WHERE company_id = $1 AND (email = $2 OR phone = $3)',
@@ -56,23 +58,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             contactId = existingContact.id;
           } else {
             // Create a new contact
+            const contactUuid = uuidv4();
             const newContact = await queryOne(
               `INSERT INTO company_contacts (id, company_id, name, email, phone) 
                VALUES ($1, $2, $3, $4, $5) 
                RETURNING id`,
-              [uuidv4(), companyId, name, email || null, phone || null]
+              [contactUuid, companyId, name, email || null, phone || null]
             );
             contactId = newContact.id;
+            isNewContact = true;
+            
+            // If a new contact was created with email/phone, update any previous messages 
+            // from this session to link to this contact
+            if (req.body.session_id) {
+              await query(
+                `UPDATE company_messages 
+                 SET contact_id = $1 
+                 WHERE company_id = $2 
+                 AND session_id = $3 
+                 AND contact_id IS NULL`,
+                [contactId, companyId, req.body.session_id]
+              );
+            }
           }
         }
         
-        // Store the message
+        // Store the message with session tracking
         const messageId = uuidv4();
+        const sessionId = req.body.session_id || uuidv4(); // Use provided session_id or generate a new one
+        
         const newMessage = await queryOne(
-          `INSERT INTO company_messages (id, company_id, contact_id, body, direction, service_type, ts) 
-           VALUES ($1, $2, $3, $4, $5, $6, NOW()) 
+          `INSERT INTO company_messages (id, company_id, contact_id, body, direction, service_type, ts, session_id) 
+           VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7) 
            RETURNING *`,
-          [messageId, companyId, contactId, message, 'in', 'website_chat']
+          [messageId, companyId, contactId, message, 'in', 'website_chat', sessionId]
         );
         
         return res.status(201).json(newMessage);
