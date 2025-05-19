@@ -264,38 +264,28 @@
     // Add user message to chat
     addMessageToChat(message, true);
     
-    // If contact info hasn't been collected yet, show the form immediately
+    // Store message in database
+    fetch(`/api/messages/${companySlug}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ 
+        name: 'Website Visitor', 
+        email: null, 
+        phone: null, 
+        message: message,
+        session_id: sessionId
+      })
+    });
+    
+    // If contact info hasn't been collected yet, show the form immediately after any message
     if (!contactCollected) {
-      // Show a specific response based on their inquiry
-      let responseText = "";
-      
-      if (message.toLowerCase().includes("quote")) {
-        responseText = "I'd be happy to help you get a quote for a new HVAC system. To connect you with our team, please provide your contact information below:";
-      } else if (message.toLowerCase().includes("maintenance")) {
-        responseText = "Regular maintenance is essential for your HVAC system. To schedule a maintenance visit, please share your contact details below:";
-      } else if (message.toLowerCase().includes("repair") || message.toLowerCase().includes("isn't working")) {
-        responseText = "I'm sorry to hear you're having issues. To get help with repairs, please provide your contact information below:";
-      } else {
-        responseText = "Thank you for your message. To help you better, please share your contact information below:";
-      }
+      // Simple, consistent response for all inquiries
+      const responseText = "Thank you for your message. To connect you with our team, please share your contact information below:";
       
       // Add system response
       addMessageToChat(responseText, false);
-      
-      // Store message in database
-      fetch(`/api/messages/${companySlug}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ 
-          name: 'Website Visitor', 
-          email: null, 
-          phone: null, 
-          message: message,
-          session_id: sessionId
-        })
-      });
       
       // Show contact form
       showContactForm();
@@ -502,16 +492,14 @@
         addMessageToChat(additionalDetails, true);
         messageInput.value = '';
         
-        // Store the additional details
+        // Store the additional details - use a simpler message without trying to send contact info again
         fetch(`/api/messages/${companySlug}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ 
-            name, 
-            email, 
-            phone, 
+            name: 'Website Visitor', 
             message: additionalDetails,
             session_id: sessionId
           })

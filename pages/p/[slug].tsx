@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { query, queryOne } from "../../lib/db";
+import PortalMessagesTab from "../../components/PortalMessagesTab";
 
 interface Contact {
   id: string;
