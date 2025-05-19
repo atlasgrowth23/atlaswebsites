@@ -7,62 +7,64 @@ import { useState } from "react";
 interface Props {
   slug: string;
   username: string;
-  password: string;
-  showForm: boolean;
+  companyName: string;
 }
 
-export default function LoginPage({ slug, username, password, showForm }: Props) {
-  const [formPassword, setFormPassword] = useState(password);
+export default function LoginPage({ slug, username, companyName }: Props) {
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // If we have password from the URL and showForm is false, auto-submit
-  if (password && !showForm) {
-    return (
-      <>
-        <Head><title>Logging you in…</title></Head>
-        <form
-          id="autoForm"
-          method="POST"
-          action="/api/auth/login"
-          style={{ display: "none" }}
-        >
-          <input name="slug" value={slug} readOnly />
-          <input name="username" value={username} readOnly />
-          <input name="password" value={password} readOnly />
-        </form>
-        <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '500px', margin: '40px auto', textAlign: 'center', padding: '20px' }}>
-          <h1>HVAC Portal Login</h1>
-          <p>Redirecting to your company portal...</p>
-        </div>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `document.getElementById("autoForm").submit();`
-          }}
-        />
-      </>
-    );
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!password.trim()) {
+      setError("Password is required");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError("");
+    
+    // Submit the form programmatically using fetch
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          slug,
+          username,
+          password
+        }),
+      });
+      
+      if (response.redirected) {
+        // If successful login, follow the redirect
+        window.location.href = response.url;
+      } else {
+        // If error, show the error message
+        const errorText = await response.text();
+        setError(errorText || "Login failed. Please check your password and try again.");
+        setIsSubmitting(false);
+      }
+    } catch (err) {
+      setError("Login failed. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
   
-  // Otherwise, show the manual login form
   return (
     <>
-      <Head><title>HVAC Company Portal Login</title></Head>
+      <Head><title>{companyName} - Portal Login</title></Head>
       <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '500px', margin: '40px auto', padding: '20px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', borderRadius: '8px' }}>
-        <h1 style={{ textAlign: 'center', color: '#1e3a8a' }}>Company Portal</h1>
-        <p style={{ textAlign: 'center', marginBottom: '20px' }}>Enter your credentials to access your HVAC business dashboard</p>
+        <h1 style={{ textAlign: 'center', color: '#1e3a8a' }}>{companyName}</h1>
+        <p style={{ textAlign: 'center', marginBottom: '20px' }}>Enter your password to access your HVAC business dashboard</p>
         
         {error && <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '8px 12px', borderRadius: '4px', marginBottom: '20px' }}>{error}</div>}
         
-        <form 
-          method="POST" 
-          action="/api/auth/login"
-          onSubmit={(e) => {
-            if (!formPassword.trim()) {
-              e.preventDefault();
-              setError("Password is required");
-            }
-          }}
-        >
+        <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Company ID</label>
             <input
@@ -88,9 +90,9 @@ export default function LoginPage({ slug, username, password, showForm }: Props)
             <input
               type="password"
               name="password"
-              value={formPassword}
+              value={password}
               onChange={(e) => {
-                setFormPassword(e.target.value);
+                setPassword(e.target.value);
                 if (error) setError("");
               }}
               style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '4px' }}
@@ -99,9 +101,19 @@ export default function LoginPage({ slug, username, password, showForm }: Props)
           
           <button
             type="submit"
-            style={{ width: '100%', padding: '10px', backgroundColor: '#1e40af', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+            disabled={isSubmitting}
+            style={{ 
+              width: '100%', 
+              padding: '10px', 
+              backgroundColor: isSubmitting ? '#9ca3af' : '#1e40af', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px', 
+              fontWeight: 'bold', 
+              cursor: isSubmitting ? 'not-allowed' : 'pointer' 
+            }}
           >
-            Log In
+            {isSubmitting ? 'Logging in...' : 'Log In'}
           </button>
         </form>
       </div>
@@ -113,21 +125,19 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
   const slug = query.slug as string;
   if (!slug) return { notFound: true };
 
-  const preview = await portalDb.getPreviewUser(slug);
-  if (!preview) return { notFound: true };
-
-  // Use the password directly from the URL query parameter
-  const password = query.pwd as string || ""; 
+  // Get the company and user data
+  const [company, preview] = await Promise.all([
+    portalDb.getCompany(slug),
+    portalDb.getPreviewUser(slug)
+  ]);
   
-  // If the showForm query parameter is set, show form even if password is provided
-  const showForm = query.showForm === "true";
+  if (!company || !preview) return { notFound: true };
   
   return { 
     props: { 
       slug, 
-      username: preview.username, 
-      password,
-      showForm
+      username: preview.username,
+      companyName: company.name || 'HVAC Company'
     } 
   };
 };

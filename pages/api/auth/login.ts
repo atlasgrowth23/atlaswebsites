@@ -7,10 +7,22 @@ import crypto from "crypto";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") return res.status(405).end();
 
-  // Log the entire request body for debugging
-  console.log('Login attempt with body:', req.body);
+  // Parse JSON body for fetch requests or form data for form submissions
+  let body = req.body;
+  
+  // Handle both JSON and form data submissions
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      // Not JSON, might be URL encoded form data
+      console.log('Login request body is not JSON:', body);
+    }
+  }
 
-  const { slug, username, password } = req.body as {
+  console.log('Login attempt:', { slug: body.slug });
+
+  const { slug, username, password } = body as {
     slug: string; username: string; password: string;
   };
 
@@ -35,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const isValid = await portalDb.verifyCredentials(slug, password);
   if (!isValid) {
     console.log(`Invalid credentials for slug: ${slug}`);
-    return res.status(401).send("Bad credentials");
+    return res.status(401).send("Invalid password");
   }
 
   console.log(`Successful login for ${slug}`);
@@ -48,14 +60,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .digest("hex")}`
   ).toString("base64");
 
+  // Set the cookie
   res.setHeader(
     "Set-Cookie",
     serialize("session", token, {
       httpOnly: true,
       path: "/",
-      maxAge: 14 * 24 * 3600
+      maxAge: 14 * 24 * 3600,
+      sameSite: "lax"
     })
   );
   
-  res.redirect(`/portal/${slug}`);
+  // Redirect to the portal
+  res.redirect(302, `/portal/${slug}`);
 }
