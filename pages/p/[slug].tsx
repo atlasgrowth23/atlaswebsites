@@ -783,13 +783,15 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                               marginBottom: '8px'
                             }}>
                               <div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{message.name}</div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                                  {message.contact_name || 'Website Visitor'}
+                                </div>
                                 <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                                  {new Date(message.created_at).toLocaleString()}
+                                  {new Date(message.ts).toLocaleString()}
                                 </div>
                               </div>
                               <div>
-                                {message.is_from_website && (
+                                {message.service_type === 'website_chat' && (
                                   <span style={{ 
                                     backgroundColor: '#3b82f6', 
                                     color: 'white', 
@@ -797,15 +799,15 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                                     borderRadius: '9999px',
                                     fontSize: '0.7rem'
                                   }}>
-                                    Website Lead
+                                    Website Chat
                                   </span>
                                 )}
                               </div>
                             </div>
                             
                             <div style={{ marginBottom: '8px' }}>
-                              <div><strong>Email:</strong> {message.email || '—'}</div>
-                              <div><strong>Phone:</strong> {message.phone || '—'}</div>
+                              <div><strong>Email:</strong> {message.contact_email || '—'}</div>
+                              <div><strong>Phone:</strong> {message.contact_phone || '—'}</div>
                             </div>
                             
                             <div style={{ 
