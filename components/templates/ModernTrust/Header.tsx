@@ -135,6 +135,13 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                   {item}
                 </Link>
               ))}
+              <Link 
+                href={`/p/${company.slug}`}
+                className="text-lg text-white font-medium transition-colors py-2 bg-blue-600/30 px-4 rounded-lg mt-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Portal Login
+              </Link>
             </nav>
             
             {/* Mobile reviews badge - only if ratings should show */}
