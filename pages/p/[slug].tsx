@@ -39,7 +39,6 @@ interface Message {
 export default function PortalPage({ companyName, slug, companyData }: Props) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [currentContact, setCurrentContact] = useState<Contact | null>(null);
@@ -77,32 +76,6 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
     }
   }, [activeTab, slug]);
   
-  // State for conversation sessions
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [selectedSession, setSelectedSession] = useState<string | null>(null);
-  const [sessionMessages, setSessionMessages] = useState<any[]>([]);
-  
-  // Fetch messages when the messages tab is active
-  useEffect(() => {
-    if (activeTab === 'messages') {
-      fetchMessages();
-    }
-  }, [activeTab, slug]);
-  
-  // Set selected session messages when a session is selected
-  useEffect(() => {
-    if (selectedSession && sessions.length > 0) {
-      const session = sessions.find(s => s.session_id === selectedSession);
-      if (session) {
-        setSessionMessages(session.messages);
-      }
-    } else if (sessions.length > 0) {
-      // Select the first session by default
-      setSelectedSession(sessions[0].session_id);
-      setSessionMessages(sessions[0].messages);
-    }
-  }, [selectedSession, sessions]);
-  
   // Function to fetch contacts
   const fetchContacts = async () => {
     setLoading(true);
@@ -116,32 +89,6 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
       }
     } catch (error) {
       console.error('Error fetching contacts:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Function to fetch messages
-  const fetchMessages = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/messages/${slug}`);
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Check if the response has new sessions format
-        if (data.sessions) {
-          setSessions(data.sessions);
-          setMessages(data.messages); // Keep old format for backward compatibility
-        } else {
-          // If old format, just set the messages
-          setMessages(data);
-        }
-      } else {
-        console.error('Failed to fetch messages');
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
     }
@@ -484,32 +431,38 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                                 <div style={{ width: '30%' }}>{contact.name}</div>
                                 <div style={{ width: '30%' }}>{contact.email || '—'}</div>
                                 <div style={{ width: '25%' }}>{contact.phone || '—'}</div>
-                                <div style={{ width: '15%', display: 'flex', gap: '10px' }}>
-                                  <button
+                                <div style={{ 
+                                  width: '15%',
+                                  display: 'flex',
+                                  gap: '10px'
+                                }}>
+                                  <button 
                                     onClick={() => handleEdit(contact)}
                                     style={{
-                                      backgroundColor: '#4f46e5',
+                                      backgroundColor: '#3b82f6',
                                       color: 'white',
                                       border: 'none',
-                                      padding: '4px 8px',
                                       borderRadius: '4px',
+                                      padding: '4px 8px',
                                       fontSize: '0.8rem',
                                       cursor: 'pointer'
                                     }}
+                                    disabled={loading}
                                   >
                                     Edit
                                   </button>
-                                  <button
+                                  <button 
                                     onClick={() => handleDelete(contact.id)}
                                     style={{
                                       backgroundColor: '#ef4444',
                                       color: 'white',
                                       border: 'none',
-                                      padding: '4px 8px',
                                       borderRadius: '4px',
+                                      padding: '4px 8px',
                                       fontSize: '0.8rem',
                                       cursor: 'pointer'
                                     }}
+                                    disabled={loading}
                                   >
                                     Delete
                                   </button>
@@ -518,8 +471,12 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                             ))}
                           </>
                         ) : (
-                          <div style={{ color: '#666', textAlign: 'center', padding: '40px 20px' }}>
-                            <p>No contacts yet. Click "Add New Contact" to get started.</p>
+                          <div style={{ 
+                            textAlign: 'center', 
+                            padding: '30px',
+                            color: '#666' 
+                          }}>
+                            No contacts found. Add your first contact using the button above.
                           </div>
                         )}
                       </>
@@ -535,21 +492,8 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                     marginBottom: '20px' 
                   }}>
                     <h1 style={{ fontSize: '1.8rem', margin: 0 }}>
-                      {currentContact ? 'Edit Contact' : 'Add New Contact'}
+                      {currentContact ? `Edit Contact: ${currentContact.name}` : 'Add New Contact'}
                     </h1>
-                    <button 
-                      onClick={() => setShowContactForm(false)}
-                      style={{ 
-                        backgroundColor: '#6b7280',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Cancel
-                    </button>
                   </div>
                   
                   <div style={{ 
@@ -584,9 +528,9 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                           }}
                         />
                         {formErrors.name && (
-                          <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '4px' }}>
+                          <div style={{ color: '#ef4444', fontSize: '0.85rem', marginTop: '4px' }}>
                             {formErrors.name}
-                          </p>
+                          </div>
                         )}
                       </div>
                       
@@ -694,7 +638,7 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                         />
                       </div>
                       
-                      <div style={{ marginBottom: '20px' }}>
+                      <div style={{ marginBottom: '16px' }}>
                         <label 
                           htmlFor="notes" 
                           style={{ 
@@ -708,7 +652,6 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                         <textarea 
                           id="notes"
                           name="notes"
-                          rows={4}
                           value={formData.notes}
                           onChange={handleInputChange}
                           style={{ 
@@ -716,18 +659,28 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                             padding: '8px',
                             border: '1px solid #d1d5db',
                             borderRadius: '4px',
+                            minHeight: '100px',
                             resize: 'vertical'
                           }}
                         />
                       </div>
                       
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'flex-end',
+                        gap: '10px',
+                        marginTop: '20px'
+                      }}>
                         <button 
                           type="button"
-                          onClick={() => setShowContactForm(false)}
+                          onClick={() => {
+                            setShowContactForm(false);
+                            resetForm();
+                          }}
+                          disabled={loading}
                           style={{ 
                             padding: '8px 16px',
-                            backgroundColor: 'transparent',
+                            backgroundColor: '#f1f5f9',
                             border: '1px solid #d1d5db',
                             borderRadius: '4px',
                             cursor: 'pointer'
@@ -760,103 +713,7 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
           {/* Messages Tab */}
           {activeTab === 'messages' && (
             <div>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '20px' 
-              }}>
-                <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Messages</h1>
-                <div>
-                  <span style={{ 
-                    backgroundColor: '#10b981', 
-                    color: 'white', 
-                    padding: '4px 8px', 
-                    borderRadius: '9999px',
-                    fontSize: '0.8rem',
-                    marginRight: '10px'
-                  }}>
-                    Website Leads
-                  </span>
-                </div>
-              </div>
-              
-              <div style={{ 
-                backgroundColor: 'white', 
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', 
-                borderRadius: '8px',
-                padding: '20px'
-              }}>
-                {loading ? (
-                  <div style={{ textAlign: 'center', padding: '20px' }}>
-                    Loading messages...
-                  </div>
-                ) : (
-                  <>
-                    {messages.length > 0 ? (
-                      <div>
-                        {messages.map(message => (
-                          <div 
-                            key={message.id}
-                            style={{ 
-                              borderBottom: '1px solid #f5f5f5',
-                              padding: '16px 0',
-                              marginBottom: '10px'
-                            }}
-                          >
-                            <div style={{ 
-                              display: 'flex', 
-                              justifyContent: 'space-between',
-                              alignItems: 'flex-start',
-                              marginBottom: '8px'
-                            }}>
-                              <div>
-                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                  {message.contact_name || 'Website Visitor'}
-                                </div>
-                                <div style={{ fontSize: '0.9rem', color: '#666' }}>
-                                  {new Date(message.ts).toLocaleString()}
-                                </div>
-                              </div>
-                              <div>
-                                {message.service_type === 'website_chat' && (
-                                  <span style={{ 
-                                    backgroundColor: '#3b82f6', 
-                                    color: 'white', 
-                                    padding: '2px 8px', 
-                                    borderRadius: '9999px',
-                                    fontSize: '0.7rem'
-                                  }}>
-                                    Website Chat
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div style={{ marginBottom: '8px' }}>
-                              <div><strong>Email:</strong> {message.contact_email || '—'}</div>
-                              <div><strong>Phone:</strong> {message.contact_phone || '—'}</div>
-                            </div>
-                            
-                            <div style={{ 
-                              backgroundColor: '#f9fafb',
-                              padding: '10px',
-                              borderRadius: '4px',
-                              whiteSpace: 'pre-wrap'
-                            }}>
-                              {message.message}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ color: '#666', textAlign: 'center', padding: '40px 20px' }}>
-                        <p>No messages yet. Messages from your website chat will appear here.</p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+              <PortalMessagesTab slug={slug} />
             </div>
           )}
         </div>
@@ -865,37 +722,40 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async ({ req, params }) => {
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   const slug = params?.slug as string;
-  if (!slug) return { notFound: true };
-
+  
+  if (!slug) {
+    return {
+      notFound: true
+    };
+  }
+  
   try {
-    // Get company data directly from database
+    // Get company data
     const company = await queryOne('SELECT * FROM companies WHERE slug = $1', [slug]);
     
     if (!company) {
-      console.log(`No company found with slug: ${slug}`);
-      return { notFound: true };
+      return {
+        notFound: true
+      };
     }
     
-    console.log(`Portal access for ${company.name}`);
-    
-    return { 
-      props: { 
-        companyName: company.name, 
+    return {
+      props: {
+        companyName: company.name,
         slug,
         companyData: {
-          city: company.city || 'N/A',
-          state: company.state || 'N/A',
-          phone: company.phone || 'N/A',
-          rating: company.rating || 0,
-          reviews: company.reviews || 0,
-          site: company.site || ''
+          ...company,
+          // Convert non-serializable data like dates to strings
+          created_at: company.created_at ? company.created_at.toString() : null
         }
-      } 
+      }
     };
   } catch (error) {
-    console.error('Error loading portal data:', error);
-    return { notFound: true };
+    console.error('Error loading portal page:', error);
+    return {
+      notFound: true
+    };
   }
-};
+}
