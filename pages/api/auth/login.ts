@@ -58,17 +58,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .digest("hex")}`
   ).toString("base64");
 
-  // Set the cookie
+  // Set the cookie with more specific settings to ensure it's saved properly
   res.setHeader(
     "Set-Cookie",
     serialize("session", token, {
       httpOnly: true,
       path: "/",
       maxAge: 14 * 24 * 3600,
-      sameSite: "lax"
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production"
     })
   );
   
-  // Redirect to the portal
-  res.redirect(302, `/portal/${slug}`);
+  // Add some debugging info
+  console.log(`Setting cookie and redirecting to /portal/${slug}`);
+  
+  // Redirect to the portal with full URL
+  const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+  const host = req.headers.host || "localhost:5000";
+  res.redirect(302, `${protocol}://${host}/portal/${slug}`);
 }
