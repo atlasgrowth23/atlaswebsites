@@ -1,0 +1,35 @@
+[
+  {
+    "id": "1",
+    "name": "Comfort Plus Heating & Air",
+    "slug": "comfort-plus",
+    "city": "Springfield",
+    "state": "IL",
+    "site": "https://comfortplushvac.com",
+    "phone": "(555) 123-4567",
+    "rating": 4.8,
+    "reviews": 124
+  },
+  {
+    "id": "2",
+    "name": "Cool Breeze HVAC Solutions",
+    "slug": "cool-breeze",
+    "city": "Riverdale",
+    "state": "OH",
+    "site": "https://coolbreezehvac.com",
+    "phone": "(555) 987-6543",
+    "rating": 4.6,
+    "reviews": 89
+  },
+  {
+    "id": "3",
+    "name": "Expert Air & Heating",
+    "slug": "expert-air",
+    "city": "Lakeside",
+    "state": "MI",
+    "site": "https://expertairhvac.com",
+    "phone": "(555) 456-7890",
+    "rating": 4.9,
+    "reviews": 156
+  }
+]
