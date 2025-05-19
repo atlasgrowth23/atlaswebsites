@@ -91,8 +91,7 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
           
           <div style={{ padding: '20px', position: 'absolute', bottom: '0', width: 'calc(100% - 40px)' }}>
             <p style={{ fontSize: '0.8rem', opacity: 0.7 }}>HVAC Portal for {companyName}</p>
-            <Link href="/">
-              <a style={{ 
+            <Link href="/" style={{ 
                 display: 'block',
                 textAlign: 'center',
                 padding: '8px',
@@ -103,7 +102,6 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                 fontSize: '0.9rem'
               }}>
                 Back to Website
-              </a>
             </Link>
           </div>
         </div>

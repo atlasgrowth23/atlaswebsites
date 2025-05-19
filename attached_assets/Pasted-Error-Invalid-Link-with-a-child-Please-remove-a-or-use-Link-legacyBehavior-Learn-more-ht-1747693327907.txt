@@ -1,0 +1,17 @@
+Error: Invalid <Link> with <a> child. Please remove <a> or use <Link legacyBehavior>.
+Learn more: https://nextjs.org/docs/messages/invalid-new-link-with-extra-anchor
+    at LinkComponent (webpack-internal:///(pages-dir-node)/./node_modules/next/dist/client/link.js:279:45)
+    at react-stack-bottom-frame (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:9251:18)
+    at renderWithHooks (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:4898:19)
+    at renderElement (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5732:39)
+    at retryNode (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6092:31)
+    at renderNodeDestructive (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6042:11)
+    at renderNode (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6499:18)
+    at renderChildrenArray (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6375:9)
+    at retryNode (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6116:13)
+    at renderNodeDestructive (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6042:11)
+    at renderNode (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6499:18)
+    at renderElement (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:5459:18)
+    at retryNode (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6092:31)
+    at renderNodeDestructive (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6042:11)
+    at renderNode (file:///home/runner/workspace/node_modules/react-dom/cjs/react-dom-server.edge.development.js:6499:18)
