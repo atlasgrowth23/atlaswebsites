@@ -79,6 +79,13 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
     }
   }, [activeTab, slug]);
   
+  // Fetch messages when the messages tab is active
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      fetchMessages();
+    }
+  }, [activeTab, slug]);
+  
   // Function to fetch contacts
   const fetchContacts = async () => {
     setLoading(true);
@@ -92,6 +99,24 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
       }
     } catch (error) {
       console.error('Error fetching contacts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to fetch messages
+  const fetchMessages = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/messages/${slug}`);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data);
+      } else {
+        console.error('Failed to fetch messages');
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
     }
@@ -704,6 +729,107 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+          
+          {/* Messages Tab */}
+          {activeTab === 'messages' && (
+            <div>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '20px' 
+              }}>
+                <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Messages</h1>
+                <div>
+                  <span style={{ 
+                    backgroundColor: '#10b981', 
+                    color: 'white', 
+                    padding: '4px 8px', 
+                    borderRadius: '9999px',
+                    fontSize: '0.8rem',
+                    marginRight: '10px'
+                  }}>
+                    Website Leads
+                  </span>
+                </div>
+              </div>
+              
+              <div style={{ 
+                backgroundColor: 'white', 
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', 
+                borderRadius: '8px',
+                padding: '20px'
+              }}>
+                {loading ? (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    Loading messages...
+                  </div>
+                ) : (
+                  <>
+                    {messages.length > 0 ? (
+                      <div>
+                        {messages.map(message => (
+                          <div 
+                            key={message.id}
+                            style={{ 
+                              borderBottom: '1px solid #f5f5f5',
+                              padding: '16px 0',
+                              marginBottom: '10px'
+                            }}
+                          >
+                            <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between',
+                              alignItems: 'flex-start',
+                              marginBottom: '8px'
+                            }}>
+                              <div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{message.name}</div>
+                                <div style={{ fontSize: '0.9rem', color: '#666' }}>
+                                  {new Date(message.created_at).toLocaleString()}
+                                </div>
+                              </div>
+                              <div>
+                                {message.is_from_website && (
+                                  <span style={{ 
+                                    backgroundColor: '#3b82f6', 
+                                    color: 'white', 
+                                    padding: '2px 8px', 
+                                    borderRadius: '9999px',
+                                    fontSize: '0.7rem'
+                                  }}>
+                                    Website Lead
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div style={{ marginBottom: '8px' }}>
+                              <div><strong>Email:</strong> {message.email || '—'}</div>
+                              <div><strong>Phone:</strong> {message.phone || '—'}</div>
+                            </div>
+                            
+                            <div style={{ 
+                              backgroundColor: '#f9fafb',
+                              padding: '10px',
+                              borderRadius: '4px',
+                              whiteSpace: 'pre-wrap'
+                            }}>
+                              {message.message}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ color: '#666', textAlign: 'center', padding: '40px 20px' }}>
+                        <p>No messages yet. Messages from your website chat will appear here.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
