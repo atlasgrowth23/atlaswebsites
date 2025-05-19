@@ -23,18 +23,73 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Handle different HTTP methods
     switch (req.method) {
       case 'GET':
-        // Get all messages for this company
+        // Get all messages for this company with session grouping
         const messages = await queryMany(
           `SELECT m.id, m.company_id, m.contact_id, m.body as message, 
-                 m.direction, m.service_type, m.ts,
+                 m.direction, m.service_type, m.ts, m.session_id,
                  c.name as contact_name, c.email as contact_email, c.phone as contact_phone 
            FROM company_messages m
            LEFT JOIN company_contacts c ON m.contact_id = c.id
            WHERE m.company_id = $1 
-           ORDER BY m.ts DESC`,
+           ORDER BY m.session_id, m.ts ASC`,
           [companyId]
         );
-        return res.status(200).json(messages);
+        
+        // Group messages by conversation session
+        const sessionsMap = new Map();
+        
+        messages.forEach(message => {
+          const sessionId = message.session_id || 'unknown_session';
+          
+          if (!sessionsMap.has(sessionId)) {
+            // Find the contact info for the session
+            const contactInfo = {
+              id: message.contact_id,
+              name: message.contact_name || 'Website Visitor',
+              email: message.contact_email || '',
+              phone: message.contact_phone || '',
+              has_details: !!(message.contact_email || message.contact_phone)
+            };
+            
+            sessionsMap.set(sessionId, {
+              session_id: sessionId,
+              contact: contactInfo,
+              messages: [],
+              last_message_time: message.ts,
+              last_message: message.message
+            });
+          }
+          
+          const session = sessionsMap.get(sessionId);
+          session.messages.push(message);
+          
+          // Update last message time if this message is newer
+          if (new Date(message.ts) > new Date(session.last_message_time)) {
+            session.last_message_time = message.ts;
+            session.last_message = message.message;
+          }
+          
+          // If this message has contact info, update the session's contact info
+          if (message.contact_name || message.contact_email || message.contact_phone) {
+            session.contact = {
+              id: message.contact_id,
+              name: message.contact_name || session.contact.name,
+              email: message.contact_email || session.contact.email,
+              phone: message.contact_phone || session.contact.phone,
+              has_details: !!(message.contact_email || message.contact_phone || session.contact.has_details)
+            };
+          }
+        });
+        
+        // Convert to array and sort sessions by most recent message
+        const sessions = Array.from(sessionsMap.values()).sort((a, b) => {
+          return new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime();
+        });
+        
+        return res.status(200).json({
+          sessions,
+          messages // Also return flat messages for backward compatibility
+        });
         
       case 'POST':
         // Create a new message from website

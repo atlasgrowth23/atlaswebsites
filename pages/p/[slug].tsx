@@ -76,12 +76,31 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
     }
   }, [activeTab, slug]);
   
+  // State for conversation sessions
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string | null>(null);
+  const [sessionMessages, setSessionMessages] = useState<any[]>([]);
+  
   // Fetch messages when the messages tab is active
   useEffect(() => {
     if (activeTab === 'messages') {
       fetchMessages();
     }
   }, [activeTab, slug]);
+  
+  // Set selected session messages when a session is selected
+  useEffect(() => {
+    if (selectedSession && sessions.length > 0) {
+      const session = sessions.find(s => s.session_id === selectedSession);
+      if (session) {
+        setSessionMessages(session.messages);
+      }
+    } else if (sessions.length > 0) {
+      // Select the first session by default
+      setSelectedSession(sessions[0].session_id);
+      setSessionMessages(sessions[0].messages);
+    }
+  }, [selectedSession, sessions]);
   
   // Function to fetch contacts
   const fetchContacts = async () => {
@@ -108,7 +127,15 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
       const response = await fetch(`/api/messages/${slug}`);
       if (response.ok) {
         const data = await response.json();
-        setMessages(data);
+        
+        // Check if the response has new sessions format
+        if (data.sessions) {
+          setSessions(data.sessions);
+          setMessages(data.messages); // Keep old format for backward compatibility
+        } else {
+          // If old format, just set the messages
+          setMessages(data);
+        }
       } else {
         console.error('Failed to fetch messages');
       }

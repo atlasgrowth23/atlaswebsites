@@ -465,7 +465,8 @@
         name, 
         email, 
         phone, 
-        message: `Contact info submitted: ${name}, ${email || 'No email'}, ${phone || 'No phone'}`
+        message: `Contact info submitted: ${name}, ${email || 'No email'}, ${phone || 'No phone'}`,
+        session_id: sessionId
       })
     })
     .then(response => response.json())
@@ -511,7 +512,8 @@
             name, 
             email, 
             phone, 
-            message: additionalDetails 
+            message: additionalDetails,
+            session_id: sessionId
           })
         });
         
