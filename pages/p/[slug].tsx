@@ -5,6 +5,17 @@ import Head from "next/head";
 import Link from "next/link";
 import { query, queryOne } from "../../lib/db";
 
+interface Contact {
+  id: string;
+  company_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  street: string | null;
+  city: string | null;
+  notes: string | null;
+}
+
 interface Props { 
   companyName: string; 
   slug: string;
@@ -13,6 +24,21 @@ interface Props {
 
 export default function PortalPage({ companyName, slug, companyData }: Props) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [currentContact, setCurrentContact] = useState<Contact | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    street: '',
+    city: '',
+    notes: ''
+  });
+  const [formErrors, setFormErrors] = useState({
+    name: ''
+  });
   
   // Track the view when the component mounts
   useEffect(() => {
@@ -28,6 +54,156 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
     
     trackView();
   }, [slug]);
+  
+  // Fetch contacts when the contacts tab is active
+  useEffect(() => {
+    if (activeTab === 'contacts') {
+      fetchContacts();
+    }
+  }, [activeTab, slug]);
+  
+  // Function to fetch contacts
+  const fetchContacts = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/contacts/${slug}`);
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data);
+      } else {
+        console.error('Failed to fetch contacts');
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to handle form input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear errors as user types
+    if (name === 'name' && formErrors.name) {
+      setFormErrors(prev => ({ ...prev, name: '' }));
+    }
+  };
+  
+  // Function to validate the form
+  const validateForm = () => {
+    let valid = true;
+    const errors = { name: '' };
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+      valid = false;
+    }
+    
+    setFormErrors(errors);
+    return valid;
+  };
+  
+  // Function to reset the form
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      street: '',
+      city: '',
+      notes: ''
+    });
+    setFormErrors({ name: '' });
+    setCurrentContact(null);
+  };
+  
+  // Function to handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+    
+    setLoading(true);
+    try {
+      if (currentContact) {
+        // Update existing contact
+        const response = await fetch(`/api/contacts/contact/${currentContact.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+        
+        if (response.ok) {
+          await fetchContacts();
+          setShowContactForm(false);
+          resetForm();
+        } else {
+          console.error('Failed to update contact');
+        }
+      } else {
+        // Create new contact
+        const response = await fetch(`/api/contacts/${slug}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+        
+        if (response.ok) {
+          await fetchContacts();
+          setShowContactForm(false);
+          resetForm();
+        } else {
+          console.error('Failed to create contact');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving contact:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Function to edit a contact
+  const handleEdit = (contact: Contact) => {
+    setCurrentContact(contact);
+    setFormData({
+      name: contact.name,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      street: contact.street || '',
+      city: contact.city || '',
+      notes: contact.notes || ''
+    });
+    setShowContactForm(true);
+  };
+  
+  // Function to delete a contact
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this contact?')) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/contacts/contact/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        await fetchContacts();
+      } else {
+        console.error('Failed to delete contact');
+      }
+    } catch (error) {
+      console.error('Error deleting contact:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   return (
     <>
@@ -156,49 +332,345 @@ export default function PortalPage({ companyName, slug, companyData }: Props) {
           
           {activeTab === 'contacts' && (
             <div>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '20px' 
-              }}>
-                <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Contacts</h1>
-                <button style={{ 
-                  backgroundColor: '#1e3a8a',
-                  color: 'white',
-                  border: 'none',
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  cursor: 'pointer'
-                }}>
-                  Add New Contact
-                </button>
-              </div>
-              
-              <div style={{ 
-                backgroundColor: 'white', 
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', 
-                borderRadius: '8px',
-                padding: '20px'
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  borderBottom: '1px solid #eee',
-                  paddingBottom: '10px',
-                  marginBottom: '10px',
-                  fontWeight: 'bold'
-                }}>
-                  <div style={{ width: '30%' }}>Name</div>
-                  <div style={{ width: '30%' }}>Email</div>
-                  <div style={{ width: '25%' }}>Phone</div>
-                  <div style={{ width: '15%' }}>Actions</div>
+              {!showContactForm ? (
+                <>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: '20px' 
+                  }}>
+                    <h1 style={{ fontSize: '1.8rem', margin: 0 }}>Contacts</h1>
+                    <button 
+                      onClick={() => {
+                        resetForm();
+                        setShowContactForm(true);
+                      }}
+                      style={{ 
+                        backgroundColor: '#1e3a8a',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                      disabled={loading}
+                    >
+                      Add New Contact
+                    </button>
+                  </div>
+                  
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', 
+                    borderRadius: '8px',
+                    padding: '20px'
+                  }}>
+                    {loading ? (
+                      <div style={{ textAlign: 'center', padding: '20px' }}>
+                        Loading contacts...
+                      </div>
+                    ) : (
+                      <>
+                        {contacts.length > 0 ? (
+                          <>
+                            <div style={{ 
+                              display: 'flex', 
+                              justifyContent: 'space-between', 
+                              borderBottom: '1px solid #eee',
+                              paddingBottom: '10px',
+                              marginBottom: '10px',
+                              fontWeight: 'bold'
+                            }}>
+                              <div style={{ width: '30%' }}>Name</div>
+                              <div style={{ width: '30%' }}>Email</div>
+                              <div style={{ width: '25%' }}>Phone</div>
+                              <div style={{ width: '15%' }}>Actions</div>
+                            </div>
+                            
+                            {contacts.map(contact => (
+                              <div 
+                                key={contact.id}
+                                style={{ 
+                                  display: 'flex', 
+                                  justifyContent: 'space-between', 
+                                  borderBottom: '1px solid #f5f5f5',
+                                  padding: '10px 0'
+                                }}
+                              >
+                                <div style={{ width: '30%' }}>{contact.name}</div>
+                                <div style={{ width: '30%' }}>{contact.email || '—'}</div>
+                                <div style={{ width: '25%' }}>{contact.phone || '—'}</div>
+                                <div style={{ width: '15%', display: 'flex', gap: '10px' }}>
+                                  <button
+                                    onClick={() => handleEdit(contact)}
+                                    style={{
+                                      backgroundColor: '#4f46e5',
+                                      color: 'white',
+                                      border: 'none',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.8rem',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(contact.id)}
+                                    style={{
+                                      backgroundColor: '#ef4444',
+                                      color: 'white',
+                                      border: 'none',
+                                      padding: '4px 8px',
+                                      borderRadius: '4px',
+                                      fontSize: '0.8rem',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        ) : (
+                          <div style={{ color: '#666', textAlign: 'center', padding: '40px 20px' }}>
+                            <p>No contacts yet. Click "Add New Contact" to get started.</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    marginBottom: '20px' 
+                  }}>
+                    <h1 style={{ fontSize: '1.8rem', margin: 0 }}>
+                      {currentContact ? 'Edit Contact' : 'Add New Contact'}
+                    </h1>
+                    <button 
+                      onClick={() => setShowContactForm(false)}
+                      style={{ 
+                        backgroundColor: '#6b7280',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)', 
+                    borderRadius: '8px',
+                    padding: '20px'
+                  }}>
+                    <form onSubmit={handleSubmit}>
+                      <div style={{ marginBottom: '16px' }}>
+                        <label 
+                          htmlFor="name" 
+                          style={{ 
+                            display: 'block', 
+                            marginBottom: '4px', 
+                            fontWeight: 'bold' 
+                          }}
+                        >
+                          Name *
+                        </label>
+                        <input 
+                          type="text"
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          style={{ 
+                            width: '100%',
+                            padding: '8px',
+                            border: formErrors.name ? '1px solid #ef4444' : '1px solid #d1d5db',
+                            borderRadius: '4px'
+                          }}
+                        />
+                        {formErrors.name && (
+                          <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '4px' }}>
+                            {formErrors.name}
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div style={{ marginBottom: '16px' }}>
+                        <label 
+                          htmlFor="email" 
+                          style={{ 
+                            display: 'block', 
+                            marginBottom: '4px', 
+                            fontWeight: 'bold' 
+                          }}
+                        >
+                          Email
+                        </label>
+                        <input 
+                          type="email"
+                          id="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          style={{ 
+                            width: '100%',
+                            padding: '8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px'
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ marginBottom: '16px' }}>
+                        <label 
+                          htmlFor="phone" 
+                          style={{ 
+                            display: 'block', 
+                            marginBottom: '4px', 
+                            fontWeight: 'bold' 
+                          }}
+                        >
+                          Phone
+                        </label>
+                        <input 
+                          type="text"
+                          id="phone"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          style={{ 
+                            width: '100%',
+                            padding: '8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px'
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ marginBottom: '16px' }}>
+                        <label 
+                          htmlFor="street" 
+                          style={{ 
+                            display: 'block', 
+                            marginBottom: '4px', 
+                            fontWeight: 'bold' 
+                          }}
+                        >
+                          Street Address
+                        </label>
+                        <input 
+                          type="text"
+                          id="street"
+                          name="street"
+                          value={formData.street}
+                          onChange={handleInputChange}
+                          style={{ 
+                            width: '100%',
+                            padding: '8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px'
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ marginBottom: '16px' }}>
+                        <label 
+                          htmlFor="city" 
+                          style={{ 
+                            display: 'block', 
+                            marginBottom: '4px', 
+                            fontWeight: 'bold' 
+                          }}
+                        >
+                          City
+                        </label>
+                        <input 
+                          type="text"
+                          id="city"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleInputChange}
+                          style={{ 
+                            width: '100%',
+                            padding: '8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px'
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ marginBottom: '20px' }}>
+                        <label 
+                          htmlFor="notes" 
+                          style={{ 
+                            display: 'block', 
+                            marginBottom: '4px', 
+                            fontWeight: 'bold' 
+                          }}
+                        >
+                          Notes
+                        </label>
+                        <textarea 
+                          id="notes"
+                          name="notes"
+                          rows={4}
+                          value={formData.notes}
+                          onChange={handleInputChange}
+                          style={{ 
+                            width: '100%',
+                            padding: '8px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px',
+                            resize: 'vertical'
+                          }}
+                        />
+                      </div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <button 
+                          type="button"
+                          onClick={() => setShowContactForm(false)}
+                          style={{ 
+                            padding: '8px 16px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          type="submit"
+                          disabled={loading}
+                          style={{ 
+                            padding: '8px 16px',
+                            backgroundColor: '#1e3a8a',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {loading ? 'Saving...' : 'Save Contact'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
-                
-                <div style={{ color: '#666', textAlign: 'center', padding: '40px 20px' }}>
-                  <p>No contacts yet. Click "Add New Contact" to get started.</p>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </div>
