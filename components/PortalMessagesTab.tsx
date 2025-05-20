@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 type Message = {
   id: string;
   message: string;
+  contact_id?: string;
   contact_name?: string;
   contact_email?: string;
   contact_phone?: string;
