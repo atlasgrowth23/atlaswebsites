@@ -26,6 +26,11 @@ export interface Company {
   // Added for theme colors
   primary_color?: string;
   secondary_color?: string;
+  // Added for address display in templates
+  full_address?: string;
+  street?: string;
+  postal_code?: string;
+  email_1?: string;
 }
 
 // Minimal lead type

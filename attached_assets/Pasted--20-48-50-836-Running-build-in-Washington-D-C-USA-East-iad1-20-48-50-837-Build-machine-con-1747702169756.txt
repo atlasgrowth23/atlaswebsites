@@ -1,0 +1,39 @@
+[20:48:50.836] Running build in Washington, D.C., USA (East) – iad1
+[20:48:50.837] Build machine configuration: 2 cores, 8 GB
+[20:48:50.854] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: b625f1d)
+[20:48:52.586] Cloning completed: 1.732s
+[20:48:52.857] Restored build cache from previous deployment (3f1Vc8a2QjYUE9kLWagcSi892Qfr)
+[20:48:53.340] Running "vercel build"
+[20:48:53.755] Vercel CLI 41.7.3
+[20:48:54.070] Installing dependencies...
+[20:48:58.066] 
+[20:48:58.066] added 119 packages, and changed 3 packages in 4s
+[20:48:58.071] 
+[20:48:58.073] 97 packages are looking for funding
+[20:48:58.074]   run `npm fund` for details
+[20:48:58.127] Detected Next.js version: 15.3.1
+[20:48:58.136] Running "npm run build"
+[20:48:58.272] 
+[20:48:58.272] > workspace@1.0.0 build
+[20:48:58.273] > next build
+[20:48:58.273] 
+[20:48:59.027]    ▲ Next.js 15.3.1
+[20:48:59.027]    - Environments: .env.production
+[20:48:59.028] 
+[20:48:59.069]    Linting and checking validity of types ...
+[20:49:07.130] Failed to compile.
+[20:49:07.131] 
+[20:49:07.131] ./components/templates/ModernTrust/Footer.tsx:20:22
+[20:49:07.131] Type error: Property 'full_address' does not exist on type 'Company'.
+[20:49:07.131] 
+[20:49:07.132] [0m [90m 18 |[39m           [33m<[39m[33mdiv[39m[33m>[39m[0m
+[20:49:07.132] [0m [90m 19 |[39m             [33m<[39m[33mh3[39m className[33m=[39m[32m"text-xl font-bold mb-4"[39m[33m>[39m{company[33m.[39mname}[33m<[39m[33m/[39m[33mh3[39m[33m>[39m[0m
+[20:49:07.132] [0m[31m[1m>[22m[39m[90m 20 |[39m             {company[33m.[39mfull_address [33m&&[39m ([0m
+[20:49:07.132] [0m [90m    |[39m                      [31m[1m^[22m[39m[0m
+[20:49:07.132] [0m [90m 21 |[39m               [33m<[39m[33maddress[39m className[33m=[39m[32m"not-italic mb-4 text-gray-300"[39m[33m>[39m[0m
+[20:49:07.133] [0m [90m 22 |[39m                 {company[33m.[39mstreet [33m||[39m company[33m.[39mfull_address}[33m<[39m[33mbr[39m [33m/[39m[33m>[39m[0m
+[20:49:07.133] [0m [90m 23 |[39m                 {company[33m.[39mcity}[33m,[39m {company[33m.[39mstate} {company[33m.[39mpostal_code}[0m
+[20:49:07.152] Next.js build worker exited with code: 1 and signal: null
+[20:49:07.169] Error: Command "npm run build" exited with 1
+[20:49:07.444] 
+[20:49:10.475] Exiting build container
