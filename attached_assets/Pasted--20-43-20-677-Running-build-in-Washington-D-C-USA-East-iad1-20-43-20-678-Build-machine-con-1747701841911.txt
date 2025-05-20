@@ -1,0 +1,38 @@
+[20:43:20.677] Running build in Washington, D.C., USA (East) – iad1
+[20:43:20.678] Build machine configuration: 2 cores, 8 GB
+[20:43:20.694] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: c46dd89)
+[20:43:22.266] Cloning completed: 1.571s
+[20:43:24.552] Restored build cache from previous deployment (3f1Vc8a2QjYUE9kLWagcSi892Qfr)
+[20:43:25.041] Running "vercel build"
+[20:43:25.432] Vercel CLI 41.7.3
+[20:43:25.804] Installing dependencies...
+[20:43:32.187] 
+[20:43:32.188] added 119 packages, and changed 3 packages in 6s
+[20:43:32.189] 
+[20:43:32.189] 97 packages are looking for funding
+[20:43:32.189]   run `npm fund` for details
+[20:43:32.230] Detected Next.js version: 15.3.1
+[20:43:32.234] Running "npm run build"
+[20:43:32.353] 
+[20:43:32.353] > workspace@1.0.0 build
+[20:43:32.353] > next build
+[20:43:32.353] 
+[20:43:33.123]    ▲ Next.js 15.3.1
+[20:43:33.123]    - Environments: .env.production
+[20:43:33.123] 
+[20:43:33.195]    Linting and checking validity of types ...
+[20:43:41.807] Failed to compile.
+[20:43:41.807] 
+[20:43:41.807] ./components/chat/ChatWidget.tsx:72:32
+[20:43:41.808] Type error: Property 'primary_color' does not exist on type 'Company'.
+[20:43:41.808] 
+[20:43:41.808] [0m [90m 70 |[39m   [0m
+[20:43:41.808] [0m [90m 71 |[39m   [90m// Company colors[39m[0m
+[20:43:41.808] [0m[31m[1m>[22m[39m[90m 72 |[39m   [36mconst[39m primaryColor [33m=[39m company[33m.[39mprimary_color [33m||[39m [32m'#2563eb'[39m[33m;[39m[0m
+[20:43:41.808] [0m [90m    |[39m                                [31m[1m^[22m[39m[0m
+[20:43:41.808] [0m [90m 73 |[39m   [36mconst[39m secondaryColor [33m=[39m company[33m.[39msecondary_color [33m||[39m [32m'#1e40af'[39m[33m;[39m[0m
+[20:43:41.808] [0m [90m 74 |[39m   [0m
+[20:43:41.808] [0m [90m 75 |[39m   [90m// Chat container ref for scrolling[39m[0m
+[20:43:41.835] Next.js build worker exited with code: 1 and signal: null
+[20:43:41.855] Error: Command "npm run build" exited with 1
+[20:43:42.115] 

@@ -23,6 +23,9 @@ export interface Company {
   geocoded_state?: string;
   geocoded_zip?: string;
   geocoded_country?: string;
+  // Added for theme colors
+  primary_color?: string;
+  secondary_color?: string;
 }
 
 // Minimal lead type
