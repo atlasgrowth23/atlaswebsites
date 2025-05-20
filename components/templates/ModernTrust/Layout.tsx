@@ -23,9 +23,9 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
     script.async = true;
     script.onload = () => {
       // Initialize chat widget with company info after loading
-      if (typeof window !== 'undefined' && window['HVACChatWidget']) {
+      if (typeof window !== 'undefined' && (window as any)['HVACChatWidget']) {
         // Use bracket notation to avoid TypeScript errors
-        const chatWidget = window['HVACChatWidget'] as any;
+        const chatWidget = (window as any)['HVACChatWidget'];
         chatWidget.init({
           slug: company.slug,
           name: company.name
