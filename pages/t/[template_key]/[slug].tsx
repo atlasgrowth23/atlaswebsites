@@ -3,7 +3,6 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import { query } from '@/lib/db';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
-import ComfortClassicLayout from '@/components/templates/ComfortClassic/Layout';
 import Head from 'next/head';
 
 type TemplateProps = {
@@ -16,8 +15,6 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
   switch (template_key) {
     case 'moderntrust':
       return <ModernTrustLayout company={company} />;
-    case 'comfort-classic':
-      return <ComfortClassicLayout company={company} />;
     default:
       return (
         <div className="p-8">
@@ -39,7 +36,6 @@ export const getStaticPaths: GetStaticPaths = async () => {
   const paths = [];
   for (const company of result.rows) {
     paths.push({ params: { template_key: 'moderntrust', slug: company.slug } });
-    paths.push({ params: { template_key: 'comfort-classic', slug: company.slug } });
   }
   
   return {
@@ -67,7 +63,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     }
     
     // Check if the template exists
-    if (!['moderntrust', 'comfort-classic'].includes(template_key as string)) {
+    if (!['moderntrust'].includes(template_key as string)) {
       return { notFound: true };
     }
     

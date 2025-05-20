@@ -1,0 +1,38 @@
+[20:54:44.101] Running build in Washington, D.C., USA (East) – iad1
+[20:54:44.101] Build machine configuration: 2 cores, 8 GB
+[20:54:44.118] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: c46641e)
+[20:54:45.829] Cloning completed: 1.711s
+[20:54:46.116] Restored build cache from previous deployment (3f1Vc8a2QjYUE9kLWagcSi892Qfr)
+[20:54:46.614] Running "vercel build"
+[20:54:47.003] Vercel CLI 41.7.3
+[20:54:47.330] Installing dependencies...
+[20:54:51.482] 
+[20:54:51.482] added 119 packages, and changed 3 packages in 4s
+[20:54:51.483] 
+[20:54:51.483] 97 packages are looking for funding
+[20:54:51.483]   run `npm fund` for details
+[20:54:51.535] Detected Next.js version: 15.3.1
+[20:54:51.539] Running "npm run build"
+[20:54:51.657] 
+[20:54:51.657] > workspace@1.0.0 build
+[20:54:51.658] > next build
+[20:54:51.658] 
+[20:54:52.399]    ▲ Next.js 15.3.1
+[20:54:52.400]    - Environments: .env.production
+[20:54:52.400] 
+[20:54:52.441]    Linting and checking validity of types ...
+[20:55:00.639] Failed to compile.
+[20:55:00.640] 
+[20:55:00.640] ./pages/t/[template_key]/[slug].tsx:6:34
+[20:55:00.640] Type error: Cannot find module '@/components/templates/ComfortClassic/Layout' or its corresponding type declarations.
+[20:55:00.640] 
+[20:55:00.640] [0m [90m 4 |[39m [36mimport[39m { [33mCompany[39m } [36mfrom[39m [32m'@/types'[39m[33m;[39m[0m
+[20:55:00.641] [0m [90m 5 |[39m [36mimport[39m [33mModernTrustLayout[39m [36mfrom[39m [32m'@/components/templates/ModernTrust/Layout'[39m[33m;[39m[0m
+[20:55:00.641] [0m[31m[1m>[22m[39m[90m 6 |[39m [36mimport[39m [33mComfortClassicLayout[39m [36mfrom[39m [32m'@/components/templates/ComfortClassic/Layout'[39m[33m;[39m[0m
+[20:55:00.641] [0m [90m   |[39m                                  [31m[1m^[22m[39m[0m
+[20:55:00.641] [0m [90m 7 |[39m [36mimport[39m [33mHead[39m [36mfrom[39m [32m'next/head'[39m[33m;[39m[0m
+[20:55:00.641] [0m [90m 8 |[39m[0m
+[20:55:00.641] [0m [90m 9 |[39m type [33mTemplateProps[39m [33m=[39m {[0m
+[20:55:00.662] Next.js build worker exited with code: 1 and signal: null
+[20:55:00.679] Error: Command "npm run build" exited with 1
+[20:55:00.937] 
