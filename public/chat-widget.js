@@ -279,21 +279,25 @@
       })
     });
     
-    // If contact info hasn't been collected yet, show the form immediately after any message
-    if (!contactCollected) {
-      // Simple, consistent response for all inquiries
-      const responseText = "Thank you for your message. To connect you with our team, please share your contact information below:";
-      
-      // Add system response
-      addMessageToChat(responseText, false);
-      
-      // Show contact form
-      showContactForm();
-      return;
+    // Always show the contact form after any message
+    // Simple, consistent response for all inquiries
+    let responseText = "";
+    
+    if (message.toLowerCase().includes("quote")) {
+      responseText = "We'd be happy to provide a quote for your HVAC needs. Please share your contact information below and we'll get back to you soon:";
+    } else if (message.toLowerCase().includes("maintenance")) {
+      responseText = "Regular maintenance is key to keeping your HVAC system running efficiently. Please provide your contact details below and we'll schedule your service:";
+    } else if (message.toLowerCase().includes("repair") || message.toLowerCase().includes("fix") || message.toLowerCase().includes("broken")) {
+      responseText = "We understand HVAC issues can be urgent. Please share your contact information below and our team will reach out quickly to help:";
+    } else {
+      responseText = "Thank you for your message. To connect you with our team, please share your contact information below:";
     }
     
-    // After contact info is collected, just show a simple response instead of using AI
-    addMessageToChat("Thank you for your message. A member of our team will contact you shortly.", false);
+    // Add system response
+    addMessageToChat(responseText, false);
+    
+    // Show contact form
+    showContactForm();
   }
   
   // Add message to chat UI
@@ -366,6 +370,12 @@
     const email = document.getElementById('hvac-email').value;
     const phone = document.getElementById('hvac-phone').value;
     
+    // Validate the form (at minimum name is required)
+    if (!name.trim()) {
+      alert("Please enter your name");
+      return;
+    }
+    
     console.log("Contact info submitted:", { name, email, phone });
     
     // Mark contact as collected
@@ -393,61 +403,32 @@
         contactId = data.contact_id;
       }
       
-      // Thank the user and prompt for additional details
-      addMessageToChat(`Thanks ${name}! Is there anything specific we should know about your HVAC needs to better assist you?`, false);
+      // Hide the contact form
+      document.getElementById('hvac-contact-form-area').style.display = 'none';
       
-      // Show the chat input again
-      showChatInput();
+      // Show the final thank you message
+      addMessageToChat(`Thank you, ${name}! Our team will contact you shortly to discuss your HVAC needs. If you have any urgent questions, please call us at ${companySlug === 'temperaturepro' ? '(555) 123-4567' : '(555) 987-6543'}.`, false);
       
-      // Hide quick buttons - we want them to provide more details now
-      document.getElementById('hvac-quick-buttons').style.display = 'none';
-      
-      // Add event listener for the next message
-      const messageForm = document.getElementById('hvac-message-form');
-      const originalSubmit = messageForm.onsubmit;
-      
-      messageForm.onsubmit = function(event) {
-        event.preventDefault();
-        
-        const messageInput = document.getElementById('hvac-input-message');
-        const additionalDetails = messageInput.value.trim();
-        
-        if (!additionalDetails) return;
-        
-        // Add user message to chat
-        addMessageToChat(additionalDetails, true);
-        messageInput.value = '';
-        
-        // Store the additional details - use a simpler message without trying to send contact info again
-        fetch(`/api/messages/${companySlug}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ 
-            name: 'Website Visitor', 
-            message: additionalDetails,
-            session_id: sessionId
-          })
-        });
-        
-        // Show final message
-        addMessageToChat(`Thank you for providing those details. A member of our team will contact you shortly to discuss your HVAC needs. If you have any urgent questions, please call us at ${companySlug === 'temperaturepro' ? '(555) 123-4567' : '(555) 987-6543'}.`, false);
-        
-        // Replace input with a message
-        document.getElementById('hvac-chat-input-area').innerHTML = `
-          <div style="text-align: center; padding: 10px; color: #666; font-size: 14px;">
-            Chat session complete. You can close this window.
-          </div>
-        `;
-      };
+      // Show a closing message instead of the input
+      document.getElementById('hvac-chat-input-area').innerHTML = `
+        <div style="text-align: center; padding: 15px; color: #666; font-size: 14px; background-color: #f9f9f9; border-radius: 4px; margin-top: 10px;">
+          Thanks for contacting us! We'll be in touch soon.
+        </div>
+      `;
     })
     .catch(error => {
       console.error('Error creating contact:', error);
       
-      // Still thank the user and prompt them
-      addMessageToChat(`Thanks ${name}! Is there anything specific we should know about your HVAC needs to better assist you?`, false);
-      showChatInput();
+      // Still show thank you message even if there was an error
+      document.getElementById('hvac-contact-form-area').style.display = 'none';
+      addMessageToChat(`Thank you, ${name}! Our team will contact you shortly. If you have any urgent questions, please call our office directly.`, false);
+      
+      // Show closing message
+      document.getElementById('hvac-chat-input-area').innerHTML = `
+        <div style="text-align: center; padding: 15px; color: #666; font-size: 14px; background-color: #f9f9f9; border-radius: 4px; margin-top: 10px;">
+          Thanks for contacting us! We'll be in touch soon.
+        </div>
+      `;
     });
   }
   
