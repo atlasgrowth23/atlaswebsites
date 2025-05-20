@@ -58,7 +58,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
     // Load Google Maps JavaScript API
     const loadGoogleMapsAPI = () => {
       // Check if Google Maps API is already loaded
-      if (window.google && window.google.maps && window.google.maps.places) {
+      if ((window as unknown as GoogleMapsWindow).google && (window as unknown as GoogleMapsWindow).google.maps && (window as unknown as GoogleMapsWindow).google.maps.places) {
         initAutocomplete();
         return;
       }
@@ -77,13 +77,15 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
       if (!inputRef.current) return;
 
       // Create autocomplete instance
-      autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
+      autocompleteRef.current = new (window as unknown as GoogleMapsWindow).google.maps.places.Autocomplete(inputRef.current, {
         types: ['address'],
         componentRestrictions: { country: 'us' },
       });
 
       // Add listener for place selection
-      autocompleteRef.current.addListener('place_changed', handlePlaceSelect);
+      if (autocompleteRef.current) {
+        autocompleteRef.current.addListener('place_changed', handlePlaceSelect);
+      }
     };
 
     loadGoogleMapsAPI();
@@ -91,7 +93,7 @@ const GooglePlacesAutocomplete: React.FC<GooglePlacesAutocompleteProps> = ({
     return () => {
       // Clean up event listener
       if (autocompleteRef.current) {
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        (window as unknown as GoogleMapsWindow).google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
   }, []);
