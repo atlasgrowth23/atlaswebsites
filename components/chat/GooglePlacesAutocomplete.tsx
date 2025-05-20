@@ -1,39 +1,38 @@
 import React, { useEffect, useRef } from 'react';
 
 // Define type declarations for Google Maps JavaScript API
-declare global {
-  interface Window {
-    google: {
-      maps: {
-        places: {
-          Autocomplete: new (
-            input: HTMLInputElement,
-            options?: {
-              types?: string[];
-              componentRestrictions?: { country: string };
-            }
-          ) => google.maps.places.Autocomplete;
-        };
-        event: {
-          clearInstanceListeners: (instance: any) => void;
-        };
-      };
+declare namespace google.maps.places {
+  interface Autocomplete {
+    addListener: (event: string, callback: () => void) => void;
+    getPlace: () => {
+      address_components?: Array<{
+        long_name: string;
+        short_name: string;
+        types: string[];
+      }>;
+      formatted_address?: string;
     };
   }
-  
-  namespace google.maps.places {
-    interface Autocomplete {
-      addListener: (event: string, callback: () => void) => void;
-      getPlace: () => {
-        address_components?: Array<{
-          long_name: string;
-          short_name: string;
-          types: string[];
-        }>;
-        formatted_address?: string;
+}
+
+// Only define the Window interface if it hasn't been defined elsewhere
+interface GoogleMapsWindow extends Window {
+  google: {
+    maps: {
+      places: {
+        Autocomplete: new (
+          input: HTMLInputElement,
+          options?: {
+            types?: string[];
+            componentRestrictions?: { country: string };
+          }
+        ) => google.maps.places.Autocomplete;
       };
-    }
-  }
+      event: {
+        clearInstanceListeners: (instance: any) => void;
+      };
+    };
+  };
 }
 
 interface GooglePlacesAutocompleteProps {
