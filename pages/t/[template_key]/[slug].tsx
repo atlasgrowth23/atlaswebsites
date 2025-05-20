@@ -82,12 +82,12 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     );
 
     // Convert to objects for easier lookup
-    const company_frames = {};
+    const company_frames: Record<string, string> = {};
     companyFramesResult.rows.forEach((frame) => {
       company_frames[frame.frame_key] = frame.image_url;
     });
 
-    const template_frames = {};
+    const template_frames: Record<string, string> = {};
     templateFramesResult.rows.forEach((frame) => {
       template_frames[frame.frame_key] = frame.image_url;
     });
