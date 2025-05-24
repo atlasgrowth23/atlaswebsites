@@ -11,9 +11,8 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Check if ratings should be shown (rating > 4.8 and reviews > 10)
-  const showRatings = company.rating && company.reviews && 
-                     company.rating >= 4.8 && company.reviews >= 10;
+  // Check if ratings should be shown (rating > 4.8)
+  const showRatings = company.rating && company.rating >= 4.8;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -80,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                   </div>
                   <span className="ml-2 text-white font-bold">{typeof company.rating === 'number' ? company.rating.toFixed(1) : company.rating}</span>
                 </div>
-                <p className="text-xs text-white/80 font-medium">{company.reviews}+ Reviews</p>
+                <p className="text-xs text-white/80 font-medium">Trusted HVAC Service</p>
               </div>
             )}
 
@@ -155,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 </div>
                 <div className="ml-2">
                   <span className="text-sm font-bold text-white">{company.rating?.toFixed(1)}</span>
-                  <span className="text-xs text-white/70 ml-1">({company.reviews}+ Reviews)</span>
+                  <span className="text-xs text-white/70 ml-1">(Verified)</span>
                 </div>
               </div>
             )}
