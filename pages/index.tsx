@@ -134,11 +134,12 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
 
 export async function getStaticProps() {
   try {
-    // Fetch all companies using PostgreSQL
+    // Fetch only the first 50 companies for better performance
     const companies = await queryMany(`
       SELECT id, slug, name, city, state 
       FROM companies 
       ORDER BY name
+      LIMIT 50
     `);
 
     return {
