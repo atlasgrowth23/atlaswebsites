@@ -31,6 +31,9 @@ export interface Company {
   street?: string;
   postal_code?: string;
   email_1?: string;
+  // Added for logo processing
+  logo?: string;
+  logoUrl?: string;
 }
 
 // Minimal lead type

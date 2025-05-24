@@ -3,6 +3,7 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import { query } from '@/lib/db';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
+import { processLogo } from '@/lib/processLogo';
 import Head from 'next/head';
 
 type TemplateProps = {
@@ -96,8 +97,13 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     company.company_frames = company_frames;
     company.template_frames = template_frames;
     
+    // Process company logo
+    const logoUrl = await processLogo(company.slug, company.logo);
+    company.logoUrl = logoUrl;
+    
     // Log what frames we're using
     console.log('Added template frames:', template_frames);
+    console.log('Processed logo URL:', logoUrl);
     
     return {
       props: {

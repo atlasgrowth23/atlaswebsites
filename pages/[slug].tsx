@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { queryOne, queryMany } from '@/lib/db';
 import { Company } from '@/types';
+import { processLogo } from '@/lib/processLogo';
 
 // This page now redirects to the template-based URL structure
 export default function RedirectPage({ company }: { company: Company }) {
