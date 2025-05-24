@@ -63,12 +63,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 {item}
               </Link>
             ))}
-            <Link 
-              href={`/p/${company.slug}`}
-              className="text-lg font-medium text-white hover:text-blue-200 transition-colors bg-blue-600/40 px-4 py-2 rounded-lg"
-            >
-              Portal Login
-            </Link>
+
           </nav>
 
           {/* Rating/Reviews Section - conditionally displayed */}
@@ -145,13 +140,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                   {item}
                 </Link>
               ))}
-              <Link 
-                href={`/p/${company.slug}`}
-                className="text-lg text-white font-medium transition-colors py-2 bg-blue-600/30 px-4 rounded-lg mt-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Portal Login
-              </Link>
+
             </nav>
             
             {/* Mobile reviews badge - only if ratings should show */}
