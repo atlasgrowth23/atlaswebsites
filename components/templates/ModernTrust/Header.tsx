@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Company } from '@/types';
 
 interface HeaderProps {
@@ -36,7 +37,16 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
           {/* Company Name/Logo with simplified styling (no underline) */}
-          <div className="flex items-center">
+          <div className="flex items-center space-x-3">
+            {company.logoUrl && (
+              <Image 
+                src={company.logoUrl}
+                alt={`${company.name} logo`}
+                width={50}
+                height={50}
+                className="object-contain bg-white/10 backdrop-blur-sm rounded-lg p-2"
+              />
+            )}
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-white">
               {company.name}
             </h1>

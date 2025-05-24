@@ -47,6 +47,22 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
       <Head>
         <title>{`${company?.name || 'HVAC Services'} | Professional Air Conditioning & Heating`}</title>
         <meta name="description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
+        
+        {/* Open Graph tags for clean previews */}
+        <meta property="og:title" content={`${company?.name || 'HVAC Services'} | Professional Air Conditioning & Heating`} />
+        <meta property="og:description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
+        <meta property="og:type" content="website" />
+        {company?.logoUrl && (
+          <meta property="og:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com'}${company.logoUrl}`} />
+        )}
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${company?.name || 'HVAC Services'} | Professional Air Conditioning & Heating`} />
+        <meta name="twitter:description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
+        {company?.logoUrl && (
+          <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com'}${company.logoUrl}`} />
+        )}
       </Head>
       
       <Header company={company} />

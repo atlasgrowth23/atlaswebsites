@@ -63,6 +63,10 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       };
     }
 
+    // Process company logo
+    const logoUrl = await processLogo(company.slug, company.logo);
+    company.logoUrl = logoUrl;
+
     return {
       props: {
         company,

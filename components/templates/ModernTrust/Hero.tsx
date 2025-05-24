@@ -29,6 +29,20 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
       {/* Content with summer-focused copy */}
       <div className="container mx-auto px-4 z-10 py-20">
         <div className="max-w-3xl ml-0 md:ml-12 lg:ml-24">
+          {/* Company Logo */}
+          {company.logoUrl && (
+            <div className="mb-8">
+              <Image 
+                src={company.logoUrl}
+                alt={`${company.name} logo`}
+                width={180}
+                height={180}
+                className="object-contain bg-white/10 backdrop-blur-sm rounded-lg p-4 shadow-lg"
+                priority
+              />
+            </div>
+          )}
+          
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 text-white leading-tight">
             <span className="block">Stay Cool This</span> 
             <span className="block">Summer in</span>
