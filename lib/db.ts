@@ -27,7 +27,6 @@ class MockPool {
             state: 'IL',
             phone: '(555) 123-4567',
             rating: 4.8,
-            reviews: 124,
             company_frames: {
               hero_img: 'https://t3.ftcdn.net/jpg/02/81/35/14/240_F_281351499_EEFFBZbeaq6GUxRabVIfIPr6UZU3RjKV.jpg'
             }
