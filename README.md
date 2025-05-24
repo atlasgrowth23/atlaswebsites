@@ -4,7 +4,7 @@ A comprehensive platform for HVAC contractors to manage their business website, 
 
 ## Features
 
-- **Multi-tenant architecture**: Host multiple HVAC business websites on one platform
+- **Multi-tenant architecture**: Host multiple HVAC business websites odn one platform
 - **Template-based websites**: Each business uses a professional template 
 - **Custom domain support**: Businesses can use custom domains or subdomains
 - **Customer messaging system**: Built-in chat widget that connects to the admin portal
