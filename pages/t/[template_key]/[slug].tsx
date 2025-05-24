@@ -102,6 +102,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     company.logoUrl = logoUrl;
     
     // Log what frames we're using
+    console.log('Company ID:', company.id);
+    console.log('Added company frames:', company_frames);
     console.log('Added template frames:', template_frames);
     console.log('Processed logo URL:', logoUrl);
     
