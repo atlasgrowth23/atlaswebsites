@@ -103,6 +103,13 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
             <p>© {new Date().getFullYear()} {company.name}. All Rights Reserved.</p>
           </div>
         </div>
+        
+        {/* Chat Widget Script */}
+        <script 
+          src="https://widgets.leadconnectorhq.com/loader.js"  
+          data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js" 
+          data-widget-id="68311816e4bd84135d2b46e2"   
+        />
       </footer>
     </div>
   );
