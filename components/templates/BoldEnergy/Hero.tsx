@@ -44,25 +44,29 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
           )}
           
           <h1 className="text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-6 text-white leading-tight">
-            <span className="block text-yellow-400">PROFESSIONAL</span> 
-            <span className="block">SOLUTIONS FOR</span>
-            <span className="text-orange-300">{company.city || 'YOUR AREA'}</span>
+            <span className="block text-yellow-400">Stay Cool This</span> 
+            <span className="block">Summer in</span>
+            <span className="text-orange-300">{company.city || 'Your Area'}</span>
           </h1>
 
-          <p className="text-lg lg:text-xl text-white/95 mb-8 max-w-2xl leading-relaxed font-medium">
-            Quality, reliable service that gets results. Experience the difference with professional solutions that exceed expectations every time.
+          <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-xl leading-relaxed">
+            Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
             {company.phone && (
-              <Button className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-6 text-lg rounded-xl transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 border-2 border-yellow-300">
+              <Button className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-6 text-lg rounded-xl transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1">
                 <a href={`tel:${company.phone}`} className="flex items-center">
-                  🔥 CALL FOR SERVICE: {company.phone}
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                  {company.phone}
                 </a>
               </Button>
             )}
+
             <Button className="bg-transparent hover:bg-white/10 text-white font-bold px-8 py-6 text-lg rounded-xl border-2 border-white/50 hover:border-white transition-all duration-300">
-              GET BOLD RESULTS
+              Get a Free Estimate
             </Button>
           </div>
 

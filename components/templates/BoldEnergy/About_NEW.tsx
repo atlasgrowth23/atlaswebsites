@@ -42,7 +42,7 @@ const About: React.FC<AboutProps> = ({ company }) => {
       observer.disconnect();
     };
   }, []);
-
+  
   return (
     <section 
       id="about" 
