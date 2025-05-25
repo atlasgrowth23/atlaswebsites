@@ -35,9 +35,9 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
               <Image 
                 src={company.logoUrl}
                 alt={`${company.name} logo`}
-                width={160}
-                height={160}
-                className="object-contain bg-white/20 backdrop-blur-sm rounded-xl p-4 shadow-2xl w-[160px] h-[160px] lg:w-[180px] lg:h-[180px] border-2 border-yellow-400/30"
+                width={200}
+                height={120}
+                className="object-contain bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-2xl max-w-[200px] max-h-[120px] lg:max-w-[240px] lg:max-h-[140px] border-2 border-yellow-400/50"
                 priority
               />
             </div>

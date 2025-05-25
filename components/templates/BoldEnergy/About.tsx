@@ -56,6 +56,19 @@ const About: React.FC<AboutProps> = ({ company }) => {
                 className="object-cover w-full h-[400px]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-orange-600/20 to-transparent"></div>
+              
+              {/* Company logo overlay if available */}
+              {company?.logoUrl && (
+                <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-lg">
+                  <Image 
+                    src={company.logoUrl}
+                    alt={`${company.name} logo`}
+                    width={80}
+                    height={50}
+                    className="object-contain max-w-[80px] max-h-[50px]"
+                  />
+                </div>
+              )}
             </div>
             
             {/* Bold accent elements */}
