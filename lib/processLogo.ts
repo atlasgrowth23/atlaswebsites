@@ -23,9 +23,19 @@ export async function processLogo(slug: string, url: string | null): Promise<str
     try {
       // Try to get higher quality version of Google profile images
       let processUrl = url;
-      if (url.includes('googleusercontent.com') && url.includes('s44-')) {
-        // Replace small size with larger size
-        processUrl = url.replace(/s\d+-/g, 's400-').replace(/=s\d+/g, '=s400');
+      try {
+        if (url.includes('googleusercontent.com')) {
+          // Handle different Google image URL patterns safely
+          if (url.includes('s44-')) {
+            processUrl = url.replace(/s\d+-/g, 's400-');
+          }
+          if (url.includes('=s')) {
+            processUrl = processUrl.replace(/=s\d+/g, '=s400');
+          }
+        }
+      } catch (urlError) {
+        console.log('URL processing error, using original:', urlError);
+        processUrl = url;
       }
       
       // Fetch the logo from the URL
