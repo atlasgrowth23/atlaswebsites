@@ -10,8 +10,9 @@ export default function RedirectPage({ company }: { company: Company }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Use the available template
-    const templateKey = 'moderntrust';
+    // Randomly select between available templates
+    const templates = ['boldenergy', 'moderntrust'];
+    const templateKey = templates[Math.floor(Math.random() * templates.length)];
 
     if (router.isReady && company?.slug) {
       router.replace(`/t/${templateKey}/${company.slug}`);
