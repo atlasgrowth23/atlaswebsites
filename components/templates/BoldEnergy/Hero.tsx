@@ -44,20 +44,20 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
           )}
           
           <h1 className="text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-6 text-white leading-tight">
-            <span className="block text-yellow-400">BOLD</span> 
+            <span className="block text-yellow-400">PROFESSIONAL</span> 
             <span className="block">SOLUTIONS FOR</span>
             <span className="text-orange-300">{company.city || 'YOUR AREA'}</span>
           </h1>
 
           <p className="text-lg lg:text-xl text-white/95 mb-8 max-w-2xl leading-relaxed font-medium">
-            Powerful, reliable service that gets results. Experience the bold difference with professional solutions that exceed expectations every time.
+            Quality, reliable service that gets results. Experience the difference with professional solutions that exceed expectations every time.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
             {company.phone && (
               <Button className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-8 py-6 text-lg rounded-xl transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1 border-2 border-yellow-300">
                 <a href={`tel:${company.phone}`} className="flex items-center">
-                  🔥 CALL NOW: {company.phone}
+                  🔥 CALL FOR SERVICE: {company.phone}
                 </a>
               </Button>
             )}
