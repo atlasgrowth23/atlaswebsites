@@ -15,7 +15,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ company }) => {
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50">
+    <div className="flex flex-col min-h-screen">
       <Head>
         <title>{`${company?.name || 'Professional Services'} | Trusted Local Business`}</title>
         <meta name="description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
@@ -60,8 +60,8 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
       </main>
       <Footer company={company} />
       
-      {/* Template loaded indicator */}
-      <div className="hidden">BoldEnergy template loaded</div>
+      {/* Login reminder */}
+      <div className="hidden">Chat widget loaded</div>
     </div>
   );
 };
