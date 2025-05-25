@@ -36,13 +36,16 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           {/* Company Name/Logo - responsive layout */}
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-3 flex-1 min-w-0 lg:min-w-auto lg:flex-1 pr-2 lg:pr-0">
             {company.logoUrl && (
-              <Image 
-                src={company.logoUrl}
-                alt={`${company.name} logo`}
-                width={40}
-                height={40}
-                className="object-contain bg-white/20 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 w-[40px] h-[40px] sm:w-[48px] sm:h-[48px] lg:w-[50px] lg:h-[50px]"
-              />
+              <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-white/90 backdrop-blur-sm rounded-xl p-2 shadow-lg">
+                <Image 
+                  src={company.logoUrl}
+                  alt={`${company.name} logo`}
+                  width={64}
+                  height={64}
+                  className="w-full h-full object-contain"
+                  priority
+                />
+              </div>
             )}
             {/* Mobile company name - wraps and scales */}
             <h1 className="lg:hidden text-sm sm:text-base md:text-lg font-bold tracking-tight text-white leading-tight max-w-[120px] sm:max-w-[180px] md:max-w-[240px] break-words">
