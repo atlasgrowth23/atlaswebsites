@@ -30,13 +30,19 @@ export async function processLogo(slug: string, url: string | null): Promise<str
       
       const buf = Buffer.from(await res.arrayBuffer());
       
-      // Process the image with Sharp - optimized for social media previews
+      // Process the image with Sharp - high quality for social media previews
       await sharp(buf)
         .resize(1200, 630, { 
-          fit: 'inside', 
-          background: { r: 255, g: 255, b: 255, alpha: 1 } 
+          fit: 'contain', 
+          background: { r: 255, g: 255, b: 255, alpha: 1 },
+          withoutEnlargement: true // Don't upscale small images
         })
-        .png({ quality: 90 })
+        .sharpen() // Add sharpening for crisp edges
+        .png({ 
+          quality: 100, // Maximum quality
+          compressionLevel: 6, // Good compression without quality loss
+          adaptiveFiltering: true // Better compression for logos
+        })
         .toFile(outPath);
       
       return `/logos/${slug}.png`;
