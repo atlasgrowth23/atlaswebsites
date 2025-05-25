@@ -25,12 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <meta property="og:title" content={`${company?.name || 'Professional Services'} | Trusted Local Business`} />
         <meta property="og:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
         <meta property="og:type" content="website" />
-{company?.logoUrl && (
-          <>
-            <meta property="og:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}${company.logoUrl}`} />
-            <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}${company.logoUrl}`} />
-          </>
-        )}
+        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}/logos/${company?.slug}.png`} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content={`${company?.name || 'Business'} Logo`} />
@@ -39,7 +34,7 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${company?.name || 'Professional Services'} | Trusted Local Business`} />
         <meta name="twitter:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
-
+        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}/logos/${company?.slug}.png`} />
         <meta name="twitter:image:alt" content={`${company?.name || 'Business'} Logo`} />
       </Head>
       
