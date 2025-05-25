@@ -3,6 +3,7 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import { query } from '@/lib/db';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
+import BoldEnergyLayout from '@/components/templates/BoldEnergy/Layout';
 import { processLogo } from '@/lib/processLogo';
 import Head from 'next/head';
 
@@ -16,6 +17,8 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
   switch (template_key) {
     case 'moderntrust':
       return <ModernTrustLayout company={company} />;
+    case 'boldenergy':
+      return <BoldEnergyLayout company={company} />;
     default:
       return (
         <div className="p-8">
