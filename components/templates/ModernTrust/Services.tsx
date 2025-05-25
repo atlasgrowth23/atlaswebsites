@@ -136,7 +136,7 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
                     className={`px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center transform hover:scale-105 ${
                       activeType === 'cooling' 
                         ? 'bg-white text-blue-600 shadow-lg scale-105' 
-                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                        : 'bg-blue-600 bg-opacity-80 text-white hover:bg-opacity-90'
                     }`}
                   >
                     <svg className="w-7 h-7 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -149,7 +149,7 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
                     className={`px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center transform hover:scale-105 ${
                       activeType === 'heating' 
                         ? 'bg-white text-red-700 shadow-lg scale-105' 
-                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                        : 'bg-red-600 bg-opacity-80 text-white hover:bg-opacity-90'
                     }`}
                   >
                     <svg className="w-7 h-7 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
