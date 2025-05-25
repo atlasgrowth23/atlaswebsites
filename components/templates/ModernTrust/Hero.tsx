@@ -13,7 +13,7 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
   const heroImage = getPhotoUrl(company, 'hero_img', 'moderntrust');
 
   return (
-    <div className="relative min-h-[85vh] md:min-h-[90vh] lg:min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
+    <div className="relative min-h-[85vh] lg:min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
       {/* Background with gradient overlay for more depth */}
       <div className="absolute inset-0">
         <Image 
@@ -27,30 +27,30 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
       </div>
 
-      {/* Content scaled for iPhone 14 Pro Max proportions */}
-      <div className="container mx-auto px-4 md:px-6 z-10 py-16 md:py-20">
+      {/* Content - iPhone 14 Pro Max scale for mobile, original desktop scale preserved */}
+      <div className="container mx-auto px-4 z-10 py-16 lg:py-20">
         <div className="max-w-3xl ml-0 md:ml-12 lg:ml-24">
-          {/* Company Logo - iPhone 14 Pro Max sizing */}
+          {/* Company Logo - scaled for mobile but keeps original desktop */}
           {company.logoUrl && (
-            <div className="mb-8 md:mb-10">
+            <div className="mb-8">
               <Image 
                 src={company.logoUrl}
                 alt={`${company.name} logo`}
                 width={160}
                 height={160}
-                className="object-contain bg-white/10 backdrop-blur-sm rounded-lg p-4 shadow-lg w-[160px] h-[160px] md:w-[180px] md:h-[180px]"
+                className="object-contain bg-white/10 backdrop-blur-sm rounded-lg p-4 shadow-lg w-[160px] h-[160px] lg:w-[180px] lg:h-[180px]"
                 priority
               />
             </div>
           )}
           
-          <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 md:mb-8 text-white leading-tight">
+          <h1 className="text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold mb-6 text-white leading-tight">
             <span className="block">Stay Cool This</span> 
             <span className="block">Summer in</span>
             <span className="text-primary">{company.city || 'Your Area'}</span>
           </h1>
 
-          <p className="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 md:mb-10 max-w-xl leading-relaxed">
+          <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-xl leading-relaxed">
             Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs.
           </p>
 
