@@ -107,27 +107,36 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
               </p>
               
               {/* Toggle buttons */}
-              <div className="flex justify-center gap-4 mb-8">
-                <button
-                  onClick={() => handleToggle('cooling')}
-                  className={`px-8 py-3 rounded-lg font-bold transition-all duration-300 ${
-                    activeType === 'cooling'
-                      ? 'bg-white text-orange-600 shadow-lg'
-                      : 'bg-white/20 text-white hover:bg-white/30'
-                  }`}
-                >
-                  ❄️ Cooling Services
-                </button>
-                <button
-                  onClick={() => handleToggle('heating')}
-                  className={`px-8 py-3 rounded-lg font-bold transition-all duration-300 ${
-                    activeType === 'heating'
-                      ? 'bg-white text-red-700 shadow-lg'
-                      : 'bg-white/20 text-white hover:bg-white/30'
-                  }`}
-                >
-                  🔥 Heating Services
-                </button>
+              {/* Service toggle - larger and more prominent */}
+              <div className="flex justify-center mt-8">
+                <div className="bg-white bg-opacity-15 backdrop-blur-sm p-2 rounded-xl shadow-xl inline-flex gap-2">
+                  <button 
+                    onClick={() => handleToggle('cooling')} 
+                    className={`px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center transform hover:scale-105 ${
+                      activeType === 'cooling' 
+                        ? 'bg-white text-orange-600 shadow-lg scale-105' 
+                        : 'text-white hover:bg-white hover:bg-opacity-20'
+                    }`}
+                  >
+                    <svg className="w-7 h-7 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+                    </svg>
+                    Cooling
+                  </button>
+                  <button 
+                    onClick={() => handleToggle('heating')} 
+                    className={`px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center transform hover:scale-105 ${
+                      activeType === 'heating' 
+                        ? 'bg-white text-red-700 shadow-lg scale-105' 
+                        : 'text-white hover:bg-white hover:bg-opacity-20'
+                    }`}
+                  >
+                    <svg className="w-7 h-7 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                    </svg>
+                    Heating
+                  </button>
+                </div>
               </div>
             </div>
           </div>
