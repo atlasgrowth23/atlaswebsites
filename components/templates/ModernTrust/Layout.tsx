@@ -21,21 +21,27 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <title>{`${company?.name || 'HVAC Services'} | Professional Air Conditioning & Heating`}</title>
         <meta name="description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
         
-        {/* Open Graph tags for clean previews */}
-        <meta property="og:title" content={`${company?.name || 'Professional Services'} | Trusted Local Business`} />
-        <meta property="og:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
+        {/* Critical meta tags for link previews - must be at the top */}
+        <meta property="og:title" content={`${company?.name || 'Professional Services'}`} />
+        <meta property="twitter:title" content={`${company?.name || 'Professional Services'}`} />
+        
+        {/* Primary Meta Tags */}
+        <meta name="description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
+        
+        {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}/logos/${company?.slug}.png`} />
+        <meta property="og:site_name" content={`${company?.name || 'Professional Services'}`} />
+        <meta property="og:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
+        <meta property="og:image" content={company?.logoUrl || `/logos/${company?.slug}.png`} id="og-image" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
+        <meta property="og:locale" content="en_US" />
         <meta property="og:image:alt" content={`${company?.name || 'Business'} Logo`} />
         
-        {/* Twitter Card tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${company?.name || 'Professional Services'} | Trusted Local Business`} />
-        <meta name="twitter:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
-        <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}/logos/${company?.slug}.png`} />
-        <meta name="twitter:image:alt" content={`${company?.name || 'Business'} Logo`} />
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
+        <meta property="twitter:image" content={company?.logoUrl || `/logos/${company?.slug}.png`} id="twitter-image" />
       </Head>
       
       <Header company={company} />
