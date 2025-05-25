@@ -74,13 +74,13 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
   // Determine which services to display
   const services = activeType === 'cooling' ? coolingServices : heatingServices;
   
-  // Determine colors based on active type - consistent reds and blues
+  // Determine colors based on active type - green earth tones
   const activeColors = {
-    bg: activeType === 'cooling' ? 'bg-blue-600' : 'bg-red-700',
-    text: activeType === 'cooling' ? 'text-blue-600' : 'text-red-700',
-    bgLight: activeType === 'cooling' ? 'bg-blue-100' : 'bg-red-100',
-    hover: activeType === 'cooling' ? 'hover:bg-blue-700' : 'hover:bg-red-800',
-    border: activeType === 'cooling' ? 'border-blue-200' : 'border-red-200'
+    bg: activeType === 'cooling' ? 'bg-green-600' : 'bg-green-800',
+    text: activeType === 'cooling' ? 'text-green-600' : 'text-green-800',
+    bgLight: activeType === 'cooling' ? 'bg-green-100' : 'bg-green-100',
+    hover: activeType === 'cooling' ? 'hover:bg-green-700' : 'hover:bg-green-900',
+    border: activeType === 'cooling' ? 'border-green-200' : 'border-green-200'
   };
 
   // Handle toggle between cooling and heating
@@ -91,7 +91,7 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
   return (
     <div id="services" className="py-20">
       {/* Hero intro that's visible above the fold */}
-      <div className={`${activeType === 'cooling' ? 'bg-blue-600' : 'bg-red-700'} transition-colors duration-500 mb-16`}>
+      <div className={`${activeType === 'cooling' ? 'bg-green-600' : 'bg-green-800'} transition-colors duration-500 mb-16`}>
         <div className="container mx-auto px-4">
           <div className="py-16 relative overflow-hidden">
             {/* Decorative elements */}
