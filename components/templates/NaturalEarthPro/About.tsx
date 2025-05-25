@@ -9,7 +9,7 @@ interface AboutProps {
 
 const About: React.FC<AboutProps> = ({ company }) => {
   // Get about image URL using the photo helper
-  const aboutImage = getPhotoUrl(company, 'about_img', 'moderntrust');
+  const aboutImage = getPhotoUrl(company, 'about_img', 'naturalearthpro');
   
   // Refs for animated elements
   const sectionRef = useRef<HTMLElement>(null);
@@ -42,7 +42,7 @@ const About: React.FC<AboutProps> = ({ company }) => {
       observer.disconnect();
     };
   }, []);
-  
+
   return (
     <section 
       id="about" 
@@ -52,7 +52,7 @@ const About: React.FC<AboutProps> = ({ company }) => {
       <div className="container mx-auto px-6">
         {/* Company-specific heading */}
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
-          <span className="text-blue-600">About</span> <span className="text-gray-900">{company.name}</span>
+          <span className="text-green-600">About</span> <span className="text-gray-900">{company.name}</span>
         </h2>
         
         {/* Main content - clean two column layout */}
@@ -65,7 +65,7 @@ const About: React.FC<AboutProps> = ({ company }) => {
           >
             <div className="relative rounded-lg overflow-hidden aspect-[4/3] shadow-lg">
               <Image 
-                src={aboutImage || '/stock/moderntrust/about_img.svg'} 
+                src={aboutImage || '/stock/naturalearthpro/about_img.svg'} 
                 alt={`${company.name} services`}
                 fill
                 className="object-cover"
@@ -89,7 +89,7 @@ const About: React.FC<AboutProps> = ({ company }) => {
                 className="flex items-start opacity-0 translate-y-[10px] transition-all duration-700 delay-500"
               >
                 <div className="flex-shrink-0 mr-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center transform transition-transform hover:scale-110">
+                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center transform transition-transform hover:scale-110">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
@@ -123,15 +123,15 @@ const About: React.FC<AboutProps> = ({ company }) => {
                 className="flex items-start opacity-0 translate-y-[10px] transition-all duration-700 delay-900"
               >
                 <div className="flex-shrink-0 mr-4">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center transform transition-transform hover:scale-110">
+                  <div className="w-12 h-12 bg-emerald-600 rounded-full flex items-center justify-center transform transition-transform hover:scale-110">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Honest Pricing</h3>
-                  <p className="text-gray-600">Clear, upfront quotes with no surprises or hidden charges when the work is done.</p>
+                  <h3 className="text-xl font-semibold mb-2">Always Available</h3>
+                  <p className="text-gray-600">Emergency services available 24/7 because HVAC problems don't wait for business hours.</p>
                 </div>
               </div>
             </div>
@@ -139,11 +139,11 @@ const About: React.FC<AboutProps> = ({ company }) => {
         </div>
       </div>
       
-      {/* Add CSS for animations */}
-      <style jsx global>{`
+      {/* Add the fade-in animation style */}
+      <style jsx>{`
         .animate-fade-in {
           opacity: 1 !important;
-          transform: translate(0, 0) !important;
+          transform: translateX(0) translateY(0) !important;
         }
       `}</style>
     </section>
