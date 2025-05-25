@@ -4,6 +4,7 @@ import { query } from '@/lib/db';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
 import BoldEnergyLayout from '@/components/templates/BoldEnergy/Layout';
+import NaturalEarthProLayout from '@/components/templates/NaturalEarthPro/Layout';
 import { processLogo } from '@/lib/processLogo';
 import Head from 'next/head';
 
@@ -19,6 +20,8 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
       return <ModernTrustLayout company={company} />;
     case 'boldenergy':
       return <BoldEnergyLayout company={company} />;
+    case 'naturalearthpro':
+      return <NaturalEarthProLayout company={company} />;
     default:
       return (
         <div className="p-8">
