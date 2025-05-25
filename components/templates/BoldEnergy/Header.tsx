@@ -34,7 +34,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
           {/* Company Name/Logo - Mobile Optimized */}
-          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-2">
             {company.logoUrl && (
               <Image 
                 src={company.logoUrl}
@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 className="object-contain bg-white/20 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 w-[40px] h-[40px] sm:w-[48px] sm:h-[48px] lg:w-[50px] lg:h-[50px]"
               />
             )}
-            <h1 className="text-base sm:text-lg lg:text-2xl xl:text-3xl font-bold tracking-tight text-white truncate max-w-[120px] sm:max-w-[180px] lg:max-w-none">
+            <h1 className="text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl font-bold tracking-tight text-white leading-tight max-w-[120px] sm:max-w-[180px] md:max-w-[240px] lg:max-w-none break-words">
               {company.name}
             </h1>
           </div>
