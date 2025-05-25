@@ -35,8 +35,8 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
     }`}>
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
-          {/* Company Name/Logo - mobile optimized */}
-          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0 pr-2">
+          {/* Company Name/Logo - responsive layout */}
+          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-3 flex-1 min-w-0 lg:min-w-auto lg:flex-none pr-2 lg:pr-0">
             {company.logoUrl && (
               <Image 
                 src={company.logoUrl}
@@ -46,7 +46,12 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 className="object-contain bg-white/10 backdrop-blur-sm rounded-lg p-2 lg:w-[50px] lg:h-[50px]"
               />
             )}
-            <h1 className="text-sm sm:text-base md:text-lg lg:text-2xl xl:text-3xl font-bold tracking-tight text-white leading-tight max-w-[140px] sm:max-w-[200px] md:max-w-[280px] lg:max-w-none break-words">
+            {/* Mobile company name - wraps and scales */}
+            <h1 className="lg:hidden text-sm sm:text-base md:text-lg font-bold tracking-tight text-white leading-tight max-w-[140px] sm:max-w-[200px] md:max-w-[280px] break-words">
+              {company.name}
+            </h1>
+            {/* Desktop company name - original sizing */}
+            <h1 className="hidden lg:block text-2xl xl:text-3xl font-bold tracking-tight text-white">
               {company.name}
             </h1>
           </div>
