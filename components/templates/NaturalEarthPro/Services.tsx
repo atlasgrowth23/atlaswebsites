@@ -128,35 +128,50 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
                 }
               </p>
               
-              {/* Service toggle - larger and more prominent */}
+              {/* Service toggle - modern slider style */}
               <div className="flex justify-center mt-8">
-                <div className="bg-white bg-opacity-15 backdrop-blur-sm p-2 rounded-xl shadow-xl inline-flex gap-2">
-                  <button 
-                    onClick={() => handleToggle('cooling')} 
-                    className={`px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center transform hover:scale-105 ${
-                      activeType === 'cooling' 
-                        ? 'bg-white text-green-600 shadow-lg scale-105' 
-                        : 'bg-green-600 bg-opacity-80 text-white hover:bg-opacity-90'
-                    }`}
-                  >
-                    <svg className="w-7 h-7 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-                    </svg>
-                    Cooling
-                  </button>
-                  <button 
-                    onClick={() => handleToggle('heating')} 
-                    className={`px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center transform hover:scale-105 ${
-                      activeType === 'heating' 
-                        ? 'bg-white text-red-700 shadow-lg scale-105' 
-                        : 'bg-red-600 bg-opacity-80 text-white hover:bg-opacity-90'
-                    }`}
-                  >
-                    <svg className="w-7 h-7 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                    </svg>
-                    Heating
-                  </button>
+                <div className="bg-white bg-opacity-20 backdrop-blur-sm p-3 rounded-2xl shadow-xl">
+                  <div className="relative flex bg-gray-100 rounded-xl p-1">
+                    {/* Sliding background indicator */}
+                    <div 
+                      className={`absolute top-1 bottom-1 rounded-lg transition-all duration-300 shadow-lg ${
+                        activeType === 'cooling' 
+                          ? 'left-1 bg-green-600' 
+                          : 'right-1 bg-red-600'
+                      }`}
+                      style={{ width: 'calc(50% - 4px)' }}
+                    />
+                    
+                    {/* Cooling button */}
+                    <button 
+                      onClick={() => handleToggle('cooling')} 
+                      className={`relative z-10 px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center flex-1 justify-center ${
+                        activeType === 'cooling' 
+                          ? 'text-white' 
+                          : 'text-green-600 hover:text-green-700'
+                      }`}
+                    >
+                      <svg className="w-6 h-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+                      </svg>
+                      Cooling
+                    </button>
+                    
+                    {/* Heating button */}
+                    <button 
+                      onClick={() => handleToggle('heating')} 
+                      className={`relative z-10 px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 flex items-center flex-1 justify-center ${
+                        activeType === 'heating' 
+                          ? 'text-white' 
+                          : 'text-red-600 hover:text-red-700'
+                      }`}
+                    >
+                      <svg className="w-6 h-6 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                      </svg>
+                      Heating
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
