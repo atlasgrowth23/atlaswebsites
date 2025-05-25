@@ -1,21 +1,22 @@
-# HVAC Business Management Platform
+# Multi-Business Website Platform
 
-A comprehensive platform for HVAC contractors to manage their business website, customer contacts, and messaging.
+A scalable platform for hosting professional websites for multiple businesses across various industries. Create beautiful, template-based websites with integrated customer engagement tools.
 
 ## Features
 
-- **Multi-tenant architecture**: Host multiple HVAC business websites odn one platform
-- **Template-based websites**: Each business uses a professional template 
-- **Custom domain support**: Businesses can use custom domains or subdomains
-- **Customer messaging system**: Built-in chat widget that connects to the admin portal
-- **Contact management**: Store and manage customer contacts
-- **Real-time notifications**: Get notified of new messages immediately
+- **Multi-tenant architecture**: Host unlimited business websites on one platform
+- **Professional templates**: Each business gets a modern, responsive website template
+- **Custom domain support**: Businesses can use custom domains or branded subdomains
+- **Customer engagement**: Built-in chat widget and contact management
+- **Business data integration**: Automatic integration with business listings and reviews
+- **SEO optimized**: Each site is optimized for search engines and social media sharing
 
 ## Technology Stack
 
 - **Frontend**: Next.js, React, TypeScript, and Tailwind CSS
-- **Backend**: Next.js API Routes, PostgreSQL database
-- **Deployment**: Vercel (with instructions for setup)
+- **Backend**: Next.js API Routes, PostgreSQL database  
+- **Image Processing**: Sharp for logo optimization and social media previews
+- **Deployment**: Vercel optimized with static generation
 
 ## Getting Started
 

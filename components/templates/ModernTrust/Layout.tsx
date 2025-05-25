@@ -22,20 +22,25 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <meta name="description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
         
         {/* Open Graph tags for clean previews */}
-        <meta property="og:title" content={`${company?.name || 'HVAC Services'} | Professional Air Conditioning & Heating`} />
-        <meta property="og:description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
+        <meta property="og:title" content={`${company?.name || 'Professional Services'} | Trusted Local Business`} />
+        <meta property="og:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
         <meta property="og:type" content="website" />
-        {company?.logoUrl && (
-          <meta property="og:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com'}${company.logoUrl}`} />
+{company?.logoUrl && (
+          <>
+            <meta property="og:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}${company.logoUrl}`} />
+            <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.vercel.app'}${company.logoUrl}`} />
+          </>
         )}
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={`${company?.name || 'Business'} Logo`} />
         
         {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${company?.name || 'HVAC Services'} | Professional Air Conditioning & Heating`} />
-        <meta name="twitter:description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
-        {company?.logoUrl && (
-          <meta name="twitter:image" content={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://your-domain.com'}${company.logoUrl}`} />
-        )}
+        <meta name="twitter:title" content={`${company?.name || 'Professional Services'} | Trusted Local Business`} />
+        <meta name="twitter:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
+
+        <meta name="twitter:image:alt" content={`${company?.name || 'Business'} Logo`} />
       </Head>
       
       <Header company={company} />
