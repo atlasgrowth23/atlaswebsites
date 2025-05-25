@@ -153,7 +153,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                   ))}
                 </div>
                 <div className="ml-2">
-                  <span className="text-sm font-bold text-white">{company.rating?.toFixed(1)}</span>
+                  <span className="text-sm font-bold text-white">{typeof company.rating === 'number' ? company.rating.toFixed(1) : company.rating}</span>
                   <span className="text-xs text-white/70 ml-1">(Verified)</span>
                 </div>
               </div>
