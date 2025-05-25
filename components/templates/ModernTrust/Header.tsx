@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
           {/* Company Name/Logo - responsive layout */}
-          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-3 flex-1 min-w-0 lg:min-w-auto lg:flex-none pr-2 lg:pr-0">
+          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-3 flex-1 min-w-0 lg:min-w-auto lg:flex-1 pr-2 lg:pr-0">
             {company.logoUrl && (
               <Image 
                 src={company.logoUrl}
@@ -56,8 +56,8 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
             </h1>
           </div>
 
-          {/* Navigation with improved typography and layout */}
-          <nav className="hidden md:flex items-center space-x-8">
+          {/* Navigation with improved typography and layout - centered */}
+          <nav className="hidden lg:flex items-center space-x-8 flex-1 justify-center">
             {['About', 'Services', 'Contact'].map((item) => (
               <Link 
                 key={item}
@@ -70,8 +70,8 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
 
           </nav>
 
-          {/* Rating/Reviews Section - conditionally displayed */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* Rating/Reviews Section - right aligned */}
+          <div className="hidden lg:flex items-center space-x-3 flex-1 justify-end">
             {showRatings && (
               <div className="bg-white/10 py-2 px-4 rounded-lg shadow-lg border-l border-t border-white/20">
                 <div className="flex items-center">
