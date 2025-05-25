@@ -90,8 +90,8 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
                       <div className="text-sm text-gray-500">
                         HVAC Services
                       </div>
-                      <Link href={`/${company.slug}`} passHref>
-                        <Button size="sm">View Site</Button>
+                      <Link href={`/templates/${company.slug}`} passHref>
+                        <Button size="sm">Choose Style</Button>
                       </Link>
                     </div>
                   </div>
