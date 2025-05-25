@@ -39,15 +39,19 @@ export const getStaticPaths: GetStaticPaths = async () => {
   // Get all companies
   const result = await query('SELECT slug FROM companies WHERE slug IS NOT NULL LIMIT 100');
   
-  // Create paths for our templates for each company slug
+  // Create paths for ALL templates for each company slug
+  const templates = ['moderntrust', 'boldenergy', 'naturalearthpro'];
   const paths = [];
+  
   for (const company of result.rows) {
-    paths.push({ params: { template_key: 'moderntrust', slug: company.slug } });
+    for (const template of templates) {
+      paths.push({ params: { template_key: template, slug: company.slug } });
+    }
   }
   
   return {
     paths,
-    fallback: 'blocking', // Show 404 for unknown paths
+    fallback: 'blocking',
   };
 };
 
