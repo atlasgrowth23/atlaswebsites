@@ -16,13 +16,13 @@ const About: React.FC<AboutProps> = ({ company }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6">
-              <span className="text-orange-600">BOLD</span> EXPERIENCE,
+              <span className="text-orange-600">EXPERT</span> EXPERIENCE,
               <br />
               <span className="text-red-600">PROVEN</span> RESULTS
             </h2>
             
             <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-              When you need results that matter, {company?.name || 'our team'} delivers with bold action and unwavering commitment. We don't just meet expectations – we exceed them with powerful solutions built for success.
+              When you need results that matter, {company?.name || 'our team'} delivers with professional expertise and unwavering commitment. We don't just meet expectations – we exceed them with quality solutions built for lasting success.
             </p>
             
             <div className="grid grid-cols-2 gap-6 mb-8">
@@ -41,7 +41,7 @@ const About: React.FC<AboutProps> = ({ company }) => {
                 href={`tel:${company.phone}`}
                 className="inline-block bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
               >
-                🔥 GET BOLD RESULTS: {company.phone}
+                🔥 GET EXPERT SERVICE: {company.phone}
               </a>
             )}
           </div>

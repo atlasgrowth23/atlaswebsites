@@ -10,25 +10,25 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
     {
       icon: '⚡',
       title: 'RAPID RESPONSE',
-      description: 'Lightning-fast service when you need it most',
+      description: 'Quick, reliable service when you need it most',
       color: 'from-orange-500 to-red-500'
     },
     {
       icon: '💪',
-      title: 'BOLD SOLUTIONS',
-      description: 'Powerful approaches that deliver real results',
+      title: 'EXPERT SOLUTIONS',
+      description: 'Professional approaches that deliver real results',
       color: 'from-red-500 to-yellow-500'
     },
     {
       icon: '🔥',
-      title: 'FIERCE QUALITY',
+      title: 'PREMIUM QUALITY',
       description: 'Uncompromising standards in every project',
       color: 'from-yellow-500 to-orange-500'
     },
     {
       icon: '🏆',
       title: 'PROVEN SUCCESS',
-      description: 'Track record of bold achievements',
+      description: 'Track record of satisfied customers',
       color: 'from-orange-600 to-red-600'
     }
   ];
@@ -38,10 +38,10 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-black text-white mb-6">
-            <span className="text-yellow-400">BOLD</span> SERVICES
+            <span className="text-yellow-400">PROFESSIONAL</span> SERVICES
           </h2>
           <p className="text-xl text-white/90 max-w-3xl mx-auto">
-            {company?.name || 'We'} deliver powerful solutions with unmatched intensity and commitment to excellence
+            {company?.name || 'We'} deliver quality solutions with expertise and commitment to excellence
           </p>
         </div>
         
@@ -72,7 +72,7 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
               href={`tel:${company.phone}`}
               className="inline-block bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-black py-4 px-8 rounded-xl text-lg transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-1"
             >
-              🔥 UNLEASH THE POWER: {company.phone}
+              🔥 GET PROFESSIONAL SERVICE: {company.phone}
             </a>
           </div>
         )}

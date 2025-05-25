@@ -11,10 +11,10 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6">
-            <span className="text-orange-600">BOLD</span> SERVICE AREA
+            <span className="text-orange-600">LOCAL</span> SERVICE AREA
           </h2>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Bringing powerful solutions to {company?.city || 'your area'} and surrounding communities
+            Bringing professional solutions to {company?.city || 'your area'} and surrounding communities
           </p>
         </div>
         
@@ -56,7 +56,7 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
                     href={`tel:${company.phone}`}
                     className="block w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black py-4 px-6 rounded-lg text-center text-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
                   >
-                    🔥 CALL FOR BOLD SERVICE: {company.phone}
+                    🔥 CALL FOR EXPERT SERVICE: {company.phone}
                   </a>
                 </div>
               )}
@@ -73,7 +73,7 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
                 <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 p-4 rounded-lg border border-orange-400/30">
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold">Same Day Service</span>
-                    <span className="text-yellow-400 font-black">⚡ BOLD</span>
+                    <span className="text-yellow-400 font-black">⚡ FAST</span>
                   </div>
                 </div>
                 
@@ -87,7 +87,7 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
                 <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 p-4 rounded-lg border border-yellow-400/30">
                   <div className="flex items-center justify-between">
                     <span className="text-white font-bold">Weekend Service</span>
-                    <span className="text-yellow-400 font-black">💪 STRONG</span>
+                    <span className="text-yellow-400 font-black">💪 RELIABLE</span>
                   </div>
                 </div>
               </div>

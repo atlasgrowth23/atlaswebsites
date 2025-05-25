@@ -16,8 +16,8 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
               <span className="text-yellow-400">{company?.name || 'BOLD'}</span>
             </h3>
             <p className="text-white/80 mb-6 leading-relaxed">
-              Delivering bold solutions with unmatched power and precision. 
-              When you need results that matter, we bring the energy to get it done.
+              Delivering professional solutions with expertise and precision. 
+              When you need results that matter, we bring the experience to get it done right.
             </p>
             
             {company?.phone && (
@@ -32,7 +32,7 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
           
           {/* Services */}
           <div>
-            <h4 className="text-xl font-black text-white mb-6">BOLD SERVICES</h4>
+            <h4 className="text-xl font-black text-white mb-6">PROFESSIONAL SERVICES</h4>
             <ul className="space-y-3 text-white/80">
               <li className="flex items-center space-x-2">
                 <span className="text-yellow-400">⚡</span>
@@ -40,22 +40,22 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
               </li>
               <li className="flex items-center space-x-2">
                 <span className="text-orange-400">💪</span>
-                <span>Power-Driven Results</span>
+                <span>Expert-Driven Results</span>
               </li>
               <li className="flex items-center space-x-2">
                 <span className="text-red-400">🔥</span>
-                <span>Bold Quality Assurance</span>
+                <span>Premium Quality Assurance</span>
               </li>
               <li className="flex items-center space-x-2">
                 <span className="text-yellow-400">🏆</span>
-                <span>Championship Service</span>
+                <span>Award-Winning Service</span>
               </li>
             </ul>
           </div>
           
           {/* Contact & Location */}
           <div>
-            <h4 className="text-xl font-black text-white mb-6">GET BOLD</h4>
+            <h4 className="text-xl font-black text-white mb-6">GET SERVICE</h4>
             <div className="space-y-4 text-white/80">
               {company?.city && (
                 <div className="flex items-center space-x-2">
@@ -80,8 +80,8 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
         {/* Bottom Bar */}
         <div className="border-t border-white/20 mt-12 pt-8 text-center">
           <p className="text-white/60">
-            © 2024 {company?.name || 'Bold Energy Services'}. 
-            <span className="text-yellow-400 font-bold"> BOLD RESULTS. EVERY TIME.</span>
+            © 2024 {company?.name || 'Professional Services'}. 
+            <span className="text-yellow-400 font-bold"> QUALITY RESULTS. EVERY TIME.</span>
           </p>
         </div>
       </div>
