@@ -21,27 +21,54 @@ export async function processLogo(slug: string, url: string | null): Promise<str
     }
     
     try {
+      // Try to get higher quality version of Google profile images
+      let processUrl = url;
+      if (url.includes('googleusercontent.com') && url.includes('s44-')) {
+        // Replace small size with larger size
+        processUrl = url.replace(/s\d+-/g, 's400-').replace(/=s\d+/g, '=s400');
+      }
+      
       // Fetch the logo from the URL
-      const res = await fetch(url);
+      const res = await fetch(processUrl);
       if (!res.ok) {
-        console.error(`Failed to fetch logo from ${url}: ${res.status}`);
+        console.error(`Failed to fetch logo from ${processUrl}: ${res.status}`);
         return null;
       }
       
       const buf = Buffer.from(await res.arrayBuffer());
       
-      // Process the image with Sharp - high quality for social media previews
-      await sharp(buf)
-        .resize(1200, 630, { 
-          fit: 'contain', 
-          background: { r: 255, g: 255, b: 255, alpha: 1 },
-          withoutEnlargement: true // Don't upscale small images
-        })
-        .sharpen() // Add sharpening for crisp edges
+      // Get image metadata first
+      const metadata = await sharp(buf).metadata();
+      const isSmall = (metadata.width || 0) < 200 || (metadata.height || 0) < 200;
+      
+      // Process the image with different settings based on size
+      let sharpInstance = sharp(buf);
+      
+      if (isSmall) {
+        // For small logos, use different upscaling approach
+        sharpInstance = sharpInstance
+          .resize(1200, 630, { 
+            fit: 'contain', 
+            background: { r: 255, g: 255, b: 255, alpha: 1 },
+            kernel: sharp.kernel.lanczos3 // Better upscaling algorithm
+          })
+          .sharpen({ sigma: 1.2, m1: 1.0, m2: 2.0 }); // More aggressive sharpening
+      } else {
+        // For larger logos, preserve quality
+        sharpInstance = sharpInstance
+          .resize(1200, 630, { 
+            fit: 'contain', 
+            background: { r: 255, g: 255, b: 255, alpha: 1 },
+            withoutEnlargement: true
+          })
+          .sharpen(); // Standard sharpening
+      }
+      
+      await sharpInstance
         .png({ 
-          quality: 100, // Maximum quality
-          compressionLevel: 6, // Good compression without quality loss
-          adaptiveFiltering: true // Better compression for logos
+          quality: 100,
+          compressionLevel: 0, // No compression for maximum quality
+          adaptiveFiltering: true
         })
         .toFile(outPath);
       

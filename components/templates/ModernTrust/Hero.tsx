@@ -13,15 +13,16 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
   const heroImage = getPhotoUrl(company, 'hero_img', 'moderntrust');
 
   return (
-    <div className="relative min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
+    <div className="relative min-h-[calc(100vh-80px)] md:min-h-[calc(100vh-80px)] sm:min-h-[70vh] flex items-center overflow-hidden">
       {/* Background with gradient overlay for more depth */}
       <div className="absolute inset-0">
         <Image 
           src={heroImage || '/stock/moderntrust/hero_img.svg'} 
-          alt="Professional HVAC services"
+          alt={`Professional services by ${company?.name || 'our company'}`}
           fill
           className="object-cover object-center"
           priority
+          sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
       </div>

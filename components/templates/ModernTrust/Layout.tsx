@@ -18,15 +18,19 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
   return (
     <div className="flex flex-col min-h-screen">
       <Head>
-        <title>{`${company?.name || 'HVAC Services'} | Professional Air Conditioning & Heating`}</title>
-        <meta name="description" content={`${company?.name || 'Our company'} provides professional HVAC services for your home or business. Contact us today for expert heating and cooling solutions.`} />
+        <title>{`${company?.name || 'Professional Services'} | Trusted Local Business`}</title>
+        <meta name="description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
+        
+        {/* Mobile optimization */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+        <meta name="format-detection" content="telephone=yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         
         {/* Critical meta tags for link previews - must be at the top */}
         <meta property="og:title" content={`${company?.name || 'Professional Services'}`} />
         <meta property="twitter:title" content={`${company?.name || 'Professional Services'}`} />
-        
-        {/* Primary Meta Tags */}
-        <meta name="description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
@@ -42,6 +46,10 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:description" content={`${company?.name || 'Our company'} provides professional services for your home or business. Contact us today for expert solutions.`} />
         <meta property="twitter:image" content={company?.logoUrl || `/logos/${company?.slug}.png`} id="twitter-image" />
+        
+        {/* Performance hints */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </Head>
       
       <Header company={company} />
