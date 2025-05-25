@@ -74,7 +74,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     }
     
     // Check if the template exists
-    if (!['moderntrust', 'boldenergy'].includes(template_key as string)) {
+    if (!['moderntrust', 'boldenergy', 'naturalearthpro'].includes(template_key as string)) {
       return { notFound: true };
     }
     
