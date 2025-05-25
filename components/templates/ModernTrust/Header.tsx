@@ -33,16 +33,16 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
         ? 'bg-gradient-to-r from-blue-900 to-blue-700 shadow-xl py-2' 
         : 'bg-gradient-to-r from-blue-900/90 to-blue-700/90 backdrop-blur-md py-4'
     }`}>
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
-          {/* Company Name/Logo with simplified styling (no underline) */}
-          <div className="flex items-center space-x-3">
+          {/* Company Name/Logo optimized for mobile */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {company.logoUrl && (
               <Image 
                 src={company.logoUrl}
                 alt={`${company.name} logo`}
-                width={50}
-                height={50}
+                width={40}
+                height={40}
                 className="object-contain bg-white/10 backdrop-blur-sm rounded-lg p-2"
               />
             )}
