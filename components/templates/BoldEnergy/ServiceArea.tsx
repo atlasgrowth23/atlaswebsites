@@ -157,8 +157,8 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
   }
   
   // Use geocoded data if regular city/state are missing
-  const cityDisplay = company.city || company.geocoded_city || 'your area';
-  const stateDisplay = company.state || company.geocoded_state || '';
+  const cityDisplay = (company as any).display_city || company.city || 'your area';
+  const stateDisplay = (company as any).display_state || company.state || '';
 
   return (
     <section id="service-area" className="py-16 bg-white">
