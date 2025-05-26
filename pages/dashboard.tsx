@@ -1,5 +1,5 @@
 import type { NextPage } from 'next';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -70,7 +70,7 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
   };
 
   // Apply filters when search term or filters change
-  React.useEffect(() => {
+  useEffect(() => {
     applyFilters();
   }, [searchTerm, filters, companies, trackingData]);
 
@@ -133,10 +133,11 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search and Filters */}
         <div className="container mx-auto px-4 py-6">
-          <div className="max-w-md mx-auto">
-            <div className="relative">
+          <div className="max-w-4xl mx-auto">
+            {/* Search Bar */}
+            <div className="relative mb-6">
               <input
                 type="text"
                 placeholder="Search companies by name or location..."
@@ -148,6 +149,76 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
+              </div>
+            </div>
+            
+            {/* Filters */}
+            <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">State:</label>
+                  <select
+                    value={filters.state}
+                    onChange={(e) => handleFilterChange('state', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">All States</option>
+                    <option value="AL">Alabama (AL)</option>
+                    <option value="AR">Arkansas (AR)</option>
+                    <option value="Alabama">Alabama</option>
+                    <option value="Arkansas">Arkansas</option>
+                    <option value="Florida">Florida</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Louisiana">Louisiana</option>
+                    <option value="New Jersey">New Jersey</option>
+                    <option value="New York">New York</option>
+                    <option value="Oklahoma">Oklahoma</option>
+                    <option value="Tennessee">Tennessee</option>
+                    <option value="Texas">Texas</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">Min Rating:</label>
+                  <select
+                    value={filters.minRating}
+                    onChange={(e) => handleFilterChange('minRating', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Any Rating</option>
+                    <option value="4.5">4.5+ Stars</option>
+                    <option value="4.0">4.0+ Stars</option>
+                    <option value="3.5">3.5+ Stars</option>
+                    <option value="3.0">3.0+ Stars</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700">Tracking:</label>
+                  <select
+                    value={filters.trackingStatus}
+                    onChange={(e) => handleFilterChange('trackingStatus', e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">All Companies</option>
+                    <option value="active">Active Tracking</option>
+                    <option value="inactive">Inactive Tracking</option>
+                  </select>
+                </div>
+                
+                {/* Clear Filters Button */}
+                {(filters.state || filters.minRating || filters.trackingStatus) && (
+                  <button
+                    onClick={() => setFilters({ state: '', minRating: '', trackingStatus: '' })}
+                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+                
+                <div className="ml-auto text-sm text-gray-600">
+                  Showing {filteredCompanies.length} of {companies.length} companies
+                </div>
               </div>
             </div>
           </div>
