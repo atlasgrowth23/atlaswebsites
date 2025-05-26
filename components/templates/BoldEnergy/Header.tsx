@@ -80,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           </nav>
 
           {/* Rating/Reviews Section - right aligned */}
-          <div className="hidden lg:flex items-center space-x-3 flex-1 justify-end">
+          <div className="hidden md:flex items-center space-x-3 flex-1 justify-end">
             {showRatings && (
               <div className="bg-white/10 py-2 px-4 rounded-lg shadow-lg border-l border-t border-white/20">
                 <div className="flex items-center">
