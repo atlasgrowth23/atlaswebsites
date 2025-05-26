@@ -11,8 +11,8 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Check if ratings should be shown (rating > 4.8)
-  const showRatings = company.rating && company.rating >= 4.8;
+  // Check if ratings should be shown (rating exists)
+  const showRatings = company.rating && company.rating > 0;
 
   useEffect(() => {
     const handleScroll = () => {
