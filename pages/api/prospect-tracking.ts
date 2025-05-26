@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           INSERT INTO prospect_tracking (company_id, tracking_enabled, activated_at)
           VALUES ($1, true, CURRENT_TIMESTAMP)
           ON CONFLICT (company_id) 
-          UPDATE SET tracking_enabled = true, activated_at = CURRENT_TIMESTAMP
+          DO UPDATE SET tracking_enabled = true, activated_at = CURRENT_TIMESTAMP
         `, [companyId]);
         
         res.json({ success: true, message: 'Tracking activated' });

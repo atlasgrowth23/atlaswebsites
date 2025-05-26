@@ -137,20 +137,22 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
                 return (
                   <div key={company.id || company.name} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="p-6">
-                      <div className="flex justify-between items-start mb-3">
-                        <h3 className="text-xl font-bold">{company.name}</h3>
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          isTracking ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {isTracking ? '📊 Active' : '⏸️ Inactive'}
+                      <Link href={`/company/${company.slug}`} className="block cursor-pointer mb-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-xl font-bold">{company.name}</h3>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            isTracking ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {isTracking ? '📊 Active' : '⏸️ Inactive'}
+                          </div>
                         </div>
-                      </div>
-                      
-                      <p className="text-gray-600 mb-4">
-                        {company.city ? company.city : ''}
-                        {company.city && company.state ? ', ' : ''}
-                        {company.state ? company.state : ''}
-                      </p>
+                        
+                        <p className="text-gray-600">
+                          {company.city ? company.city : ''}
+                          {company.city && company.state ? ', ' : ''}
+                          {company.state ? company.state : ''}
+                        </p>
+                      </Link>
 
                       {/* Analytics Display */}
                       {isTracking && trackingInfo && (
