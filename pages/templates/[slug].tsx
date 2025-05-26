@@ -168,6 +168,13 @@ export default function TemplateSelection({ company }: TemplateSelectionProps) {
                   </div>
                 </div>
 
+                {/* Feedback Message */}
+                {feedback[template.key] && (
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                    {feedback[template.key]}
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="space-y-3">
                   <Link 
@@ -177,8 +184,15 @@ export default function TemplateSelection({ company }: TemplateSelectionProps) {
                       background: `linear-gradient(135deg, ${template.colors[0]}, ${template.colors[1]})`
                     }}
                   >
-                    View {template.name} Style
+                    Preview {template.name} Style
                   </Link>
+                  
+                  <button
+                    onClick={() => handleSendToProspect(template.key)}
+                    className="w-full py-3 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5"
+                  >
+                    🚀 Send This Style to Prospect
+                  </button>
                   
                   <button
                     onClick={() => {
@@ -201,7 +215,7 @@ export default function TemplateSelection({ company }: TemplateSelectionProps) {
                       color: template.colors[0]
                     }}
                   >
-                    📋 Copy Link to Share
+                    📋 Copy Link Only
                   </button>
                 </div>
               </div>
