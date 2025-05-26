@@ -96,7 +96,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { template_key, slug } = params;
   
   try {
-    // Get company data with geocoded location data
+    // Get company data with geocoded location data and customizations
     const result = await query(`
       SELECT c.*, 
              COALESCE(c.city, g.locality) as display_city,

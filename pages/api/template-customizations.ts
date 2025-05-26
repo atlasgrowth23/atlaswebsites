@@ -2,13 +2,13 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { query } from '@/lib/db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { slug, template } = req.query;
+  const { slug, template, getCompany } = req.query;
 
   if (req.method === 'GET') {
     try {
-      // Get company ID from slug
+      // Get company data from slug
       const companyResult = await query(
-        'SELECT id FROM companies WHERE slug = $1 LIMIT 1',
+        'SELECT id, name, slug, city, state FROM companies WHERE slug = $1 LIMIT 1',
         [slug]
       );
 
@@ -16,14 +16,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(404).json({ error: 'Company not found' });
       }
 
-      const companyId = companyResult.rows[0].id;
+      const company = companyResult.rows[0];
+
+      // If requesting company data only
+      if (getCompany === 'true') {
+        return res.status(200).json(company);
+      }
 
       // Get customizations for this company and template
       const customizations = await query(`
         SELECT customization_type, custom_value, original_value 
         FROM business_customizations 
         WHERE company_id = $1 AND template_key = $2
-      `, [companyId, template]);
+      `, [company.id, template]);
 
       res.status(200).json(customizations.rows);
     } catch (error) {

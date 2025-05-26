@@ -187,7 +187,7 @@ export default function CompanyDetail({ company, trackingData: initialTrackingDa
                       Choose Template Style
                     </button>
                   </Link>
-                  <Link href={`/template-editor/${company.slug}`}>
+                  <Link href={`/template-editor?slug=${company.slug}`}>
                     <button className="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all duration-300 hover:shadow-lg">
                       🎨 Customize Templates
                     </button>
