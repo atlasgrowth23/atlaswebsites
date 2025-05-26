@@ -5,14 +5,7 @@
     return;
   }
 
-  // Don't track views from admin or internal users
-  const isInternalIp = false; // This would normally check the IP
-  if (isInternalIp) {
-    console.log('Not tracking internal user view');
-    return;
-  }
-
-  // Extract the company name from the URL
+  // Extract the template and company info from the URL
   // Pattern: /t/[template]/[company-slug]
   const pathParts = window.location.pathname.split('/');
   if (pathParts.length < 4) {
@@ -20,16 +13,18 @@
     return;
   }
 
-  const template = pathParts[2];
+  const templateKey = pathParts[2];
   const companySlug = pathParts[3];
   
-  // Convert slug back to company name (approximate)
-  const companyName = companySlug
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  // Get company ID from the page data (injected by Next.js)
+  const companyId = window.__COMPANY_ID__;
   
-  // Send the view tracking request
+  if (!companyId) {
+    console.log('Company ID not found, cannot track');
+    return;
+  }
+  
+  // Send the view tracking request after 3 seconds
   setTimeout(() => {
     fetch('/api/track-template-view', {
       method: 'POST',
@@ -37,8 +32,9 @@
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        companyName,
-        template
+        companySlug,
+        templateKey,
+        companyId
       }),
     })
     .then(response => response.json())
@@ -48,5 +44,5 @@
     .catch(error => {
       console.error('Error tracking template view:', error);
     });
-  }, 5000); // Wait 5 seconds to make sure it's a real view
+  }, 3000); // Wait 3 seconds to make sure it's a real view
 })();

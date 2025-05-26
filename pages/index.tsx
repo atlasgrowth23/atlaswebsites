@@ -1,18 +1,31 @@
 import type { NextPage } from 'next';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
 import { queryMany } from '@/lib/db';
 
-interface HomeProps {
-  companies: Company[];
+interface TrackingData {
+  company_id: string;
+  tracking_enabled: boolean;
+  total_views: number;
+  template_views: Record<string, number>;
+  last_viewed_at: string;
+  activated_at: string;
+  name: string;
+  slug: string;
 }
 
-const Home: NextPage<HomeProps> = ({ companies }) => {
+interface HomeProps {
+  companies: Company[];
+  trackingData: TrackingData[];
+}
+
+const Home: NextPage<HomeProps> = ({ companies, trackingData: initialTrackingData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCompanies, setFilteredCompanies] = useState(companies);
+  const [trackingData, setTrackingData] = useState(initialTrackingData);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
@@ -30,6 +43,29 @@ const Home: NextPage<HomeProps> = ({ companies }) => {
     );
     
     setFilteredCompanies(filtered);
+  };
+
+  const handleTrackingToggle = async (companyId: string, action: 'activate' | 'deactivate') => {
+    try {
+      const response = await fetch('/api/prospect-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId, action })
+      });
+      
+      if (response.ok) {
+        // Refresh tracking data
+        const trackingResponse = await fetch('/api/prospect-tracking');
+        const data = await trackingResponse.json();
+        setTrackingData(data.trackingData);
+      }
+    } catch (error) {
+      console.error('Error toggling tracking:', error);
+    }
+  };
+
+  const getTrackingInfo = (companyId: string) => {
+    return trackingData.find(t => t.company_id === companyId);
   };
 
   return (

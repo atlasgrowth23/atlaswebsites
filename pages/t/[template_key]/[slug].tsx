@@ -17,11 +17,44 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
   // Determine which template layout to use
   switch (template_key) {
     case 'moderntrust':
-      return <ModernTrustLayout company={company} />;
+      return (
+        <>
+          <Head>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.__COMPANY_ID__ = "${company.id}";`
+              }}
+            />
+          </Head>
+          <ModernTrustLayout company={company} />
+        </>
+      );
     case 'boldenergy':
-      return <BoldEnergyLayout company={company} />;
+      return (
+        <>
+          <Head>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.__COMPANY_ID__ = "${company.id}";`
+              }}
+            />
+          </Head>
+          <BoldEnergyLayout company={company} />
+        </>
+      );
     case 'naturalearthpro':
-      return <NaturalEarthProLayout company={company} />;
+      return (
+        <>
+          <Head>
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.__COMPANY_ID__ = "${company.id}";`
+              }}
+            />
+          </Head>
+          <NaturalEarthProLayout company={company} />
+        </>
+      );
     default:
       return (
         <div className="p-8">
