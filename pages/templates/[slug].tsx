@@ -135,16 +135,42 @@ export default function TemplateSelection({ company }: TemplateSelectionProps) {
                   </div>
                 </div>
 
-                {/* Action Button */}
-                <Link 
-                  href={`/t/${template.key}/${company.slug}`}
-                  className="block w-full text-center py-3 px-6 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5"
-                  style={{
-                    background: `linear-gradient(135deg, ${template.colors[0]}, ${template.colors[1]})`
-                  }}
-                >
-                  View {template.name} Style
-                </Link>
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <Link 
+                    href={`/t/${template.key}/${company.slug}`}
+                    className="block w-full text-center py-3 px-6 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5"
+                    style={{
+                      background: `linear-gradient(135deg, ${template.colors[0]}, ${template.colors[1]})`
+                    }}
+                  >
+                    View {template.name} Style
+                  </Link>
+                  
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/t/${template.key}/${company.slug}`;
+                      navigator.clipboard.writeText(url).then(() => {
+                        // Show success feedback
+                        const button = event.target;
+                        const originalText = button.textContent;
+                        button.textContent = 'Copied!';
+                        button.style.backgroundColor = '#10b981';
+                        setTimeout(() => {
+                          button.textContent = originalText;
+                          button.style.backgroundColor = '';
+                        }, 2000);
+                      });
+                    }}
+                    className="w-full py-2 px-4 border-2 rounded-lg font-medium transition-all duration-300 hover:shadow-md"
+                    style={{
+                      borderColor: template.colors[0],
+                      color: template.colors[0]
+                    }}
+                  >
+                    📋 Copy Link to Share
+                  </button>
+                </div>
               </div>
             </div>
           ))}
