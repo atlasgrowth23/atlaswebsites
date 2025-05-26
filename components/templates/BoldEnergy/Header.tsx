@@ -126,8 +126,61 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 <span className="text-sm whitespace-nowrap">{company.phone ? company.phone.replace(/^\+1\s?/, '') : ''}</span>
               </a>
             )}
+
+            {/* Mobile Menu Button */}
+            <button 
+              className="text-white focus:outline-none p-2 rounded-md"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+              </svg>
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-4 pb-4 pt-2 border-t border-orange-500/30">
+            <nav className="flex flex-col space-y-4">
+              <Link 
+                href="/" 
+                className="text-lg text-white font-medium transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+              {['About', 'Services', 'Contact'].map((item) => (
+                <Link 
+                  key={item}
+                  href={`#${item.toLowerCase()}`} 
+                  className="text-lg text-white font-medium transition-colors py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item}
+                </Link>
+              ))}
+
+            </nav>
+            
+            {/* Mobile reviews badge - only if ratings should show */}
+            {showRatings && (
+              <div className="mt-4 bg-white/10 py-2 px-4 rounded-lg shadow-lg border border-white/20">
+                <div className="flex items-center justify-center">
+                  <div className="text-yellow-400 flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg key={star} xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="ml-2 text-white font-bold text-sm">{typeof company.rating === 'number' ? company.rating.toFixed(1) : company.rating}</span>
+                </div>
+                <p className="text-xs text-white/80 font-medium text-center mt-1">Trusted HVAC Service</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );
