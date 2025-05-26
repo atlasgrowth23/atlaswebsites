@@ -141,8 +141,15 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 pt-2 border-t border-blue-500/30">
+          <div className="md:hidden mt-4 pb-4 pt-2 border-t border-green-500/30">
             <nav className="flex flex-col space-y-4">
+              <Link 
+                href="/" 
+                className="text-lg text-white font-medium transition-colors py-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
               {['About', 'Services', 'Contact'].map((item) => (
                 <Link 
                   key={item}
