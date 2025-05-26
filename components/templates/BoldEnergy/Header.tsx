@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Company } from '@/types';
 
 interface HeaderProps {
@@ -9,6 +9,10 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ company }) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Check if ratings should be shown (rating > 4.8)
+  const showRatings = company.rating && company.rating >= 4.8;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,13 +27,11 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const showRatings = company.rating && parseFloat(String(company.rating)) > 0;
-
   return (
     <header className={`fixed w-full z-50 transition-all duration-300 ${
       isScrolled 
-        ? 'bg-gradient-to-r from-orange-600 to-red-600 shadow-xl py-2' 
-        : 'bg-gradient-to-r from-orange-600/95 to-red-600/95 backdrop-blur-md py-4'
+        ? 'bg-gradient-to-r from-orange-900 to-red-700 shadow-xl py-2' 
+        : 'bg-gradient-to-r from-orange-900/90 to-red-700/90 backdrop-blur-md py-4'
     }`}>
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex justify-between items-center">
@@ -48,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
               </div>
             )}
             {/* Mobile company name - wraps and scales */}
-            <h1 className="lg:hidden text-sm sm:text-base md:text-lg font-bold tracking-tight text-white leading-tight max-w-[120px] sm:max-w-[180px] md:max-w-[240px] break-words">
+            <h1 className="lg:hidden text-sm sm:text-base md:text-lg font-bold tracking-tight text-white leading-tight max-w-[140px] sm:max-w-[200px] md:max-w-[280px] break-words">
               {company.name}
             </h1>
             {/* Desktop company name - original sizing */}
@@ -68,6 +70,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 {item}
               </Link>
             ))}
+
           </nav>
 
           {/* Rating/Reviews Section - right aligned */}
