@@ -304,11 +304,20 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
 
 export async function getServerSideProps() {
   try {
-    // Fetch ALL companies (not limited)
+    // Fetch companies with geocoded location data, sorted by location
     const companies = await queryMany(`
-      SELECT id, slug, name, city, state 
-      FROM companies 
-      ORDER BY name
+      SELECT c.id, c.slug, c.name, 
+             COALESCE(c.city, g.locality) as city,
+             COALESCE(c.state, g.administrative_area_level_1) as state,
+             c.latitude, c.longitude
+      FROM companies c
+      LEFT JOIN geocoded_locations g ON c.id = g.company_id
+      ORDER BY 
+        COALESCE(c.state, g.administrative_area_level_1),
+        COALESCE(c.city, g.locality),
+        c.latitude,
+        c.longitude,
+        c.name
     `);
 
     // Fetch tracking data

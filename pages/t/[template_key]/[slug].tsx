@@ -96,9 +96,17 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { template_key, slug } = params;
   
   try {
-    // Get company data with additional fields for review and map display
-    const result = await query(
-      'SELECT * FROM companies WHERE slug = $1 LIMIT 1',
+    // Get company data with geocoded location data
+    const result = await query(`
+      SELECT c.*, 
+             COALESCE(c.city, g.locality) as display_city,
+             COALESCE(c.state, g.administrative_area_level_1) as display_state,
+             COALESCE(c.postal_code, g.postal_code) as display_postal_code,
+             g.formatted_address
+      FROM companies c
+      LEFT JOIN geocoded_locations g ON c.id = g.company_id
+      WHERE c.slug = $1 
+      LIMIT 1`,
       [slug]
     );
     

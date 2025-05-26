@@ -47,7 +47,7 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
           <h1 className="text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold mb-6 text-white leading-tight">
             <span className="block">Stay Cool This</span> 
             <span className="block">Summer in</span>
-            <span className="text-primary">{company.city || 'Your Area'}</span>
+            <span className="text-primary">{company.display_city || company.city || 'Your Area'}</span>
           </h1>
 
           <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-xl leading-relaxed">

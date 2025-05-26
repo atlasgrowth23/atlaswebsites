@@ -26,4 +26,9 @@ export interface Company {
   // Added for logo processing
   logo?: string;
   logoUrl?: string;
+  // Display fields from joined geocoded data
+  display_city?: string;
+  display_state?: string;
+  display_postal_code?: string;
+  formatted_address?: string;
 }
