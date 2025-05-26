@@ -98,7 +98,7 @@ def get_companies_needing_geocoding():
               AND (c.city IS NULL OR c.state IS NULL)
               AND g.company_id IS NULL
             ORDER BY c.name
-            LIMIT 100
+            LIMIT 1000
         """)
         
         companies = cursor.fetchall()

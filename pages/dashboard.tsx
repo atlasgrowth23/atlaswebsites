@@ -29,7 +29,6 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
   const [feedback, setFeedback] = useState<{[key: string]: string}>({});
   const [filters, setFilters] = useState({
     state: '',
-    minRating: '',
     trackingStatus: ''
   });
 
@@ -41,12 +40,8 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
         (company.city && company.city.toLowerCase().includes(searchTerm.toLowerCase())) || 
         (company.state && company.state.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      // State filter
+      // State filter (Alabama/Arkansas only)
       const matchesState = !filters.state || company.state === filters.state;
-      
-      // Rating filter
-      const matchesRating = !filters.minRating || 
-        (company.rating && company.rating >= parseFloat(filters.minRating));
       
       // Tracking status filter
       const trackingInfo = getTrackingInfo(company.id?.toString() || '');
@@ -55,7 +50,7 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
         (filters.trackingStatus === 'active' && isTracking) ||
         (filters.trackingStatus === 'inactive' && !isTracking);
       
-      return matchesSearch && matchesState && matchesRating && matchesTracking;
+      return matchesSearch && matchesState && matchesTracking;
     });
     
     setFilteredCompanies(filtered);
@@ -162,34 +157,11 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
                     onChange={(e) => handleFilterChange('state', e.target.value)}
                     className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">All States</option>
+                    <option value="">Alabama & Arkansas</option>
                     <option value="AL">Alabama (AL)</option>
                     <option value="AR">Arkansas (AR)</option>
                     <option value="Alabama">Alabama</option>
                     <option value="Arkansas">Arkansas</option>
-                    <option value="Florida">Florida</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Louisiana">Louisiana</option>
-                    <option value="New Jersey">New Jersey</option>
-                    <option value="New York">New York</option>
-                    <option value="Oklahoma">Oklahoma</option>
-                    <option value="Tennessee">Tennessee</option>
-                    <option value="Texas">Texas</option>
-                  </select>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-gray-700">Min Rating:</label>
-                  <select
-                    value={filters.minRating}
-                    onChange={(e) => handleFilterChange('minRating', e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Any Rating</option>
-                    <option value="4.5">4.5+ Stars</option>
-                    <option value="4.0">4.0+ Stars</option>
-                    <option value="3.5">3.5+ Stars</option>
-                    <option value="3.0">3.0+ Stars</option>
                   </select>
                 </div>
                 
@@ -207,9 +179,9 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
                 </div>
                 
                 {/* Clear Filters Button */}
-                {(filters.state || filters.minRating || filters.trackingStatus) && (
+                {(filters.state || filters.trackingStatus) && (
                   <button
-                    onClick={() => setFilters({ state: '', minRating: '', trackingStatus: '' })}
+                    onClick={() => setFilters({ state: '', trackingStatus: '' })}
                     className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 underline"
                   >
                     Clear Filters
