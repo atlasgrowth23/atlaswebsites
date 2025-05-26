@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           </div>
 
           {/* Navigation with improved typography and layout - centered */}
-          <nav className="hidden lg:flex items-center space-x-8 flex-1 justify-center">
+          <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
             <Link 
               href="/" 
               className="text-lg font-medium text-white hover:text-yellow-200 transition-colors"

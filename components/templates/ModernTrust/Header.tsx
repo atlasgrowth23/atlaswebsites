@@ -60,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           </div>
 
           {/* Navigation with improved typography and layout - centered */}
-          <nav className="hidden lg:flex items-center space-x-8 flex-1 justify-center">
+          <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
             <Link 
               href="/" 
               className="text-lg font-medium text-white hover:text-blue-200 transition-colors"
@@ -80,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           </nav>
 
           {/* Rating/Reviews Section - right aligned */}
-          <div className="hidden lg:flex items-center space-x-3 flex-1 justify-end">
+          <div className="hidden md:flex items-center space-x-3 flex-1 justify-end">
             {showRatings && (
               <div className="bg-white/10 py-2 px-4 rounded-lg shadow-lg border-l border-t border-white/20">
                 <div className="flex items-center">
