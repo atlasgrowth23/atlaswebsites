@@ -61,12 +61,6 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
 
           {/* Navigation with improved typography and layout - centered */}
           <nav className="hidden md:flex items-center space-x-8 flex-1 justify-center">
-            <Link 
-              href="/" 
-              className="text-lg font-medium text-white hover:text-blue-200 transition-colors"
-            >
-              Home
-            </Link>
             {['About', 'Services', 'Contact'].map((item) => (
               <Link 
                 key={item}
@@ -76,7 +70,6 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 {item}
               </Link>
             ))}
-
           </nav>
 
           {/* Rating/Reviews Section - right aligned */}

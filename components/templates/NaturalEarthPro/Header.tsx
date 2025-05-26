@@ -61,12 +61,6 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
 
           {/* Navigation with improved typography and layout - centered */}
           <nav className="hidden lg:flex items-center space-x-8 flex-1 justify-center">
-            <Link 
-              href="/" 
-              className="text-lg font-medium text-white hover:text-green-200 transition-colors"
-            >
-              Home
-            </Link>
             {['About', 'Services', 'Contact'].map((item) => (
               <Link 
                 key={item}
@@ -76,7 +70,6 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 {item}
               </Link>
             ))}
-
           </nav>
 
           {/* Rating/Reviews Section - right aligned */}
@@ -143,13 +136,6 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 pb-4 pt-2 border-t border-green-500/30">
             <nav className="flex flex-col space-y-4">
-              <Link 
-                href="/" 
-                className="text-lg text-white font-medium transition-colors py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
               {['About', 'Services', 'Contact'].map((item) => (
                 <Link 
                   key={item}
