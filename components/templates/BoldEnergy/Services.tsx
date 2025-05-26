@@ -8,15 +8,6 @@ interface ServicesProps {
 // Service data for both types
 const coolingServices = [
   {
-    title: "AC Installation",
-    description: "Professional installation of energy-efficient air conditioning systems for your home.",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
-      </svg>
-    )
-  },
-  {
     title: "AC Repair",
     description: "Quick diagnostic and repair services to get your cooling system back up and running.",
     icon: (
@@ -34,19 +25,19 @@ const coolingServices = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
       </svg>
     )
+  },
+  {
+    title: "AC Installation",
+    description: "Professional installation of energy-efficient air conditioning systems for your home.",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+      </svg>
+    )
   }
 ];
 
 const heatingServices = [
-  {
-    title: "Furnace Installation",
-    description: "Expert installation of high-efficiency furnaces and heating systems for your home.",
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-      </svg>
-    )
-  },
   {
     title: "Heating Repair",
     description: "Fast, reliable repairs for all types of heating systems to restore comfort to your home.",
@@ -62,6 +53,15 @@ const heatingServices = [
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10a1 1 0 011-1h12a1 1 0 110 2H6a1 1 0 01-1-1z M5 15a1 1 0 011-1h12a1 1 0 110 2H6a1 1 0 01-1-1z" />
+      </svg>
+    )
+  },
+  {
+    title: "Furnace Installation",
+    description: "Expert installation of high-efficiency furnaces and heating systems for your home.",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
       </svg>
     )
   }
