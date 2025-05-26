@@ -1,31 +1,18 @@
 import type { NextPage } from 'next';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
 import { queryMany } from '@/lib/db';
 
-interface TrackingData {
-  company_id: string;
-  tracking_enabled: boolean;
-  total_views: number;
-  template_views: Record<string, number>;
-  last_viewed_at: string;
-  activated_at: string;
-  name: string;
-  slug: string;
-}
-
 interface HomeProps {
   companies: Company[];
-  trackingData: TrackingData[];
 }
 
-const Home: NextPage<HomeProps> = ({ companies, trackingData: initialTrackingData }) => {
+const Home: NextPage<HomeProps> = ({ companies }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCompanies, setFilteredCompanies] = useState(companies);
-  const [trackingData, setTrackingData] = useState(initialTrackingData);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
@@ -45,28 +32,7 @@ const Home: NextPage<HomeProps> = ({ companies, trackingData: initialTrackingDat
     setFilteredCompanies(filtered);
   };
 
-  const handleTrackingToggle = async (companyId: string, action: 'activate' | 'deactivate') => {
-    try {
-      const response = await fetch('/api/prospect-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId, action })
-      });
-      
-      if (response.ok) {
-        // Refresh tracking data
-        const trackingResponse = await fetch('/api/prospect-tracking');
-        const data = await trackingResponse.json();
-        setTrackingData(data.trackingData);
-      }
-    } catch (error) {
-      console.error('Error toggling tracking:', error);
-    }
-  };
 
-  const getTrackingInfo = (companyId: string) => {
-    return trackingData.find(t => t.company_id === companyId);
-  };
 
   return (
     <>
@@ -113,83 +79,26 @@ const Home: NextPage<HomeProps> = ({ companies, trackingData: initialTrackingDat
           
           {filteredCompanies.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCompanies.map((company) => {
-                const trackingInfo = getTrackingInfo(company.id?.toString() || '');
-                const isTracking = trackingInfo?.tracking_enabled || false;
-                
-                return (
-                  <div key={company.id || company.name} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-xl font-bold">{company.name}</h3>
-                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          isTracking ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {isTracking ? '📊 Tracking' : '⏸️ Inactive'}
-                        </div>
+              {filteredCompanies.map((company) => (
+                <div key={company.id || company.name} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold mb-2">{company.name}</h3>
+                    <p className="text-gray-600 mb-4">
+                      {company.city ? company.city : ''}
+                      {company.city && company.state ? ', ' : ''}
+                      {company.state ? company.state : ''}
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <div className="text-sm text-gray-500">
+                        HVAC Services
                       </div>
-                      
-                      <p className="text-gray-600 mb-3">
-                        {company.city ? company.city : ''}
-                        {company.city && company.state ? ', ' : ''}
-                        {company.state ? company.state : ''}
-                      </p>
-
-                      {/* Analytics Display */}
-                      {isTracking && trackingInfo && (
-                        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                          <div className="text-sm font-medium text-blue-900 mb-1">Analytics</div>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div>
-                              <span className="font-medium">{trackingInfo.total_views || 0}</span>
-                              <span className="text-gray-600"> total views</span>
-                            </div>
-                            <div>
-                              {trackingInfo.last_viewed_at && (
-                                <div className="text-gray-600">
-                                  Last: {new Date(trackingInfo.last_viewed_at).toLocaleDateString()}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          {trackingInfo.template_views && Object.keys(trackingInfo.template_views).length > 0 && (
-                            <div className="mt-2 text-xs">
-                              <div className="font-medium text-blue-900 mb-1">Template Views:</div>
-                              {Object.entries(trackingInfo.template_views).map(([template, views]) => (
-                                <span key={template} className="inline-block bg-white px-2 py-1 rounded mr-1 mb-1">
-                                  {template}: {views}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center gap-2">
-                        <div className="flex gap-2">
-                          <Link href={`/templates/${company.slug}`} passHref>
-                            <Button size="sm" variant="outline">Choose Style</Button>
-                          </Link>
-                        </div>
-                        
-                        <button
-                          onClick={() => handleTrackingToggle(
-                            company.id?.toString() || '',
-                            isTracking ? 'deactivate' : 'activate'
-                          )}
-                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                            isTracking 
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
-                          }`}
-                        >
-                          {isTracking ? '🛑 Stop Tracking' : '🚀 Send to Prospect'}
-                        </button>
-                      </div>
+                      <Link href={`/templates/${company.slug}`} passHref>
+                        <Button size="sm">Choose Style</Button>
+                      </Link>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="text-center p-8 bg-gray-50 rounded-lg">
@@ -227,7 +136,7 @@ const Home: NextPage<HomeProps> = ({ companies, trackingData: initialTrackingDat
 
 export async function getStaticProps() {
   try {
-    // Fetch companies
+    // Fetch only the first 50 companies for better performance
     const companies = await queryMany(`
       SELECT id, slug, name, city, state 
       FROM companies 
@@ -235,28 +144,18 @@ export async function getStaticProps() {
       LIMIT 50
     `);
 
-    // Fetch tracking data
-    const trackingData = await queryMany(`
-      SELECT pt.*, c.name, c.slug 
-      FROM prospect_tracking pt
-      JOIN companies c ON c.id::text = pt.company_id
-      ORDER BY pt.activated_at DESC NULLS LAST
-    `);
-
     return {
       props: {
         companies: companies || [],
-        trackingData: trackingData || [],
       },
-      // Revalidate every 5 minutes to keep tracking data fresh
-      revalidate: 300,
+      // Revalidate the page every hour (3600 seconds)
+      revalidate: 3600,
     };
   } catch (err) {
-    console.error('Unexpected error fetching data:', err);
+    console.error('Unexpected error fetching companies:', err);
     return {
       props: {
         companies: [],
-        trackingData: [],
       },
     };
   }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -39,6 +39,39 @@ const templates = [
 ];
 
 export default function TemplateSelection({ company }: TemplateSelectionProps) {
+  const [feedback, setFeedback] = useState<{[key: string]: string}>({});
+
+  const handleSendToProspect = async (templateKey: string) => {
+    try {
+      const response = await fetch('/api/prospect-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          companyId: company.id?.toString(),
+          action: 'activate'
+        })
+      });
+      
+      if (response.ok) {
+        setFeedback({
+          ...feedback,
+          [templateKey]: '✅ Tracking Activated! Ready to send to prospect.'
+        });
+        
+        // Clear feedback after 4 seconds
+        setTimeout(() => {
+          setFeedback(prev => ({ ...prev, [templateKey]: '' }));
+        }, 4000);
+      }
+    } catch (error) {
+      console.error('Error activating tracking:', error);
+      setFeedback({
+        ...feedback,
+        [templateKey]: '❌ Error occurred'
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Head>
