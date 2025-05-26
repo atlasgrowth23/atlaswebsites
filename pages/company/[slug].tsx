@@ -224,33 +224,7 @@ export default function CompanyDetail({ company, trackingData: initialTrackingDa
   );
 }
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  try {
-    const companies = await query(`
-      SELECT slug FROM companies 
-      WHERE slug IS NOT NULL
-      ORDER BY name
-      LIMIT 100
-    `);
-
-    const paths = companies.rows.map((company: any) => ({
-      params: { slug: company.slug },
-    }));
-
-    return {
-      paths,
-      fallback: 'blocking',
-    };
-  } catch (error) {
-    console.error('Error generating paths:', error);
-    return {
-      paths: [],
-      fallback: 'blocking',
-    };
-  }
-};
-
-export const getStaticProps: GetStaticProps = async ({ params }) => {
+export async function getServerSideProps({ params }: any) {
   try {
     const slug = params?.slug as string;
 
@@ -289,7 +263,6 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         company,
         trackingData: serializedTrackingData,
       },
-      revalidate: 300, // Revalidate every 5 minutes
     };
   } catch (error) {
     console.error('Error fetching company data:', error);

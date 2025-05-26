@@ -231,7 +231,7 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
   );
 };
 
-export async function getStaticProps() {
+export async function getServerSideProps() {
   try {
     // Fetch ALL companies (not limited)
     const companies = await queryMany(`
@@ -261,7 +261,6 @@ export async function getStaticProps() {
         companies: companies || [],
         trackingData: serializedTrackingData,
       },
-      revalidate: 300, // Revalidate every 5 minutes
     };
   } catch (err) {
     console.error('Unexpected error fetching data:', err);
