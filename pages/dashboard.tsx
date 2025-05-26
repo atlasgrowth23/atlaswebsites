@@ -248,10 +248,18 @@ export async function getStaticProps() {
       ORDER BY pt.activated_at DESC NULLS LAST
     `);
 
+    // Convert Date objects to strings for JSON serialization
+    const serializedTrackingData = (trackingData || []).map((item: any) => ({
+      ...item,
+      activated_at: item.activated_at ? item.activated_at.toISOString() : null,
+      last_viewed_at: item.last_viewed_at ? item.last_viewed_at.toISOString() : null,
+      created_at: item.created_at ? item.created_at.toISOString() : null,
+    }));
+
     return {
       props: {
         companies: companies || [],
-        trackingData: trackingData || [],
+        trackingData: serializedTrackingData,
       },
       revalidate: 300, // Revalidate every 5 minutes
     };

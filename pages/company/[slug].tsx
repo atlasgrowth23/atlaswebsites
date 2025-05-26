@@ -276,10 +276,18 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       WHERE company_id = $1
     `, [company.id]);
 
+    // Convert Date objects to strings for JSON serialization
+    const serializedTrackingData = trackingData ? {
+      ...trackingData,
+      activated_at: trackingData.activated_at ? trackingData.activated_at.toISOString() : null,
+      last_viewed_at: trackingData.last_viewed_at ? trackingData.last_viewed_at.toISOString() : null,
+      created_at: trackingData.created_at ? trackingData.created_at.toISOString() : null,
+    } : null;
+
     return {
       props: {
         company,
-        trackingData: trackingData || null,
+        trackingData: serializedTrackingData,
       },
       revalidate: 300, // Revalidate every 5 minutes
     };
