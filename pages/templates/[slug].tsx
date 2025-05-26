@@ -195,11 +195,11 @@ export default function TemplateSelection({ company }: TemplateSelectionProps) {
                   </button>
                   
                   <button
-                    onClick={() => {
+                    onClick={(event) => {
                       const url = `${window.location.origin}/t/${template.key}/${company.slug}`;
                       navigator.clipboard.writeText(url).then(() => {
                         // Show success feedback
-                        const button = event.target;
+                        const button = event.target as HTMLButtonElement;
                         const originalText = button.textContent;
                         button.textContent = 'Copied!';
                         button.style.backgroundColor = '#10b981';

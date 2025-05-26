@@ -1,0 +1,39 @@
+[16:58:16.001] Running build in Washington, D.C., USA (East) – iad1
+[16:58:16.001] Build machine configuration: 4 cores, 8 GB
+[16:58:16.017] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: 4978a4b)
+[16:58:18.049] Cloning completed: 2.032s
+[16:58:18.187] Restored build cache from previous deployment (84aPxe3YtWfccWuhj4vWjYobdEZx)
+[16:58:18.783] Running "vercel build"
+[16:58:19.222] Vercel CLI 42.1.1
+[16:58:19.515] Installing dependencies...
+[16:58:20.715] 
+[16:58:20.715] up to date in 980ms
+[16:58:20.716] 
+[16:58:20.716] 97 packages are looking for funding
+[16:58:20.716]   run `npm fund` for details
+[16:58:20.749] Detected Next.js version: 15.3.1
+[16:58:20.753] Running "npm run build"
+[16:58:20.868] 
+[16:58:20.869] > workspace@1.0.0 build
+[16:58:20.869] > next build
+[16:58:20.869] 
+[16:58:21.717]    ▲ Next.js 15.3.1
+[16:58:21.717]    - Environments: .env.production
+[16:58:21.717] 
+[16:58:21.766]    Linting and checking validity of types ...
+[16:58:27.074] Failed to compile.
+[16:58:27.075] 
+[16:58:27.075] ./pages/templates/[slug].tsx:202:40
+[16:58:27.075] Type error: 'event' is possibly 'undefined'.
+[16:58:27.075] 
+[16:58:27.075] [0m [90m 200 |[39m                       navigator[33m.[39mclipboard[33m.[39mwriteText(url)[33m.[39mthen(() [33m=>[39m {[0m
+[16:58:27.075] [0m [90m 201 |[39m                         [90m// Show success feedback[39m[0m
+[16:58:27.075] [0m[31m[1m>[22m[39m[90m 202 |[39m                         [36mconst[39m button [33m=[39m event[33m.[39mtarget[33m;[39m[0m
+[16:58:27.075] [0m [90m     |[39m                                        [31m[1m^[22m[39m[0m
+[16:58:27.075] [0m [90m 203 |[39m                         [36mconst[39m originalText [33m=[39m button[33m.[39mtextContent[33m;[39m[0m
+[16:58:27.075] [0m [90m 204 |[39m                         button[33m.[39mtextContent [33m=[39m [32m'Copied!'[39m[33m;[39m[0m
+[16:58:27.076] [0m [90m 205 |[39m                         button[33m.[39mstyle[33m.[39mbackgroundColor [33m=[39m [32m'#10b981'[39m[33m;[39m[0m
+[16:58:27.098] Next.js build worker exited with code: 1 and signal: null
+[16:58:27.120] Error: Command "npm run build" exited with 1
+[16:58:27.453] 
+[16:58:30.428] Exiting build container
