@@ -115,7 +115,7 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
               className="bg-red-600 hover:bg-red-700 text-white w-12 h-12 rounded-full transition-all duration-300 hover:scale-110 shadow-lg flex items-center justify-center"
               aria-label="Visit our Yelp page"
             >
-              <span className="text-xl font-bold">Y</span>
+              <span className="text-xs font-bold">Yelp</span>
             </a>
           </div>
           
