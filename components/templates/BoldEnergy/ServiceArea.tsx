@@ -11,224 +11,182 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
   useEffect(() => {
     if (!mapRef.current || !company?.latitude || !company?.longitude) return;
 
-    const initMap = () => {
-      if (!window.google || !window.google.maps) {
-        console.log('Google Maps not loaded yet');
-        return;
-      }
+    const latitude = Number(company.latitude);
+    const longitude = Number(company.longitude);
 
-      const latitude = Number(company.latitude);
-      const longitude = Number(company.longitude);
+    if (isNaN(latitude) || isNaN(longitude)) {
+      console.log('Invalid coordinates:', company.latitude, company.longitude);
+      return;
+    }
 
-      if (isNaN(latitude) || isNaN(longitude)) {
-        console.log('Invalid coordinates:', company.latitude, company.longitude);
-        return;
-      }
-
-      try {
-        const mapOptions = {
-          center: { lat: latitude, lng: longitude },
-          zoom: 11,
-          mapTypeControl: false,
-          streetViewControl: false,
-          styles: [
-            {
-              featureType: 'poi',
-              elementType: 'labels',
-              stylers: [{ visibility: 'off' }]
-            }
-          ]
-        };
-        
-        const map = new window.google.maps.Map(mapRef.current, mapOptions);
-        
-        // Use AdvancedMarkerElement if available, fall back to Marker if not
-        let marker;
-        if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
-          // Create a simple HTML content for the marker with BoldEnergy orange theme
-          const markerContent = document.createElement('div');
-          markerContent.innerHTML = `
-            <div style="background-color: #ea580c; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3)"></div>
-          `;
-          
-          marker = new window.google.maps.marker.AdvancedMarkerElement({
-            map,
-            position: { lat: latitude, lng: longitude },
-            title: company?.name,
-            content: markerContent
-          });
-        } else {
-          // Fall back to regular Marker
-          marker = new window.google.maps.Marker({
-            position: { lat: latitude, lng: longitude },
-            map,
-            title: company?.name,
-            animation: window.google.maps.Animation.DROP,
-          });
-        }
-        
-        // Create a circle to show approximate service area (8 mile radius) with BoldEnergy orange theme
-        const serviceAreaCircle = new window.google.maps.Circle({
-          strokeColor: '#ea580c',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: '#ea580c',
-          fillOpacity: 0.1,
-          map,
-          center: { lat: latitude, lng: longitude },
-          radius: 12000, // 8 miles in meters (12.8 km)
-        });
-        
-        // Add info window for the marker with geocoded data fallback
-        const city = company?.city || company?.geocoded_city || '';
-        const state = company?.state || company?.geocoded_state || '';
-        const locationDisplay = city && state ? `${city}, ${state}` : city || state || 'Location information not available';
-        
-        const infoContent = `
-          <div style="padding: 8px; max-width: 200px;">
-            <h3 style="margin: 0 0 8px; font-weight: bold;">${company?.name}</h3>
-            <p style="margin: 0 0 8px; color: #666;">${locationDisplay}</p>
-            ${company?.phone ? `<p style="margin: 0; color: #ea580c; font-weight: bold;">${company.phone}</p>` : ''}
+    const createStaticMap = () => {
+      if (mapRef.current) {
+        mapRef.current.innerHTML = `
+          <div class="flex h-full items-center justify-center bg-gray-100">
+            <p class="text-gray-500">Interactive map unavailable. Please contact us for service area information.</p>
           </div>
         `;
-        
-        const infoWindow = new window.google.maps.InfoWindow({
-          content: infoContent
-        });
-        
-        // Add click event to marker to open info window
-        if (marker.addListener) {
-          marker.addListener('click', () => {
-            infoWindow.open(map, marker);
-          });
-        } else if (marker.addEventListener) {
-          marker.addEventListener('click', () => {
-            infoWindow.open(map, marker);
-          });
-        }
-        
-      } catch (error) {
-        console.error('Error initializing map:', error);
       }
     };
 
-    // Check if Google Maps is already loaded
-    if (window.google && window.google.maps) {
-      initMap();
-    } else {
-      // Wait for Google Maps to load
-      const checkGoogleMaps = setInterval(() => {
-        if (window.google && window.google.maps) {
-          clearInterval(checkGoogleMaps);
-          initMap();
+    const initMap = () => {
+      window.initMap = () => {
+        try {
+          const mapOptions = {
+            center: { lat: latitude, lng: longitude },
+            zoom: 11,
+            mapTypeControl: false,
+            streetViewControl: false,
+            styles: [
+              {
+                featureType: 'poi',
+                elementType: 'labels',
+                stylers: [{ visibility: 'off' }]
+              }
+            ]
+          };
+          
+          const map = new window.google.maps.Map(mapRef.current, mapOptions);
+          
+          // Use AdvancedMarkerElement if available, fall back to Marker if not
+          let marker;
+          if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
+            // Create a simple HTML content for the marker with BoldEnergy orange theme
+            const markerContent = document.createElement('div');
+            markerContent.innerHTML = `
+              <div style="background-color: #ea580c; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3)"></div>
+            `;
+            
+            marker = new window.google.maps.marker.AdvancedMarkerElement({
+              map,
+              position: { lat: latitude, lng: longitude },
+              title: company?.name,
+              content: markerContent
+            });
+          } else {
+            // Fall back to regular Marker
+            marker = new window.google.maps.Marker({
+              position: { lat: latitude, lng: longitude },
+              map,
+              title: company?.name,
+              animation: window.google.maps.Animation.DROP,
+            });
+          }
+          
+          // Create a circle to show approximate service area (8 mile radius) with BoldEnergy orange theme
+          const serviceAreaCircle = new window.google.maps.Circle({
+            strokeColor: '#ea580c',
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            fillColor: '#ea580c',
+            fillOpacity: 0.1,
+            map,
+            center: { lat: latitude, lng: longitude },
+            radius: 12000, // 8 miles in meters (12.8 km)
+          });
+          
+          // Add info window for the marker with geocoded data fallback
+          const city = company?.city || company?.geocoded_city || '';
+          const state = company?.state || company?.geocoded_state || '';
+          const locationDisplay = city && state ? `${city}, ${state}` : city || state || 'Location information not available';
+          
+          const infoContent = `
+            <div style="padding: 8px; max-width: 200px;">
+              <h3 style="margin: 0 0 8px; font-weight: bold;">${company?.name}</h3>
+              <p style="margin: 0 0 8px; color: #666;">${locationDisplay}</p>
+              ${company?.phone ? `<p style="margin: 0; color: #ea580c; font-weight: bold;">${company.phone}</p>` : ''}
+            </div>
+          `;
+          
+          const infoWindow = new window.google.maps.InfoWindow({
+            content: infoContent
+          });
+          
+          // Use the appropriate listener based on marker type
+          if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
+            marker.addListener('click', () => {
+              infoWindow.open(map, marker);
+            });
+          } else if (marker.addListener) {
+            marker.addListener('click', () => {
+              infoWindow.open(map, marker);
+            });
+          }
+          
+          // Initially open the info window
+          infoWindow.open(map, marker);
+        } catch (error) {
+          console.error('Error rendering map:', error);
+          // Fall back to static map if dynamic map fails
+          createStaticMap();
         }
-      }, 100);
-
-      // Clean up interval after 10 seconds to prevent infinite checking
-      setTimeout(() => {
-        clearInterval(checkGoogleMaps);
-      }, 10000);
-    }
+      };
+      
+      // Check if the API is already loaded
+      if (window.google && window.google.maps) {
+        window.initMap();
+        return;
+      }
+      
+      // Load the Google Maps API with the async attribute and callback
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+      
+      // Set a timeout to fall back to static map if the dynamic map doesn't load
+      const timeout = setTimeout(() => {
+        if (!window.google || !window.google.maps) {
+          console.warn('Google Maps API failed to load, falling back to static map');
+          createStaticMap();
+        }
+      }, 5000);
+      
+      // Clean up timeout
+      return () => clearTimeout(timeout);
+    };
+    
+    initMap();
+    
   }, [company]);
 
+  // If no coordinates, don't display section
+  if (!company?.latitude || !company?.longitude) {
+    return null;
+  }
+  
+  // Use geocoded data if regular city/state are missing
+  const cityDisplay = company.city || company.geocoded_city || 'your area';
+  const stateDisplay = company.state || company.geocoded_state || '';
+
   return (
-    <section id="service-area" className="py-20 bg-gradient-to-br from-orange-100 via-red-50 to-yellow-100">
+    <section id="service-area" className="py-16 bg-white">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-black text-gray-900 mb-6">
-            <span className="text-orange-600">LOCAL</span> SERVICE AREA
-          </h2>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Bringing professional solutions to {company?.city || 'your area'} and surrounding communities
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4">Our Service Area</h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            {company.name} proudly serves {cityDisplay} {stateDisplay ? `and surrounding areas` : `area`} with reliable heating 
+            and cooling services. Contact us today to see if you're in our service area.
           </p>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="bg-gradient-to-br from-orange-200 to-red-200 p-8 rounded-2xl border-2 border-orange-300">
-              <h3 className="text-2xl font-black text-gray-900 mb-6">
-                🗺️ COVERAGE AREAS
-              </h3>
-              
-              <div className="space-y-4">
-                {company?.city && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <span className="text-lg font-bold text-gray-800">
-                      {company.city}, {company?.state || 'Local Area'}
-                    </span>
-                  </div>
-                )}
-                
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-lg font-bold text-gray-800">
-                    Surrounding Communities
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="text-lg font-bold text-gray-800">
-                    Emergency Service Available
-                  </span>
-                </div>
-              </div>
-              
-              {company?.phone && (
-                <div className="mt-8">
-                  <a 
-                    href={`tel:${company.phone}`}
-                    className="block w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white font-black py-4 px-6 rounded-lg text-center text-lg transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
-                  >
-                    🔥 CALL FOR EXPERT SERVICE: {company.phone}
-                  </a>
-                </div>
-              )}
+        <div className="shadow-xl rounded-xl overflow-hidden">
+          <div 
+            ref={mapRef} 
+            className="w-full h-[400px] md:h-[500px]"
+            style={{ backgroundColor: '#f0f0f0' }}
+          >
+            <div className="flex h-full items-center justify-center">
+              <p className="text-gray-500">Loading map...</p>
             </div>
           </div>
-          
-          <div className="relative">
-            {/* Interactive Map */}
-            {company?.latitude && company?.longitude ? (
-              <div className="bg-white p-2 rounded-2xl border-2 border-orange-300 shadow-xl">
-                <div
-                  ref={mapRef}
-                  className="w-full h-80 rounded-xl"
-                  style={{ minHeight: '320px' }}
-                />
-              </div>
-            ) : (
-              <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-2xl border-2 border-yellow-400">
-                <h3 className="text-2xl font-black text-white mb-6">
-                  ⚡ RAPID RESPONSE ZONES
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 p-4 rounded-lg border border-orange-400/30">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white font-bold">Same Day Service</span>
-                      <span className="text-yellow-400 font-black">⚡ FAST</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-red-500/20 to-yellow-500/20 p-4 rounded-lg border border-red-400/30">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white font-bold">24/7 Emergency</span>
-                      <span className="text-yellow-400 font-black">🔥 READY</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 p-4 rounded-lg border border-yellow-400/30">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white font-bold">Weekend Service</span>
-                      <span className="text-yellow-400 font-black">💪 RELIABLE</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+        </div>
+        
+        <div className="mt-8 text-center">
+          <p className="text-lg">
+            Not sure if we service your area? <a href="#" className="text-orange-600 font-semibold hover:underline">Contact us</a> today!
+          </p>
         </div>
       </div>
     </section>
