@@ -65,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
               <Link 
                 key={item}
                 href={`#${item.toLowerCase()}`} 
-                className="text-lg font-medium text-white hover:text-blue-200 transition-colors"
+                className="text-lg font-medium text-white hover:text-green-200 transition-colors"
               >
                 {item}
               </Link>
@@ -95,7 +95,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
             {company.phone && (
               <a 
                 href={`tel:${company.phone ? company.phone.replace(/^\+1\s?/, '') : ''}`} 
-                className="group bg-gradient-to-br from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white px-5 py-3 rounded-lg transition-all font-bold flex items-center shadow-lg hover:shadow-red-500/30 transform hover:-translate-y-0.5"
+                className="group bg-gradient-to-br from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white px-5 py-3 rounded-lg transition-all font-bold flex items-center shadow-lg hover:shadow-green-500/30 transform hover:-translate-y-0.5"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -111,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
             {company.phone && (
               <a 
                 href={`tel:${company.phone ? company.phone.replace(/^\+1\s?/, '') : ''}`} 
-                className="bg-gradient-to-r from-red-600 to-red-500 text-white px-3 py-2 rounded-lg flex items-center font-bold shadow-md mr-3"
+                className="bg-gradient-to-r from-green-600 to-green-500 text-white px-3 py-2 rounded-lg flex items-center font-bold shadow-md mr-3"
                 aria-label="Call us"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">

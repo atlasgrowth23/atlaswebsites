@@ -57,24 +57,25 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
             </h1>
           </div>
 
-          {/* Phone Number - Mobile Optimized */}
-          {company.phone && (
-            <div className="flex items-center ml-2">
-              <a 
-                href={`tel:${company.phone}`}
-                className="bg-yellow-500 hover:bg-yellow-400 text-orange-900 font-bold py-2 px-2 sm:px-3 lg:px-6 rounded-lg text-xs sm:text-sm lg:text-base transition-all duration-300 hover:shadow-lg whitespace-nowrap"
+          {/* Navigation with improved typography and layout - centered */}
+          <nav className="hidden lg:flex items-center space-x-8 flex-1 justify-center">
+            {['About', 'Services', 'Contact'].map((item) => (
+              <Link 
+                key={item}
+                href={`#${item.toLowerCase()}`} 
+                className="text-lg font-medium text-white hover:text-yellow-200 transition-colors"
               >
-                <span className="hidden sm:inline">📞 </span>{company.phone}
-              </a>
-            </div>
-          )}
+                {item}
+              </Link>
+            ))}
+          </nav>
 
-          {/* Rating Section - right aligned */}
+          {/* Rating/Reviews Section - right aligned */}
           <div className="hidden lg:flex items-center space-x-3 flex-1 justify-end">
             {showRatings && (
-              <div className="bg-white/20 py-2 px-4 rounded-lg shadow-lg border-l border-t border-white/30">
+              <div className="bg-white/10 py-2 px-4 rounded-lg shadow-lg border-l border-t border-white/20">
                 <div className="flex items-center">
-                  <div className="text-yellow-300 flex">
+                  <div className="text-yellow-400 flex">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <svg key={star} xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
@@ -83,8 +84,38 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                   </div>
                   <span className="ml-2 text-white font-bold">{typeof company.rating === 'number' ? company.rating.toFixed(1) : company.rating}</span>
                 </div>
-                <p className="text-xs text-white/80 font-medium">Trusted Service</p>
+                <p className="text-xs text-white/80 font-medium">Trusted HVAC Service</p>
               </div>
+            )}
+
+            {/* Phone Number */}
+            {company.phone && (
+              <a 
+                href={`tel:${company.phone ? company.phone.replace(/^\+1\s?/, '') : ''}`} 
+                className="group bg-gradient-to-br from-orange-600 to-red-500 hover:from-orange-500 hover:to-red-400 text-white px-5 py-3 rounded-lg transition-all font-bold flex items-center shadow-lg hover:shadow-orange-500/30 transform hover:-translate-y-0.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                {company.phone ? company.phone.replace(/^\+1\s?/, '') : ''}
+              </a>
+            )}
+          </div>
+
+          {/* Mobile header elements */}
+          <div className="flex items-center md:hidden">
+            {/* Show phone with number on mobile */}
+            {company.phone && (
+              <a 
+                href={`tel:${company.phone ? company.phone.replace(/^\+1\s?/, '') : ''}`} 
+                className="bg-gradient-to-r from-orange-600 to-red-500 text-white px-3 py-2 rounded-lg flex items-center font-bold shadow-md mr-3"
+                aria-label="Call us"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                <span className="text-sm whitespace-nowrap">{company.phone ? company.phone.replace(/^\+1\s?/, '') : ''}</span>
+              </a>
             )}
           </div>
         </div>
