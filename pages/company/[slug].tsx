@@ -181,11 +181,18 @@ export default function CompanyDetail({ company, trackingData: initialTrackingDa
               {/* Template Selection */}
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-semibold mb-4">Website Templates</h3>
-                <Link href={`/templates/${company.slug}`}>
-                  <button className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all duration-300 hover:shadow-lg">
-                    Choose Template Style
-                  </button>
-                </Link>
+                <div className="space-y-3">
+                  <Link href={`/templates/${company.slug}`}>
+                    <button className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all duration-300 hover:shadow-lg">
+                      Choose Template Style
+                    </button>
+                  </Link>
+                  <Link href={`/template-editor/${company.slug}`}>
+                    <button className="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all duration-300 hover:shadow-lg">
+                      🎨 Customize Templates
+                    </button>
+                  </Link>
+                </div>
               </div>
 
               {/* Quick Links */}
