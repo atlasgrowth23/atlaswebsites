@@ -33,21 +33,11 @@ export default function TemplateEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Available customization options
+  // Available customization options (using actual frame keys from templates)
   const customizationOptions = {
     images: [
-      { key: 'hero_image', label: 'Hero Background Image', description: 'Main background image in the hero section' },
-      { key: 'about_image', label: 'About Section Image', description: 'Image displayed in the about us section' },
-      { key: 'services_image', label: 'Services Background', description: 'Background image for services section' },
-      { key: 'logo_override', label: 'Company Logo', description: 'Custom logo for this template' }
-    ],
-    text: [
-      { key: 'hero_title', label: 'Hero Title', description: 'Main headline in the hero section' },
-      { key: 'hero_subtitle', label: 'Hero Subtitle', description: 'Subtitle text under the main headline' },
-      { key: 'about_title', label: 'About Section Title', description: 'Title for the about us section' },
-      { key: 'about_description', label: 'About Description', description: 'Description text in about section' },
-      { key: 'services_title', label: 'Services Title', description: 'Main services section title' },
-      { key: 'contact_cta', label: 'Contact Call-to-Action', description: 'Text for contact buttons' }
+      { key: 'hero_img', label: 'Hero Background Image', description: 'Main background image in the hero section' },
+      { key: 'about_img', label: 'About Section Image', description: 'Image displayed in the about us section' }
     ]
   };
 
@@ -246,37 +236,15 @@ export default function TemplateEditor() {
                   </CardContent>
                 </Card>
 
-                {/* Text Content Section */}
+                {/* Instructions */}
                 <Card>
                   <CardContent className="p-6">
-                    <Heading level={4} className="mb-6">📝 Custom Text</Heading>
-                    <div className="grid grid-cols-1 gap-6">
-                      {customizationOptions.text.map(option => (
-                        <div key={option.key} className="space-y-2">
-                          <label className="block font-medium text-gray-700">
-                            {option.label}
-                          </label>
-                          <Text size="sm" className="text-gray-500">
-                            {option.description}
-                          </Text>
-                          {option.key.includes('description') ? (
-                            <textarea
-                              placeholder="Enter custom text..."
-                              value={customizations[option.key] || ''}
-                              onChange={(e) => handleInputChange(option.key, e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-h-[100px]"
-                            />
-                          ) : (
-                            <Input
-                              type="text"
-                              placeholder="Enter custom text..."
-                              value={customizations[option.key] || ''}
-                              onChange={(e) => handleInputChange(option.key, e.target.value)}
-                              className="w-full"
-                            />
-                          )}
-                        </div>
-                      ))}
+                    <Heading level={4} className="mb-4">💡 How It Works</Heading>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <p>• Add custom images by pasting image URLs above</p>
+                      <p>• These images will override the default template images for this business only</p>
+                      <p>• Leave fields empty to use the default template images</p>
+                      <p>• Changes apply immediately after saving</p>
                     </div>
                   </CardContent>
                 </Card>

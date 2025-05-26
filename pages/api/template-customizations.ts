@@ -23,14 +23,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json(company);
       }
 
-      // Get customizations for this company and template
-      const customizations = await query(`
-        SELECT customization_type, custom_value, original_value 
-        FROM business_customizations 
-        WHERE company_id = $1 AND template_key = $2
-      `, [company.id, template]);
+      // Get existing company frames (the real data templates use)
+      const frames = await query(`
+        SELECT slug as frame_key, url as image_url 
+        FROM company_frames 
+        WHERE company_id = $1
+      `, [company.id]);
 
-      res.status(200).json(customizations.rows);
+      // Convert to the format expected by the editor
+      const customizations = frames.rows.map((frame: any) => ({
+        customization_type: frame.frame_key,
+        custom_value: frame.image_url
+      }));
+
+      res.status(200).json(customizations);
     } catch (error) {
       console.error('Error fetching customizations:', error);
       res.status(500).json({ error: 'Failed to fetch customizations' });
@@ -41,24 +47,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const { companyId, templateKey, customizations } = req.body;
 
-      // Save each customization
-      for (const [type, value] of Object.entries(customizations)) {
-        if (value && value.toString().trim()) {
+      // Save to company_frames table that templates actually use
+      for (const [frameKey, imageUrl] of Object.entries(customizations)) {
+        if (imageUrl && imageUrl.toString().trim()) {
+          // Insert or update company frame
           await query(`
-            INSERT INTO business_customizations 
-            (company_id, template_key, customization_type, custom_value, updated_at)
-            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-            ON CONFLICT (company_id, template_key, customization_type)
+            INSERT INTO company_frames (company_id, slug, url, created_at)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            ON CONFLICT (company_id, slug)
             DO UPDATE SET 
-              custom_value = EXCLUDED.custom_value,
-              updated_at = CURRENT_TIMESTAMP
-          `, [companyId, templateKey, type, value]);
+              url = EXCLUDED.url,
+              created_at = CURRENT_TIMESTAMP
+          `, [companyId, frameKey, imageUrl]);
+          
+          console.log(`Saved company frame: ${frameKey} = ${imageUrl}`);
         } else {
-          // Remove customization if value is empty
+          // Remove frame if value is empty
           await query(`
-            DELETE FROM business_customizations 
-            WHERE company_id = $1 AND template_key = $2 AND customization_type = $3
-          `, [companyId, templateKey, type]);
+            DELETE FROM company_frames 
+            WHERE company_id = $1 AND slug = $2
+          `, [companyId, frameKey]);
+          
+          console.log(`Removed company frame: ${frameKey}`);
         }
       }
 
