@@ -27,24 +27,52 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
   const [filteredCompanies, setFilteredCompanies] = useState(companies);
   const [trackingData, setTrackingData] = useState(initialTrackingData);
   const [feedback, setFeedback] = useState<{[key: string]: string}>({});
+  const [filters, setFilters] = useState({
+    state: '',
+    minRating: '',
+    trackingStatus: ''
+  });
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    
-    if (!term) {
-      setFilteredCompanies(companies);
-      return;
-    }
-    
-    const filtered = companies.filter(company => 
-      company.name.toLowerCase().includes(term) || 
-      (company.city && company.city.toLowerCase().includes(term)) || 
-      (company.state && company.state.toLowerCase().includes(term))
-    );
+  const applyFilters = () => {
+    let filtered = companies.filter(company => {
+      // Search term filter
+      const matchesSearch = !searchTerm || 
+        company.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (company.city && company.city.toLowerCase().includes(searchTerm.toLowerCase())) || 
+        (company.state && company.state.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // State filter
+      const matchesState = !filters.state || company.state === filters.state;
+      
+      // Rating filter
+      const matchesRating = !filters.minRating || 
+        (company.rating && company.rating >= parseFloat(filters.minRating));
+      
+      // Tracking status filter
+      const trackingInfo = getTrackingInfo(company.id?.toString() || '');
+      const isTracking = trackingInfo?.tracking_enabled || false;
+      const matchesTracking = !filters.trackingStatus || 
+        (filters.trackingStatus === 'active' && isTracking) ||
+        (filters.trackingStatus === 'inactive' && !isTracking);
+      
+      return matchesSearch && matchesState && matchesRating && matchesTracking;
+    });
     
     setFilteredCompanies(filtered);
   };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleFilterChange = (filterType: string, value: string) => {
+    setFilters(prev => ({ ...prev, [filterType]: value }));
+  };
+
+  // Apply filters when search term or filters change
+  React.useEffect(() => {
+    applyFilters();
+  }, [searchTerm, filters, companies, trackingData]);
 
   const handleTrackingToggle = async (companyId: string, action: 'activate' | 'deactivate') => {
     try {
@@ -136,25 +164,25 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
                 
                 return (
                   <div key={company.id || company.name} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="p-6">
-                      <Link href={`/company/${company.slug}`} className="block cursor-pointer mb-4">
-                        <div className="flex justify-between items-start mb-3">
-                          <h3 className="text-xl font-bold">{company.name}</h3>
-                          <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            isTracking ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {isTracking ? '📊 Active' : '⏸️ Inactive'}
-                          </div>
+                    <Link href={`/company/${company.slug}`} className="block p-6 cursor-pointer">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="text-xl font-bold">{company.name}</h3>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          isTracking ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {isTracking ? '📊 Active' : '⏸️ Inactive'}
                         </div>
-                        
-                        <p className="text-gray-600">
-                          {company.city ? company.city : ''}
-                          {company.city && company.state ? ', ' : ''}
-                          {company.state ? company.state : ''}
-                        </p>
-                      </Link>
+                      </div>
+                      
+                      <p className="text-gray-600 mb-4">
+                        {company.city ? company.city : ''}
+                        {company.city && company.state ? ', ' : ''}
+                        {company.state ? company.state : ''}
+                      </p>
+                    </Link>
 
-                      {/* Analytics Display */}
+                    {/* Analytics Display */}
+                    <div className="px-6">
                       {isTracking && trackingInfo && (
                         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                           <div className="text-sm font-medium text-blue-900 mb-2">Analytics</div>
@@ -196,7 +224,7 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
                         </div>
                       )}
 
-                      <div className="flex justify-between items-center gap-2">
+                      <div className="flex justify-between items-center gap-2 pb-6">
                         <Link href={`/templates/${company.slug}`} passHref>
                           <Button size="sm" variant="outline">Select Template</Button>
                         </Link>
