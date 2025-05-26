@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         UPDATE prospect_tracking 
         SET 
           total_views = total_views + 1,
-          template_views = template_views || jsonb_build_object($2, COALESCE((template_views->>$2)::integer, 0) + 1),
+          template_views = template_views || jsonb_build_object($2::text, COALESCE((template_views->>$2::text)::integer, 0) + 1),
           last_viewed_at = CURRENT_TIMESTAMP
         WHERE company_id = $1
       `, [companyId, templateKey]);
