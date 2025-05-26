@@ -44,13 +44,13 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
           )}
           
           <h1 className="text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-6 text-white leading-tight">
-            <span className="block text-yellow-400">Stay Cool This</span> 
-            <span className="block">Summer in</span>
+            <span className="block text-yellow-400">Professional</span> 
+            <span className="block">HVAC Services in</span>
             <span className="text-orange-300">{company.city || 'Your Area'}</span>
           </h1>
 
           <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-xl leading-relaxed">
-            Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs.
+            Expert heating and cooling solutions to keep your home comfortable year-round with energy-efficient service you can trust.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
