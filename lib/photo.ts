@@ -22,13 +22,13 @@ export function getPhotoUrl(company: any, frameName: string, templateKey: string
   console.log('Using shared stock image for:', frameName);
   
   if (frameName === 'hero_img') {
-    return 'https://images.unsplash.com/photo-1547447175-a68d11e30d6b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=817&q=80';
+    return 'https://media.istockphoto.com/id/2086062515/photo/technician-is-checking-air-conditioner-air-conditioning-hvac-service-technician-using-gauges.jpg?s=612x612&w=0&k=20&c=01FnRRsdf4EZRrkXj_famg0St0cjr4_rQlJmDAcA1SQ=';
   }
   
   if (frameName === 'about_img') {
-    return 'https://t4.ftcdn.net/jpg/01/76/88/37/240_F_176883703_jmMWTobxh7e61FAJ4MoSsKDEGc1UfhTE.jpg';
+    return 'https://media.istockphoto.com/id/2165427024/photo/technician-servicing-air-conditioning-unit-on-rooftop-during-daytime.jpg?s=612x612&w=0&k=20&c=G0onBre5_-5fjLOQhHyBq4wJwj6mMuxvW97lOv-spdA=';
   }
   
   // Default fallback
-  return 'https://images.unsplash.com/photo-1547447175-a68d11e30d6b?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=817&q=80';
+  return 'https://media.istockphoto.com/id/2162060920/photo/modern-hvac-air-conditioner.jpg?s=612x612&w=0&k=20&c=amGe-3LbT4YEWeDQfec7TPKitkzSVLcVjqKRyKUnzSI=';
 }
