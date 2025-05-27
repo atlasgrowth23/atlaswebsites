@@ -52,12 +52,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (imageUrl && imageUrl.toString().trim()) {
           // Insert or update company frame
           await query(`
-            INSERT INTO company_frames (company_id, slug, url, created_at)
-            VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+            INSERT INTO company_frames (company_id, slug, url)
+            VALUES ($1, $2, $3)
             ON CONFLICT (company_id, slug)
             DO UPDATE SET 
-              url = EXCLUDED.url,
-              created_at = CURRENT_TIMESTAMP
+              url = EXCLUDED.url
           `, [companyId, frameKey, imageUrl]);
           
           console.log(`Saved company frame: ${frameKey} = ${imageUrl}`);
