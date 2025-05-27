@@ -3,8 +3,6 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import { query } from '@/lib/db';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
-import BoldEnergyLayout from '@/components/templates/BoldEnergy/Layout';
-import NaturalEarthProLayout from '@/components/templates/NaturalEarthPro/Layout';
 import { processLogo } from '@/lib/processLogo';
 import Head from 'next/head';
 
@@ -29,32 +27,7 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
           <ModernTrustLayout company={company} />
         </>
       );
-    case 'boldenergy':
-      return (
-        <>
-          <Head>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `window.__COMPANY_ID__ = "${company.id}";`
-              }}
-            />
-          </Head>
-          <BoldEnergyLayout company={company} />
-        </>
-      );
-    case 'naturalearthpro':
-      return (
-        <>
-          <Head>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `window.__COMPANY_ID__ = "${company.id}";`
-              }}
-            />
-          </Head>
-          <NaturalEarthProLayout company={company} />
-        </>
-      );
+
     default:
       return (
         <div className="p-8">
