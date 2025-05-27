@@ -142,8 +142,8 @@ export default function CleanDashboard({ companies }: CleanDashboardProps) {
                       type="url"
                       placeholder="https://example.com/hero-image.jpg"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      value={customizations[company.id!]?.hero_img || ''}
-                      onChange={(e) => handleCustomizationChange(company.id!, 'hero_img', e.target.value)}
+                      value={customizations[String(company.id)]?.hero_img || ''}
+                      onChange={(e) => handleCustomizationChange(String(company.id), 'hero_img', e.target.value)}
                     />
                   </div>
 
@@ -154,8 +154,8 @@ export default function CleanDashboard({ companies }: CleanDashboardProps) {
                       type="url"
                       placeholder="https://example.com/about-image.jpg"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      value={customizations[company.id!]?.about_img || ''}
-                      onChange={(e) => handleCustomizationChange(company.id!, 'about_img', e.target.value)}
+                      value={customizations[String(company.id)]?.about_img || ''}
+                      onChange={(e) => handleCustomizationChange(String(company.id), 'about_img', e.target.value)}
                     />
                   </div>
 
@@ -180,15 +180,10 @@ export default function CleanDashboard({ companies }: CleanDashboardProps) {
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
     const result = await query(`
-      SELECT 
-        c.*,
-        COALESCE(c.city, g.city) as display_city,
-        COALESCE(c.state, g.state) as display_state,
-        COALESCE(c.postal_code, g.postal_code) as display_postal_code
-      FROM companies c
-      LEFT JOIN geocoded_locations g ON c.id = g.company_id
-      WHERE (c.state = 'Alabama' OR c.state = 'Arkansas')
-      ORDER BY c.state, c.city, c.name
+      SELECT *
+      FROM companies
+      WHERE (state = 'Alabama' OR state = 'Arkansas')
+      ORDER BY state, city, name
     `);
 
     const companies = result.rows || [];
