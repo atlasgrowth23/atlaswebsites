@@ -1,217 +1,246 @@
-import React, { useEffect, useRef } from 'react';
-import { Company } from '@/types';
-
-// Skip TypeScript checking for Google Maps
-// @ts-ignore
-declare global {
-  interface Window {
-    google: any;
-    initMap: () => void;
-  }
-}
+import React, { useEffect, useState } from 'react';
 
 interface ServiceAreaProps {
-  company: Company;
+  company: any;
+}
+
+interface CountyInfo {
+  name: string;
+  state: string;
 }
 
 const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  
+  const [nearbyCounties, setNearbyCounties] = useState<CountyInfo[]>([]);
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  const latitude = company.latitude || company.lat;
+  const longitude = company.longitude || company.lng;
+
   useEffect(() => {
-    // Skip if no coordinates are available or if we're not in the browser
-    if (typeof window === 'undefined') return;
-    
-    // Ensure we have valid coordinates
-    const latitude = parseFloat(String(company?.latitude));
-    const longitude = parseFloat(String(company?.longitude));
-    
-    if (isNaN(latitude) || isNaN(longitude)) {
-      console.log('Invalid coordinates:', company?.latitude, company?.longitude);
-      return;
-    }
-    
-    // Use a simple static map as a fallback option (doesn't require JavaScript)
-    const createStaticMap = () => {
-      if (!mapRef.current) return;
-      
-      const width = mapRef.current.clientWidth;
-      const height = mapRef.current.clientHeight;
-      
-      // Create an image element with a static map
-      const img = document.createElement('img');
-      img.src = `https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=12&size=${width}x${height}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&markers=color:red|${latitude},${longitude}`;
-      img.style.width = '100%';
-      img.style.height = '100%';
-      img.style.objectFit = 'cover';
-      img.alt = `Map showing ${company?.name} location`;
-      
-      // Clear the loading message and append the image
-      mapRef.current.innerHTML = '';
-      mapRef.current.appendChild(img);
-    };
-    
-    // Function to initialize Google Maps - using best practices with loading=async
-    const initMap = () => {
-      // Create a global callback that will run when the Google Maps script loads
-      window.initMap = () => {
-        if (!mapRef.current || !window.google || !window.google.maps) return;
-        
-        try {
-          const mapOptions = {
-            center: { lat: latitude, lng: longitude },
-            zoom: 11,
-            mapTypeControl: false,
-            streetViewControl: false,
-            styles: [
-              {
-                featureType: 'poi',
-                elementType: 'labels',
-                stylers: [{ visibility: 'off' }]
-              }
-            ]
-          };
-          
-          const map = new window.google.maps.Map(mapRef.current, mapOptions);
-          
-          // Use AdvancedMarkerElement if available, fall back to Marker if not
-          let marker;
-          if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
-            // Create a simple HTML content for the marker
-            const markerContent = document.createElement('div');
-            markerContent.innerHTML = `
-              <div style="background-color: #0066FF; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3)"></div>
-            `;
-            
-            marker = new window.google.maps.marker.AdvancedMarkerElement({
-              map,
-              position: { lat: latitude, lng: longitude },
-              title: company?.name,
-              content: markerContent
-            });
-          } else {
-            // Fall back to regular Marker
-            marker = new window.google.maps.Marker({
-              position: { lat: latitude, lng: longitude },
-              map,
-              title: company?.name,
-              animation: window.google.maps.Animation.DROP,
-            });
-          }
-          
-          // Create a circle to show approximate service area (8 mile radius)
-          const serviceAreaCircle = new window.google.maps.Circle({
-            strokeColor: '#0066FF',
-            strokeOpacity: 0.8,
-            strokeWeight: 2,
-            fillColor: '#0066FF',
-            fillOpacity: 0.1,
-            map,
-            center: { lat: latitude, lng: longitude },
-            radius: 12000, // 8 miles in meters (12.8 km)
-          });
-          
-          // Add info window for the marker with geocoded data fallback
-          const city = company?.city || company?.geocoded_city || '';
-          const state = company?.state || company?.geocoded_state || '';
-          const locationDisplay = city && state ? `${city}, ${state}` : city || state || 'Location information not available';
-          
-          const infoContent = `
-            <div style="padding: 8px; max-width: 200px;">
-              <h3 style="margin: 0 0 8px; font-weight: bold;">${company?.name}</h3>
-              <p style="margin: 0 0 5px;">${locationDisplay}</p>
-              ${company?.phone ? `<p style="margin: 0;"><a href="tel:${company?.phone}" style="color: #0066FF; text-decoration: none;">${company?.phone}</a></p>` : ''}
-            </div>
-          `;
-          
-          const infoWindow = new window.google.maps.InfoWindow({
-            content: infoContent,
-          });
-          
-          // Use the appropriate listener based on marker type
-          if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
-            marker.addListener('click', () => {
-              infoWindow.open(map, marker);
-            });
-          } else if (marker.addListener) {
-            marker.addListener('click', () => {
-              infoWindow.open(map, marker);
-            });
-          }
-          
-          // Initially open the info window
-          infoWindow.open(map, marker);
-        } catch (error) {
-          console.error('Error rendering map:', error);
-          // Fall back to static map if dynamic map fails
-          createStaticMap();
-        }
-      };
-      
-      // Check if the API is already loaded
-      if (window.google && window.google.maps) {
-        window.initMap();
-        return;
-      }
-      
-      // Load the Google Maps API with the async attribute and callback
+    // Load Google Maps API
+    if (typeof window !== 'undefined' && !window.google) {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,geometry`;
       script.async = true;
       script.defer = true;
+      script.onload = () => setMapLoaded(true);
       document.head.appendChild(script);
-      
-      // Set a timeout to fall back to static map if the dynamic map doesn't load
-      const timeout = setTimeout(() => {
-        if (!window.google || !window.google.maps) {
-          console.warn('Google Maps API failed to load, falling back to static map');
-          createStaticMap();
+    } else if (window.google) {
+      setMapLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mapLoaded && latitude && longitude) {
+      initializeMap();
+      fetchNearbyCounties();
+    }
+  }, [mapLoaded, latitude, longitude]);
+
+  const initializeMap = () => {
+    const mapContainer = document.getElementById('service-area-map');
+    if (!mapContainer || !window.google) return;
+
+    const center = new google.maps.LatLng(latitude, longitude);
+    
+    const map = new google.maps.Map(mapContainer, {
+      center,
+      zoom: 10,
+      styles: [
+        {
+          featureType: 'administrative.country',
+          elementType: 'geometry.stroke',
+          stylers: [{ color: '#4285f4' }, { weight: 2 }]
+        },
+        {
+          featureType: 'administrative.province',
+          elementType: 'geometry.stroke',
+          stylers: [{ color: '#4285f4' }, { weight: 1 }]
         }
-      }, 5000);
+      ]
+    });
+
+    // Add marker for business location
+    new google.maps.Marker({
+      position: center,
+      map,
+      title: company.name,
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="#dc2626">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        `),
+        scaledSize: new google.maps.Size(40, 40)
+      }
+    });
+
+    // Draw 25-mile radius circle
+    new google.maps.Circle({
+      strokeColor: '#3b82f6',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      fillColor: '#3b82f6',
+      fillOpacity: 0.15,
+      map,
+      center,
+      radius: 40233.6 // 25 miles in meters
+    });
+  };
+
+  const fetchNearbyCounties = async () => {
+    try {
+      // Use Google Maps Geocoding API to get nearby administrative areas
+      const geocoder = new google.maps.Geocoder();
       
-      // Clean up timeout
-      return () => clearTimeout(timeout);
-    };
-    
-    initMap();
-    
-  }, [company]);
-  
-  // If no coordinates, don't display section
-  if (!company?.latitude || !company?.longitude) {
+      // Get counties within approximate radius
+      const counties = new Set<string>();
+      
+      // Sample points around the main location to find counties
+      const radiusPoints = [
+        { lat: latitude + 0.2, lng: longitude },
+        { lat: latitude - 0.2, lng: longitude },
+        { lat: latitude, lng: longitude + 0.2 },
+        { lat: latitude, lng: longitude - 0.2 },
+        { lat: latitude + 0.15, lng: longitude + 0.15 },
+        { lat: latitude - 0.15, lng: longitude - 0.15 },
+        { lat: latitude + 0.15, lng: longitude - 0.15 },
+        { lat: latitude - 0.15, lng: longitude + 0.15 }
+      ];
+
+      const promises = radiusPoints.map(point => 
+        new Promise<void>((resolve) => {
+          geocoder.geocode({ location: point }, (results, status) => {
+            if (status === 'OK' && results) {
+              results.forEach(result => {
+                result.address_components.forEach(component => {
+                  if (component.types.includes('administrative_area_level_2')) {
+                    const countyName = component.long_name.replace(' County', '');
+                    const state = result.address_components.find(c => 
+                      c.types.includes('administrative_area_level_1')
+                    )?.short_name || '';
+                    counties.add(`${countyName}, ${state}`);
+                  }
+                });
+              });
+            }
+            resolve();
+          });
+        })
+      );
+
+      await Promise.all(promises);
+      
+      const countyList = Array.from(counties)
+        .filter(county => county.includes(company.state?.substring(0, 2) || ''))
+        .slice(0, 8)
+        .map(county => {
+          const [name, state] = county.split(', ');
+          return { name, state };
+        });
+
+      setNearbyCounties(countyList);
+    } catch (error) {
+      console.error('Error fetching counties:', error);
+    }
+  };
+
+  if (!latitude || !longitude) {
     return null;
   }
-  
-  // Use geocoded data if regular city/state are missing
-  const cityDisplay = company.city || company.geocoded_city || 'your area';
-  const stateDisplay = company.state || company.geocoded_state || '';
-  
+
   return (
-    <section id="service-area" className="py-16 bg-white">
+    <section className="py-16 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold mb-4">Our Service Area</h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            {company.name} proudly serves {cityDisplay} {stateDisplay ? `and surrounding areas` : `area`} with reliable heating 
-            and cooling services. Contact us today to see if you're in our service area.
+          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            Service Area Coverage
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            We proudly serve a 25-mile radius around {company.city}, {company.state} and surrounding counties
           </p>
         </div>
-        
-        <div className="shadow-xl rounded-xl overflow-hidden">
-          <div 
-            ref={mapRef} 
-            className="w-full h-[400px] md:h-[500px]"
-            style={{ backgroundColor: '#f0f0f0' }}
-          >
-            <div className="flex h-full items-center justify-center">
-              <p className="text-gray-500">Loading map...</p>
+
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Map */}
+          <div className="order-2 lg:order-1">
+            <div className="relative">
+              <div 
+                id="service-area-map" 
+                className="w-full h-96 rounded-xl shadow-lg bg-gray-100"
+                style={{ minHeight: '400px' }}
+              ></div>
+              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-md">
+                <div className="flex items-center space-x-2 text-sm">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <span>25-Mile Service Radius</span>
+                </div>
+                <div className="flex items-center space-x-2 text-sm mt-1">
+                  <div className="w-3 h-3 bg-red-600 rounded-full"></div>
+                  <span>{company.name} Location</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="mt-8 text-center">
-          <p className="text-lg">
-            Not sure if we service your area? <a href="#" className="text-blue-600 font-semibold hover:underline">Contact us</a> today!
-          </p>
+
+          {/* Counties and Info */}
+          <div className="order-1 lg:order-2">
+            <div className="bg-blue-50 rounded-xl p-8">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Counties We Serve
+              </h3>
+              
+              {nearbyCounties.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {nearbyCounties.map((county, index) => (
+                    <div key={index} className="bg-white rounded-lg p-3 text-center shadow-sm">
+                      <div className="font-semibold text-gray-900">{county.name}</div>
+                      <div className="text-sm text-gray-600">{county.state}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="bg-white rounded-lg p-3 text-center shadow-sm">
+                    <div className="font-semibold text-gray-900">Primary</div>
+                    <div className="text-sm text-gray-600">{company.state}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-700">Same-day emergency service</span>
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-700">Licensed & insured technicians</span>
+                </div>
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-gray-700">100% satisfaction guarantee</span>
+                </div>
+              </div>
+
+              {company.phone && (
+                <div className="mt-6 pt-6 border-t border-blue-200">
+                  <a 
+                    href={`tel:${company.phone}`}
+                    className="block w-full bg-primary text-white text-center py-3 rounded-lg font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    Call {company.phone}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </section>

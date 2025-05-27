@@ -5,6 +5,7 @@ import Header from './Header';
 import Hero from './Hero';
 import About from './About';
 import Services from './Services';
+import GoogleReviews from './GoogleReviews';
 import ServiceArea from './ServiceArea';
 import Footer from './Footer';
 
@@ -57,6 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <Hero company={company} />
         <About company={company} />
         <Services company={company} />
+        <GoogleReviews company={company} />
         <ServiceArea company={company} />
       </main>
       <Footer company={company} />
