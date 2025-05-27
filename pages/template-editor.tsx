@@ -29,8 +29,10 @@ export default function TemplateEditor() {
   const [selectedTemplate, setSelectedTemplate] = useState('moderntrust');
   const [company, setCompany] = useState<Company | null>(null);
   const [customizations, setCustomizations] = useState<Record<string, string>>({});
+  const [customDomain, setCustomDomain] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDomainSaving, setIsDomainSaving] = useState(false);
   const [message, setMessage] = useState('');
 
   // Available customization options (using actual frame keys from templates)
@@ -54,6 +56,8 @@ export default function TemplateEditor() {
       if (response.ok) {
         const data = await response.json();
         setCompany(data);
+        // Load existing custom domain if available
+        setCustomDomain(data.custom_domain || '');
       }
     } catch (error) {
       console.error('Error fetching company data:', error);
@@ -115,6 +119,39 @@ export default function TemplateEditor() {
       setMessage('❌ Error saving customizations. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const saveDomain = async () => {
+    if (!company?.id || !customDomain.trim()) return;
+    
+    setIsDomainSaving(true);
+    setMessage('');
+
+    try {
+      const response = await fetch('/api/manage-domain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: company.id,
+          customDomain: customDomain.trim()
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage(data.vercelError 
+          ? '⚠️ Domain saved! Please manually add to Vercel dashboard.' 
+          : '✅ Custom domain configured successfully!');
+        setTimeout(() => setMessage(''), 4000);
+      } else {
+        setMessage('❌ Failed to configure domain. Please try again.');
+      }
+    } catch (error) {
+      setMessage('❌ Error configuring domain. Please try again.');
+    } finally {
+      setIsDomainSaving(false);
     }
   };
 
