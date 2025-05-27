@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     // Add domain to Vercel project (using your correct project ID)
-    const vercelResponse = await fetch(`https://api.vercel.com/v10/projects/prj_a7o4Q54HlqYt82IUzhOfLVuOoBxQ/domains`, {
+    const vercelResponse = await fetch(`https://api.vercel.com/v10/projects/prj_4M9ztyh53V76lUdsEHPIw88UT5wC/domains`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.VERCEL_TOKEN}`,
