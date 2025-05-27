@@ -98,8 +98,10 @@ export default function TemplateEditor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyId: company.id,
-          templateKey: selectedTemplate,
-          customizations
+          customizations: {
+            hero_img: customizations.hero_img,
+            about_img: customizations.about_img
+          }
         })
       });
 
