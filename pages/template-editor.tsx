@@ -237,6 +237,44 @@ export default function TemplateEditor() {
             {/* Customization Form */}
             <div className="lg:col-span-3">
               <div className="space-y-8">
+                {/* Custom Domain Section */}
+                <Card>
+                  <CardContent className="p-6">
+                    <Heading level={4} className="mb-6">🌐 Custom Domain</Heading>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block font-medium text-gray-700 mb-2">
+                          Custom Domain (e.g., yourcompany.com)
+                        </label>
+                        <Text size="sm" className="text-gray-500 mb-2">
+                          Enter a custom domain to make this business accessible on their own website
+                        </Text>
+                        <div className="flex gap-3">
+                          <Input
+                            type="text"
+                            placeholder="example.com"
+                            value={customDomain}
+                            onChange={(e) => setCustomDomain(e.target.value)}
+                            className="flex-1"
+                          />
+                          <Button 
+                            onClick={saveDomain}
+                            disabled={isDomainSaving || !customDomain.trim()}
+                            className="whitespace-nowrap"
+                          >
+                            {isDomainSaving ? 'Configuring...' : 'Save Domain'}
+                          </Button>
+                        </div>
+                        {customDomain && (
+                          <Text size="sm" className="text-blue-600 mt-2">
+                            Preview: https://{customDomain}
+                          </Text>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Images Section */}
                 <Card>
                   <CardContent className="p-6">
