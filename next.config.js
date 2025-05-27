@@ -8,6 +8,10 @@ const nextConfig = {
       'images.unsplash.com', 
       'media.istockphoto.com',
       'lh3.googleusercontent.com',
+      'lh5.googleusercontent.com',
+      'encrypted-tbn0.gstatic.com',
+      't3.ftcdn.net',
+      't4.ftcdn.net',
       'localhost',
       'vercel.app',
       'replit.dev'
@@ -24,6 +28,22 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh5.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'encrypted-tbn0.gstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 't3.ftcdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 't4.ftcdn.net',
       },
       {
         protocol: 'https',
