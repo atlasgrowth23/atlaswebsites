@@ -56,10 +56,30 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                          business.city.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesState = stateFilter === 'all' || business.state === stateFilter;
     const matchesSite = siteFilter === 'all' || 
-                       (siteFilter === 'has_site' && business.custom_domain) ||
-                       (siteFilter === 'no_site' && !business.custom_domain);
+                       (siteFilter === 'has_site' && (business as any).site) ||
+                       (siteFilter === 'no_site' && !(business as any).site);
+    const matchesTracking = trackingFilter === 'all' ||
+                           (trackingFilter === 'enabled' && business.tracking_enabled === true) ||
+                           (trackingFilter === 'disabled' && business.tracking_enabled === false);
     
-    return matchesSearch && matchesState && matchesSite;
+    // Rating filters
+    const rating = parseFloat((business as any).rating) || 0;
+    const matchesMinRating = !minRating || rating >= parseFloat(minRating);
+    const matchesMaxRating = !maxRating || rating <= parseFloat(maxRating);
+    
+    // Review filters
+    const reviews = parseInt((business as any).reviews) || 0;
+    const matchesMinReviews = !minReviews || reviews >= parseInt(minReviews);
+    const matchesMaxReviews = !maxReviews || reviews <= parseInt(maxReviews);
+    
+    // Photo filters
+    const photos = parseInt((business as any).photos_count) || 0;
+    const matchesMinPhotos = !minPhotos || photos >= parseInt(minPhotos);
+    const matchesMaxPhotos = !maxPhotos || photos <= parseInt(maxPhotos);
+    
+    return matchesSearch && matchesState && matchesSite && matchesTracking &&
+           matchesMinRating && matchesMaxRating && matchesMinReviews && 
+           matchesMaxReviews && matchesMinPhotos && matchesMaxPhotos;
   });
 
   const toggleTracking = async (businessId: string, currentStatus: boolean) => {
@@ -125,7 +145,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
             hero_img: customizations.hero_img,
             hero_img_2: customizations.hero_img_2,
             about_img: customizations.about_img,
-            logo: processedLogoUrl
+            logo_url: processedLogoUrl
           }
         })
       });
