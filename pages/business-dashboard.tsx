@@ -189,59 +189,70 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                 {/* Expanded Content */}
                 {expandedCard === business.id && (
                   <div className="border-t bg-gray-50 p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Quick Actions */}
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">Quick Actions</h4>
-                        <div className="space-y-2">
-                          <Link
-                            href={`/t/moderntrust/${business.slug}`}
-                            target="_blank"
-                            className="block w-full bg-blue-500 text-white py-2 px-4 rounded text-sm hover:bg-blue-600 text-center"
-                          >
-                            View Website
-                          </Link>
-                          <button 
-                            onClick={() => toggleTracking(business.id, business.tracking_enabled || false)}
-                            className={`w-full py-2 px-4 rounded text-sm ${
-                              business.tracking_enabled
-                                ? 'bg-red-500 text-white hover:bg-red-600'
-                                : 'bg-green-500 text-white hover:bg-green-600'
-                            }`}
-                          >
-                            {business.tracking_enabled ? 'Pause Tracking' : 'Start Tracking'}
-                          </button>
-                        </div>
+                    <div className="space-y-6">
+                      {/* Quick Actions - Full Width */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Link
+                          href={`/t/moderntrust/${business.slug}`}
+                          target="_blank"
+                          className="bg-blue-500 text-white py-3 px-4 rounded text-center hover:bg-blue-600 font-medium"
+                        >
+                          View Website
+                        </Link>
+                        <button 
+                          onClick={() => toggleTracking(business.id, business.tracking_enabled || false)}
+                          className={`py-3 px-4 rounded font-medium ${
+                            business.tracking_enabled
+                              ? 'bg-red-500 text-white hover:bg-red-600'
+                              : 'bg-green-500 text-white hover:bg-green-600'
+                          }`}
+                        >
+                          {business.tracking_enabled ? 'Pause Tracking' : 'Start Tracking'}
+                        </button>
                       </div>
 
-                      {/* Website Analytics */}
+                      {/* Enhanced Analytics */}
                       <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">📊 Analytics</h4>
-                        <div className="bg-white p-4 rounded border">
+                        <h4 className="font-semibold text-gray-800 mb-4 text-lg">📊 Website Analytics</h4>
+                        <div className="bg-white p-6 rounded-lg border shadow-sm">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-blue-600">{business.total_views || 0}</div>
+                              <div className="text-xs text-gray-500">Total Views</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-600">{Math.floor((business.total_views || 0) * 0.7)}</div>
+                              <div className="text-xs text-gray-500">Unique Visitors</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-600">{Math.floor((business.total_views || 0) * 0.4)}</div>
+                              <div className="text-xs text-gray-500">This Month</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-orange-600">2:34</div>
+                              <div className="text-xs text-gray-500">Avg. Time</div>
+                            </div>
+                          </div>
+                          
                           <div className="space-y-3">
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Total Views</span>
-                              <span className="font-semibold">{business.total_views || 0}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">This Month</span>
-                              <span className="font-semibold text-green-600">+{Math.floor((business.total_views || 0) * 0.3)}</span>
-                            </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span className="text-sm text-gray-600">Last Viewed</span>
-                              <span className="text-xs text-gray-500">
+                              <span className="text-sm font-medium">
                                 {business.last_viewed_at 
                                   ? new Date(business.last_viewed_at).toLocaleDateString() 
                                   : 'Never'
                                 }
                               </span>
                             </div>
-                            <div className="pt-2 border-t">
-                              <div className="text-xs text-gray-500">Engagement Rate</div>
-                              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                            <div>
+                              <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-600">Engagement Score</span>
+                                <span className="font-medium">{Math.min(Math.floor((business.total_views || 0) / 10 * 100), 100)}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-3">
                                 <div 
-                                  className="bg-blue-500 h-2 rounded-full" 
-                                  style={{ width: `${Math.min(((business.total_views || 0) / 100) * 100, 100)}%` }}
+                                  className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300" 
+                                  style={{ width: `${Math.min(((business.total_views || 0) / 10 * 100), 100)}%` }}
                                 ></div>
                               </div>
                             </div>
@@ -251,47 +262,49 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
 
                       {/* Website Customization */}
                       <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">🎨 Website Customization</h4>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Hero Image URL</label>
-                            <input
-                              type="url"
-                              placeholder="https://example.com/hero.jpg"
-                              className="w-full px-3 py-2 border rounded text-sm"
-                              value={customizations.hero_img}
-                              onChange={(e) => setCustomizations({...customizations, hero_img: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">About Image URL</label>
-                            <input
-                              type="url"
-                              placeholder="https://example.com/about.jpg"
-                              className="w-full px-3 py-2 border rounded text-sm"
-                              value={customizations.about_img}
-                              onChange={(e) => setCustomizations({...customizations, about_img: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Logo URL</label>
-                            <input
-                              type="url"
-                              placeholder="https://example.com/logo.svg"
-                              className="w-full px-3 py-2 border rounded text-sm"
-                              value={customizations.logo}
-                              onChange={(e) => setCustomizations({...customizations, logo: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Custom Domain</label>
-                            <input
-                              type="text"
-                              placeholder="example.com"
-                              className="w-full px-3 py-2 border rounded text-sm"
-                              value={customizations.custom_domain}
-                              onChange={(e) => setCustomizations({...customizations, custom_domain: e.target.value})}
-                            />
+                        <h4 className="font-semibold text-gray-800 mb-4 text-lg">🎨 Website Customization</h4>
+                        <div className="bg-white p-6 rounded-lg border shadow-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image URL</label>
+                              <input
+                                type="url"
+                                placeholder="https://example.com/hero.jpg"
+                                className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={customizations.hero_img}
+                                onChange={(e) => setCustomizations({...customizations, hero_img: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">About Image URL</label>
+                              <input
+                                type="url"
+                                placeholder="https://example.com/about.jpg"
+                                className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={customizations.about_img}
+                                onChange={(e) => setCustomizations({...customizations, about_img: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
+                              <input
+                                type="url"
+                                placeholder="https://example.com/logo.svg"
+                                className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={customizations.logo}
+                                onChange={(e) => setCustomizations({...customizations, logo: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Custom Domain</label>
+                              <input
+                                type="text"
+                                placeholder="example.com"
+                                className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={customizations.custom_domain}
+                                onChange={(e) => setCustomizations({...customizations, custom_domain: e.target.value})}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>

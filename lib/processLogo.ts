@@ -5,6 +5,11 @@ import path from 'path';
 export async function processLogo(slug: string, url: string | null): Promise<string | null> {
   if (!url) return null;
   
+  // Clean up Google profile photo URLs by removing size parameters
+  if (url.includes('googleusercontent.com') && url.includes('s44-p-k-no-ns-nd')) {
+    url = url.replace(/\/s\d+-p-k-no-ns-nd/, '/s400-p-k-no-ns-nd');
+  }
+  
   const logosDir = path.join(process.cwd(), 'public', 'logos');
   const outPath = path.join(logosDir, `${slug}.png`);
   
