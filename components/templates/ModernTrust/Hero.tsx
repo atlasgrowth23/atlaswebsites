@@ -53,6 +53,7 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
                 : 'opacity-0 scale-105'
             }`}
             priority={index === 0}
+            quality={90}
             sizes="100vw"
           />
         ))}

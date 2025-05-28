@@ -45,10 +45,11 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                 <Image 
                   src={company.logoUrl}
                   alt={`${company.name} logo`}
-                  width={64}
-                  height={64}
-                  className="w-full h-full object-contain"
+                  fill
+                  className="object-contain p-1"
                   priority
+                  quality={95}
+                  sizes="(max-width: 640px) 48px, (max-width: 1024px) 56px, 64px"
                 />
               </div>
             )}

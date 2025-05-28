@@ -69,6 +69,8 @@ const About: React.FC<AboutProps> = ({ company }) => {
                 alt={`${company.name} services`}
                 fill
                 className="object-cover"
+                quality={90}
+                sizes="(max-width: 768px) 100vw, 50vw"
               />
             </div>
           </div>

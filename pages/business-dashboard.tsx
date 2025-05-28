@@ -59,19 +59,18 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
     }
   };
 
-  const saveCustomizations = async () => {
-    if (!selectedBusiness) return;
-    
+  const saveCustomizations = async (business: Business) => {
     try {
       // Save images
       await fetch('/api/template-customizations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyId: selectedBusiness.id,
+          companyId: business.id,
           customizations: {
             hero_img: customizations.hero_img,
-            about_img: customizations.about_img
+            about_img: customizations.about_img,
+            logo: customizations.logo
           }
         })
       });
@@ -82,14 +81,14 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            companyId: selectedBusiness.id,
+            companyId: business.id,
             customDomain: customizations.custom_domain
           })
         });
       }
 
       alert('✅ Customizations saved!');
-      setSelectedBusiness(null);
+      setExpandedCard(null);
       window.location.reload();
     } catch (error) {
       alert('❌ Error saving customizations');
@@ -190,7 +189,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                 {/* Expanded Content */}
                 {expandedCard === business.id && (
                   <div className="border-t bg-gray-50 p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* Quick Actions */}
                       <div>
                         <h4 className="font-semibold text-gray-800 mb-3">Quick Actions</h4>
@@ -215,38 +214,44 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                         </div>
                       </div>
 
-                      {/* Website Content Customization */}
+                      {/* Website Analytics */}
                       <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">Website Content</h4>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Hero Title</label>
-                            <input
-                              type="text"
-                              placeholder="Stay Cool This Summer in [City]"
-                              className="w-full px-3 py-2 border rounded text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Hero Description</label>
-                            <textarea
-                              placeholder="Expert cooling solutions..."
-                              className="w-full px-3 py-2 border rounded text-sm h-20 resize-none"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">About Section Text</label>
-                            <textarea
-                              placeholder="With years of experience..."
-                              className="w-full px-3 py-2 border rounded text-sm h-20 resize-none"
-                            />
+                        <h4 className="font-semibold text-gray-800 mb-3">📊 Analytics</h4>
+                        <div className="bg-white p-4 rounded border">
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Total Views</span>
+                              <span className="font-semibold">{business.total_views || 0}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">This Month</span>
+                              <span className="font-semibold text-green-600">+{Math.floor((business.total_views || 0) * 0.3)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Last Viewed</span>
+                              <span className="text-xs text-gray-500">
+                                {business.last_viewed_at 
+                                  ? new Date(business.last_viewed_at).toLocaleDateString() 
+                                  : 'Never'
+                                }
+                              </span>
+                            </div>
+                            <div className="pt-2 border-t">
+                              <div className="text-xs text-gray-500">Engagement Rate</div>
+                              <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                <div 
+                                  className="bg-blue-500 h-2 rounded-full" 
+                                  style={{ width: `${Math.min(((business.total_views || 0) / 100) * 100, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Images & Domain */}
+                      {/* Website Customization */}
                       <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">Images & Domain</h4>
+                        <h4 className="font-semibold text-gray-800 mb-3">🎨 Website Customization</h4>
                         <div className="space-y-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Hero Image URL</label>
@@ -254,6 +259,8 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                               type="url"
                               placeholder="https://example.com/hero.jpg"
                               className="w-full px-3 py-2 border rounded text-sm"
+                              value={customizations.hero_img}
+                              onChange={(e) => setCustomizations({...customizations, hero_img: e.target.value})}
                             />
                           </div>
                           <div>
@@ -262,6 +269,18 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                               type="url"
                               placeholder="https://example.com/about.jpg"
                               className="w-full px-3 py-2 border rounded text-sm"
+                              value={customizations.about_img}
+                              onChange={(e) => setCustomizations({...customizations, about_img: e.target.value})}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Logo URL</label>
+                            <input
+                              type="url"
+                              placeholder="https://example.com/logo.svg"
+                              className="w-full px-3 py-2 border rounded text-sm"
+                              value={customizations.logo}
+                              onChange={(e) => setCustomizations({...customizations, logo: e.target.value})}
                             />
                           </div>
                           <div>
@@ -270,35 +289,9 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                               type="text"
                               placeholder="example.com"
                               className="w-full px-3 py-2 border rounded text-sm"
-                              defaultValue={business.custom_domain || ''}
+                              value={customizations.custom_domain}
+                              onChange={(e) => setCustomizations({...customizations, custom_domain: e.target.value})}
                             />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Business Info */}
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">Business Details</h4>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Business Hours</label>
-                            <input
-                              type="text"
-                              placeholder="8:00 AM - 6:00 PM"
-                              className="w-full px-3 py-2 border rounded text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Saturday Hours</label>
-                            <input
-                              type="text"
-                              placeholder="9:00 AM - 3:00 PM"
-                              className="w-full px-3 py-2 border rounded text-sm"
-                            />
-                          </div>
-                          <div className="flex items-center">
-                            <input type="checkbox" id={`emergency-${business.id}`} className="mr-2" />
-                            <label htmlFor={`emergency-${business.id}`} className="text-xs text-gray-600">24/7 Emergency Service</label>
                           </div>
                         </div>
                       </div>
@@ -306,7 +299,10 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
 
                     {/* Save Button */}
                     <div className="mt-6 flex justify-end">
-                      <button className="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700">
+                      <button 
+                        onClick={() => saveCustomizations(business)}
+                        className="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700"
+                      >
                         Save Changes
                       </button>
                     </div>

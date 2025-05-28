@@ -1,0 +1,65 @@
+1 ▸ Why the images (logo included) look soft today
+Symptom	Root cause	Quick fix
+Small, blurry logo	72 dpi PNG is being stretched to fill a fixed-height header	Replace the asset with an SVG (scalar) or at least a 2× / 3× PNG, then cap the rendered height in CSS.
+Hero / gallery photos look washed out	You’re serving the same, highly-compressed JPG to every device size	Switch to the Next.js <Image> component and pass an explicit quality value or let the component choose sizes automatically.
+Next.js
+Lighthouse flags “Properly size images”	Browsers download a larger file than the layout needs	Add a sizes prop (sizes="(min-width: 1024px) 33vw, 100vw") so Next.js can emit the right srcset.
+
+Sample logo component
+tsx
+Copy
+Edit
+// components/BrandLogo.tsx
+import Image from 'next/image';
+
+export default function BrandLogo() {
+  return (
+    <div className="h-12 w-auto flex items-center">
+      {/* Prefer SVG.  If you must keep PNG/JPG, give next/image a big original */}
+      <Image
+        src="/brand/logo.svg"
+        alt="Business logo"
+        fill
+        priority
+        className="object-contain"
+      />
+    </div>
+  );
+}
+Why it helps:
+
+fill + object-contain lets the vector scale perfectly in its 48 px slot.
+
+An SVG delivers sharp edges on any DPI with negligible bandwidth.
+
+Back-end optimisation (optional but nice)
+You already list Sharp in the stack 
+GitHub
+. A tiny build-time script will turn every upload into multiple WebP / AVIF sizes:
+
+js
+Copy
+Edit
+// scripts/optimize-images.js
+import sharp from 'sharp';
+import fs from 'node:fs/promises';
+
+for (const file of await fs.readdir('public/uploads')) {
+  const img = sharp(`public/uploads/${file}`);
+  const base = file.split('.').slice(0,-1).join('.');
+  await Promise.all(
+    [320, 640, 1024].map(w =>
+      img
+        .clone()
+        .resize({ width: w })
+        .webp({ quality: 82 })   // or .avif({ quality: 50 })
+        .toFile(`public/optimized/${base}-${w}.webp`)
+    )
+  );
+}
+Sharp’s resize() keeps the picture crisp with Lanczos resampling 
+sharp
+.
+
+Add a one-liner to package.json so npm run img creates the derivatives and git-ignores the originals.
+
