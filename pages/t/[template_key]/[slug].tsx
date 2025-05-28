@@ -121,10 +121,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     company.company_frames = company_frames;
     company.template_frames = template_frames;
     
-    // Process company logo - check frames first, then fallback to company.logo
-    const logoFromFrames = company_frames['logo_url'] || company.logo;
-    const logoUrl = await processLogo(company.slug, logoFromFrames);
-    company.logoUrl = logoUrl;
+    // Use logo URL directly from frames or company data - no processing during render
+    company.logoUrl = company_frames['logo_url'] || company.logo;
     
     // Log what frames we're using
     console.log('Company ID:', company.id);
