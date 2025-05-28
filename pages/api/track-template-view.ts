@@ -15,24 +15,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     `, [companyId]);
     
     if (trackingStatus && trackingStatus.tracking_enabled) {
-      // Insert detailed visit record
-      await query(`
-        INSERT INTO enhanced_tracking (
-          company_id, 
-          session_id, 
-          template_key,
-          total_time_seconds,
-          user_agent,
-          referrer_url,
-          visit_start_time,
-          visit_end_time
-        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (company_id, session_id) 
-        DO UPDATE SET 
-          total_time_seconds = GREATEST(enhanced_tracking.total_time_seconds, EXCLUDED.total_time_seconds),
-          visit_end_time = CURRENT_TIMESTAMP,
-          last_viewed_at = CURRENT_TIMESTAMP
-      `, [companyId, sessionId || 'session_' + Date.now(), templateKey, timeOnPage || 0, userAgent || '', referrer || '']);
+      // Insert detailed visit record for sessions
+      if (sessionId) {
+        await query(`
+          INSERT INTO enhanced_tracking (
+            company_id, 
+            session_id, 
+            template_key,
+            total_time_seconds,
+            user_agent,
+            referrer_url,
+            visit_start_time,
+            visit_end_time,
+            last_viewed_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        `, [companyId, sessionId, templateKey, timeOnPage || 0, userAgent || '', referrer || '']);
+      }
       
       // Update main tracking record
       await query(`

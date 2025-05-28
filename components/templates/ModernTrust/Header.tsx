@@ -37,11 +37,54 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
         : 'bg-gradient-to-r from-blue-900/90 to-blue-700/90 backdrop-blur-md py-4'
     }`}>
       <div className="container mx-auto px-3 sm:px-4">
-        <div className="flex justify-between items-center">
-          {/* Company Name/Logo - responsive layout */}
-          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-3 flex-1 min-w-0 lg:min-w-auto lg:flex-1 pr-2 lg:pr-0">
+        {/* Mobile Layout - Stacked */}
+        <div className="md:hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {company.logoUrl && (
+                <div className="flex-shrink-0 w-16 h-16 bg-white/90 backdrop-blur-sm rounded-xl p-2 shadow-lg">
+                  <Image 
+                    src={company.logoUrl}
+                    alt={`${company.name} logo`}
+                    fill
+                    className="object-contain p-1"
+                    priority
+                    quality={95}
+                  />
+                </div>
+              )}
+              <div>
+                <h1 className="text-sm font-bold tracking-tight text-white leading-tight break-words">
+                  {company.name}
+                </h1>
+                {showRatings && (
+                  <div className="flex items-center space-x-1 mt-1">
+                    <div className="text-yellow-400 flex text-xs">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span key={star}>★</span>
+                      ))}
+                    </div>
+                    <span className="text-white text-xs">
+                      {company.rating}/5 • {(company as any).reviews} reviews
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <Link 
+              href={`tel:${company.phone}`}
+              className="bg-white text-blue-900 px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-50 transition-colors shadow-lg"
+            >
+              Call Now
+            </Link>
+          </div>
+        </div>
+
+        {/* Desktop Layout - Horizontal */}
+        <div className="hidden md:flex justify-between items-center">
+          <div className="flex items-center space-x-3 flex-1">
             {company.logoUrl && (
-              <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-white/90 backdrop-blur-sm rounded-xl p-2 shadow-lg">
+              <div className="flex-shrink-0 w-20 h-20 lg:w-24 lg:h-24 bg-white/90 backdrop-blur-sm rounded-xl p-2 shadow-lg">
                 <Image 
                   src={company.logoUrl}
                   alt={`${company.name} logo`}
@@ -49,16 +92,10 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                   className="object-contain p-1"
                   priority
                   quality={95}
-                  sizes="(max-width: 640px) 48px, (max-width: 1024px) 56px, 64px"
                 />
               </div>
             )}
-            {/* Mobile company name - wraps and scales */}
-            <h1 className="lg:hidden text-sm sm:text-base md:text-lg font-bold tracking-tight text-white leading-tight max-w-[140px] sm:max-w-[200px] md:max-w-[280px] break-words">
-              {company.name}
-            </h1>
-            {/* Desktop company name - original sizing */}
-            <h1 className="hidden lg:block text-2xl xl:text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-xl lg:text-2xl xl:text-3xl font-bold tracking-tight text-white">
               {company.name}
             </h1>
           </div>
