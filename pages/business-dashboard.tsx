@@ -42,6 +42,17 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
     logo: ''
   });
 
+  // Initialize form with current database values when expanding a card
+  const initializeCustomizations = (business: Business) => {
+    setCustomizations({
+      custom_domain: (business as any).custom_domain || '',
+      hero_img: getBusinessFrameUrl(business, 'hero_img') || '',
+      hero_img_2: getBusinessFrameUrl(business, 'hero_img_2') || '',
+      about_img: getBusinessFrameUrl(business, 'about_img') || '',
+      logo: getBusinessLogoUrl(business) || ''
+    });
+  };
+
   // Helper functions to get current business images from database
   const getBusinessFrameUrl = (business: Business, frameName: string) => {
     // First check if we have frame data loaded
@@ -138,18 +149,29 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
         }
       }
 
+      // Only save fields that have values to preserve existing customizations
+      const fieldsToUpdate: any = {};
+      
+      if (customizations.hero_img && customizations.hero_img.trim()) {
+        fieldsToUpdate.hero_img = customizations.hero_img;
+      }
+      if (customizations.hero_img_2 && customizations.hero_img_2.trim()) {
+        fieldsToUpdate.hero_img_2 = customizations.hero_img_2;
+      }
+      if (customizations.about_img && customizations.about_img.trim()) {
+        fieldsToUpdate.about_img = customizations.about_img;
+      }
+      if (processedLogoUrl && processedLogoUrl.trim()) {
+        fieldsToUpdate.logo_url = processedLogoUrl;
+      }
+
       // Save images
       await fetch('/api/template-customizations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyId: business.id,
-          customizations: {
-            hero_img: customizations.hero_img,
-            hero_img_2: customizations.hero_img_2,
-            about_img: customizations.about_img,
-            logo_url: processedLogoUrl
-          }
+          customizations: fieldsToUpdate
         })
       });
 
@@ -350,7 +372,13 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                 {/* Clickable Card Header */}
                 <div 
                   className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => setExpandedCard(expandedCard === business.id ? null : business.id)}
+                  onClick={() => {
+                    const newExpandedId = expandedCard === business.id ? null : business.id;
+                    setExpandedCard(newExpandedId);
+                    if (newExpandedId) {
+                      initializeCustomizations(business);
+                    }
+                  }}
                 >
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-lg font-semibold text-gray-800">{business.name}</h3>
