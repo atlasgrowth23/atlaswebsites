@@ -80,14 +80,13 @@ export async function processLogo(slug: string, url: string | null): Promise<str
       }
       
       await sharpInstance
-        .png({ 
-          quality: 100,
-          compressionLevel: 0, // No compression for maximum quality
-          adaptiveFiltering: true
+        .webp({ 
+          quality: 90,
+          effort: 6 // Higher effort for better compression
         })
         .toFile(outPath);
       
-      return `/logos/${slug}.png`;
+      return `/logos/${slug}.webp`;
     } catch (error) {
       console.error(`Error processing logo for ${slug}:`, error);
       return null;
