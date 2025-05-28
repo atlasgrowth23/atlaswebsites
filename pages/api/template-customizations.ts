@@ -58,8 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             VALUES ($1, $2, $3)
             ON CONFLICT (company_id, slug)
             DO UPDATE SET 
-              url = EXCLUDED.url,
-              updated_at = NOW()
+              url = EXCLUDED.url
           `, [companyId, frameKey, imageUrl]);
           
           console.log(`✅ Saved company frame: ${frameKey} = ${imageUrl}`);

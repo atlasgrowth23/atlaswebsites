@@ -42,13 +42,16 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
     logo: ''
   });
 
-  // Helper functions to get current business images
+  // Helper functions to get current business images from database
   const getBusinessFrameUrl = (business: Business, frameName: string) => {
-    return (business as any)[`${frameName}_url`] || '';
+    // First check if we have frame data loaded
+    const frames = (business as any).frames || {};
+    return frames[frameName] || '';
   };
 
   const getBusinessLogoUrl = (business: Business) => {
-    return (business as any).logo_url || '';
+    const frames = (business as any).frames || {};
+    return frames['logo_url'] || '';
   };
 
   const filteredBusinesses = businesses.filter(business => {
@@ -498,11 +501,17 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                               <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image 1 URL</label>
                               <input
                                 type="url"
-                                placeholder="https://example.com/hero1.jpg"
+                                placeholder={getBusinessFrameUrl(business, 'hero_img') || "https://example.com/hero1.jpg"}
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 value={customizations.hero_img}
                                 onChange={(e) => setCustomizations({...customizations, hero_img: e.target.value})}
                               />
+                              {getBusinessFrameUrl(business, 'hero_img') && (
+                                <div className="mt-2">
+                                  <img src={getBusinessFrameUrl(business, 'hero_img')} alt="Current hero" className="w-32 h-20 object-cover rounded border" />
+                                  <p className="text-xs text-gray-500 mt-1">Current hero image</p>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image 2 URL (Slideshow)</label>
