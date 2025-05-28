@@ -218,22 +218,26 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                       <div>
                         <h4 className="font-semibold text-gray-800 mb-4 text-lg">📊 Website Analytics</h4>
                         <div className="bg-white p-6 rounded-lg border shadow-sm">
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             <div className="text-center">
                               <div className="text-2xl font-bold text-blue-600">{business.total_views || 0}</div>
                               <div className="text-xs text-gray-500">Total Views</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-green-600">
-                                {business.tracking_enabled ? 'Active' : 'Paused'}
-                              </div>
-                              <div className="text-xs text-gray-500">Status</div>
+                              <div className="text-2xl font-bold text-green-600">{(business as any).total_sessions || 0}</div>
+                              <div className="text-xs text-gray-500">Sessions</div>
                             </div>
                             <div className="text-center">
                               <div className="text-2xl font-bold text-purple-600">
-                                {business.last_viewed_at ? 'Recent' : 'None'}
+                                {(business as any).avg_time_seconds ? `${Math.round((business as any).avg_time_seconds)}s` : '0s'}
                               </div>
-                              <div className="text-xs text-gray-500">Activity</div>
+                              <div className="text-xs text-gray-500">Avg Time</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-orange-600">
+                                {business.tracking_enabled ? 'Active' : 'Paused'}
+                              </div>
+                              <div className="text-xs text-gray-500">Status</div>
                             </div>
                           </div>
                           
