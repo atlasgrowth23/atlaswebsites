@@ -56,13 +56,8 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
                 </Link>
               </li>
               <li>
-                <Link href="#financing" className="text-gray-300 hover:text-blue-400 transition-colors">
-                  Financing Options
-                </Link>
-              </li>
-              <li>
-                <Link href="#service-areas" className="text-gray-300 hover:text-blue-400 transition-colors">
-                  Service Areas
+                <Link href="#contact" className="text-gray-300 hover:text-blue-400 transition-colors">
+                  Contact Us
                 </Link>
               </li>
             </ul>

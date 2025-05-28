@@ -39,17 +39,23 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
 
   return (
     <div className="relative min-h-[85vh] lg:min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
-      {/* Background with animated transitions */}
+      {/* Background with smooth animated transitions */}
       <div className="absolute inset-0">
-        <Image 
-          src={currentHero.image} 
-          alt={`Professional services by ${company?.name || 'our company'}`}
-          fill
-          className="object-cover object-center transition-opacity duration-1000"
-          priority
-          sizes="100vw"
-          key={currentSlide}
-        />
+        {heroSlides.map((slide, index) => (
+          <Image 
+            key={index}
+            src={slide.image} 
+            alt={`Professional services by ${company?.name || 'our company'}`}
+            fill
+            className={`object-cover object-center transition-all duration-1000 ease-in-out ${
+              index === currentSlide 
+                ? 'opacity-100 scale-100' 
+                : 'opacity-0 scale-105'
+            }`}
+            priority={index === 0}
+            sizes="100vw"
+          />
+        ))}
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
       </div>
 

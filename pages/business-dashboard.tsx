@@ -26,7 +26,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState<'all' | 'Alabama' | 'Arkansas'>('all');
   const [siteFilter, setSiteFilter] = useState<'all' | 'has_site' | 'no_site'>('all');
-  const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [customizations, setCustomizations] = useState({
     custom_domain: '',
     hero_img: '',
@@ -147,125 +147,177 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
           </div>
 
           {/* Business Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredBusinesses.map((business) => (
-              <div key={business.id} className="bg-white rounded-lg shadow-sm border p-4">
-                {/* Business Info */}
-                <div className="mb-4">
-                  <h3 className="font-semibold text-lg">{business.name}</h3>
-                  <p className="text-gray-600">{business.city}, {business.state}</p>
-                  {business.phone && <p className="text-sm text-gray-500">{business.phone}</p>}
-                  {business.email_1 && <p className="text-sm text-gray-500">{business.email_1}</p>}
-                  {business.custom_domain && (
-                    <p className="text-sm text-blue-600">🌐 {business.custom_domain}</p>
-                  )}
-                </div>
-
-                {/* Tracking Status */}
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      business.tracking_enabled 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {business.tracking_enabled ? 'Tracking ON' : 'Tracking OFF'}
-                    </span>
-                    {business.total_views > 0 && (
-                      <span className="ml-2 text-gray-500">{business.total_views} views</span>
+              <div key={business.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                {/* Clickable Card Header */}
+                <div 
+                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setExpandedCard(expandedCard === business.id ? null : business.id)}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800">{business.name}</h3>
+                    <div className="flex items-center space-x-2">
+                      {business.tracking_enabled ? (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                          Tracking On
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                          Tracking Off
+                        </span>
+                      )}
+                      <svg 
+                        className={`w-5 h-5 text-gray-400 transition-transform ${expandedCard === business.id ? 'rotate-180' : ''}`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <p><strong>Location:</strong> {business.city}, {business.state}</p>
+                    {business.phone && <p><strong>Phone:</strong> {business.phone}</p>}
+                    {business.total_views !== undefined && business.total_views > 0 && (
+                      <p><strong>Total Views:</strong> {business.total_views}</p>
                     )}
                   </div>
-                  <button
-                    onClick={() => toggleTracking(business.id, business.tracking_enabled || false)}
-                    className={`px-3 py-1 rounded text-xs ${
-                      business.tracking_enabled
-                        ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-green-500 text-white hover:bg-green-600'
-                    }`}
-                  >
-                    {business.tracking_enabled ? 'Pause' : 'Start'}
-                  </button>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2">
-                  <Link
-                    href={`/t/moderntrust/${business.slug}`}
-                    target="_blank"
-                    className="flex-1 text-center bg-blue-500 text-white py-2 px-3 rounded text-sm hover:bg-blue-600"
-                  >
-                    View Site
-                  </Link>
-                  <button
-                    onClick={() => setSelectedBusiness(business)}
-                    className="flex-1 bg-gray-500 text-white py-2 px-3 rounded text-sm hover:bg-gray-600"
-                  >
-                    Customize
-                  </button>
-                </div>
+                {/* Expanded Content */}
+                {expandedCard === business.id && (
+                  <div className="border-t bg-gray-50 p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Quick Actions */}
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-3">Quick Actions</h4>
+                        <div className="space-y-2">
+                          <Link
+                            href={`/t/moderntrust/${business.slug}`}
+                            target="_blank"
+                            className="block w-full bg-blue-500 text-white py-2 px-4 rounded text-sm hover:bg-blue-600 text-center"
+                          >
+                            View Website
+                          </Link>
+                          <button 
+                            onClick={() => toggleTracking(business.id, business.tracking_enabled || false)}
+                            className={`w-full py-2 px-4 rounded text-sm ${
+                              business.tracking_enabled
+                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                : 'bg-green-500 text-white hover:bg-green-600'
+                            }`}
+                          >
+                            {business.tracking_enabled ? 'Pause Tracking' : 'Start Tracking'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Website Content Customization */}
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-3">Website Content</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Hero Title</label>
+                            <input
+                              type="text"
+                              placeholder="Stay Cool This Summer in [City]"
+                              className="w-full px-3 py-2 border rounded text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Hero Description</label>
+                            <textarea
+                              placeholder="Expert cooling solutions..."
+                              className="w-full px-3 py-2 border rounded text-sm h-20 resize-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">About Section Text</label>
+                            <textarea
+                              placeholder="With years of experience..."
+                              className="w-full px-3 py-2 border rounded text-sm h-20 resize-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Images & Domain */}
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-3">Images & Domain</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Hero Image URL</label>
+                            <input
+                              type="url"
+                              placeholder="https://example.com/hero.jpg"
+                              className="w-full px-3 py-2 border rounded text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">About Image URL</label>
+                            <input
+                              type="url"
+                              placeholder="https://example.com/about.jpg"
+                              className="w-full px-3 py-2 border rounded text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Custom Domain</label>
+                            <input
+                              type="text"
+                              placeholder="example.com"
+                              className="w-full px-3 py-2 border rounded text-sm"
+                              defaultValue={business.custom_domain || ''}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Business Info */}
+                      <div>
+                        <h4 className="font-semibold text-gray-800 mb-3">Business Details</h4>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Business Hours</label>
+                            <input
+                              type="text"
+                              placeholder="8:00 AM - 6:00 PM"
+                              className="w-full px-3 py-2 border rounded text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Saturday Hours</label>
+                            <input
+                              type="text"
+                              placeholder="9:00 AM - 3:00 PM"
+                              className="w-full px-3 py-2 border rounded text-sm"
+                            />
+                          </div>
+                          <div className="flex items-center">
+                            <input type="checkbox" id={`emergency-${business.id}`} className="mr-2" />
+                            <label htmlFor={`emergency-${business.id}`} className="text-xs text-gray-600">24/7 Emergency Service</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="mt-6 flex justify-end">
+                      <button className="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700">
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Customization Modal */}
-        {selectedBusiness && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">Customize {selectedBusiness.name}</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Custom Domain</label>
-                  <input
-                    type="text"
-                    placeholder="example.com"
-                    className="w-full px-3 py-2 border rounded-md"
-                    value={customizations.custom_domain}
-                    onChange={(e) => setCustomizations({...customizations, custom_domain: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Hero Image URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/hero.jpg"
-                    className="w-full px-3 py-2 border rounded-md"
-                    value={customizations.hero_img}
-                    onChange={(e) => setCustomizations({...customizations, hero_img: e.target.value})}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">About Image URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://example.com/about.jpg"
-                    className="w-full px-3 py-2 border rounded-md"
-                    value={customizations.about_img}
-                    onChange={(e) => setCustomizations({...customizations, about_img: e.target.value})}
-                  />
-                </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setSelectedBusiness(null)}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveCustomizations}
-                  className="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
