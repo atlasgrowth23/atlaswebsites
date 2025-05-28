@@ -238,28 +238,34 @@ export const getServerSideProps: GetServerSideProps = async ({ query: urlQuery }
     
     let sqlQuery = `
       SELECT DISTINCT
-        vl.id,
-        vl.company_id,
+        et.id,
+        et.company_id,
         c.name as company_name,
-        vl.session_id,
-        vl.template_key,
-        vl.total_time_seconds,
-        vl.user_agent,
-        vl.referrer_url,
-        vl.visit_start_time,
-        vl.visit_end_time
-      FROM visit_logs vl
-      JOIN companies c ON vl.company_id = c.id
+        et.session_id,
+        et.template_key,
+        et.total_time_seconds,
+        et.user_agent,
+        et.referrer_url,
+        et.visit_start_time,
+        et.visit_end_time,
+        et.device_type,
+        et.browser_name,
+        et.country,
+        et.city,
+        et.page_interactions
+      FROM enhanced_tracking et
+      JOIN companies c ON et.company_id = c.id
+      WHERE et.session_id IS NOT NULL
     `;
     
     const params: any[] = [];
     
     if (companyId) {
-      sqlQuery += ` WHERE vl.company_id = $1`;
+      sqlQuery += ` AND et.company_id = $1`;
       params.push(companyId);
     }
     
-    sqlQuery += ` ORDER BY vl.visit_start_time DESC LIMIT 1000`;
+    sqlQuery += ` ORDER BY et.visit_start_time DESC LIMIT 1000`;
     
     const result = await query(sqlQuery, params);
     
