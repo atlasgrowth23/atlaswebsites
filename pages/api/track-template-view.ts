@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { companySlug, templateKey, companyId } = req.body;
+    const { companySlug, templateKey, companyId, sessionId, timeOnPage, userAgent, referrer } = req.body;
     
     // Check if tracking is enabled for this company
     const trackingStatus = await queryOne(`
@@ -15,16 +15,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     `, [companyId]);
     
     if (trackingStatus && trackingStatus.tracking_enabled) {
-      // Update view counts
+      // Insert detailed visit record
+      await query(`
+        INSERT INTO enhanced_tracking (
+          company_id, 
+          session_id, 
+          template_key,
+          total_time_seconds,
+          user_agent,
+          referrer_url,
+          visit_start_time,
+          visit_end_time
+        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (company_id, session_id) 
+        DO UPDATE SET 
+          total_time_seconds = GREATEST(enhanced_tracking.total_time_seconds, EXCLUDED.total_time_seconds),
+          visit_end_time = CURRENT_TIMESTAMP,
+          last_viewed_at = CURRENT_TIMESTAMP
+      `, [companyId, sessionId || 'session_' + Date.now(), templateKey, timeOnPage || 0, userAgent || '', referrer || '']);
+      
+      // Update main tracking record
       await query(`
         UPDATE enhanced_tracking 
         SET 
           total_views = total_views + 1,
           last_viewed_at = CURRENT_TIMESTAMP
-        WHERE company_id = $1
+        WHERE company_id = $1 AND session_id IS NULL
       `, [companyId]);
       
-      console.log('Template view tracked:', { companySlug, templateKey, companyId });
+      console.log('Template view tracked:', { companySlug, templateKey, companyId, timeOnPage });
     } else {
       console.log('View not tracked - tracking disabled for company:', companySlug);
     }

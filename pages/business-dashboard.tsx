@@ -247,18 +247,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                                 }
                               </span>
                             </div>
-                            <div>
-                              <div className="flex justify-between text-sm mb-1">
-                                <span className="text-gray-600">Engagement Score</span>
-                                <span className="font-medium">{Math.min(Math.floor((business.total_views || 0) / 10 * 100), 100)}%</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-3">
-                                <div 
-                                  className="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full transition-all duration-300" 
-                                  style={{ width: `${Math.min(((business.total_views || 0) / 10 * 100), 100)}%` }}
-                                ></div>
-                              </div>
-                            </div>
+
                           </div>
                         </div>
                       </div>
@@ -340,11 +329,26 @@ export const getServerSideProps: GetServerSideProps = async () => {
     const result = await query(`
       SELECT 
         c.*,
-        t.tracking_enabled,
-        t.total_views,
-        t.last_viewed_at
+        main_track.tracking_enabled,
+        main_track.total_views,
+        main_track.last_viewed_at,
+        visit_stats.total_sessions,
+        visit_stats.avg_time_seconds,
+        visit_stats.latest_visit
       FROM companies c
-      LEFT JOIN enhanced_tracking t ON c.id = t.company_id
+      LEFT JOIN (
+        SELECT * FROM enhanced_tracking WHERE session_id IS NULL
+      ) main_track ON c.id = main_track.company_id
+      LEFT JOIN (
+        SELECT 
+          company_id,
+          COUNT(DISTINCT session_id) as total_sessions,
+          AVG(total_time_seconds) as avg_time_seconds,
+          MAX(visit_end_time) as latest_visit
+        FROM enhanced_tracking 
+        WHERE session_id IS NOT NULL
+        GROUP BY company_id
+      ) visit_stats ON c.id = visit_stats.company_id
       WHERE (c.state = 'Alabama' OR c.state = 'Arkansas')
       ORDER BY c.state, c.city, c.name
     `);
