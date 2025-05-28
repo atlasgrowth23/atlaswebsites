@@ -630,55 +630,24 @@ export const getServerSideProps: GetServerSideProps = async () => {
   try {
     const result = await query(`
       SELECT 
-        c.*,
+        c.id, c.name, c.slug, c.city, c.state, c.phone, c.email_1, c.custom_domain,
         main_track.tracking_enabled,
         main_track.total_views,
-        main_track.last_viewed_at,
-        visit_stats.total_sessions,
-        visit_stats.avg_time_seconds,
-        visit_stats.latest_visit
+        main_track.last_viewed_at
       FROM companies c
       LEFT JOIN (
-        SELECT * FROM enhanced_tracking WHERE session_id IS NULL
+        SELECT company_id, tracking_enabled, total_views, last_viewed_at 
+        FROM enhanced_tracking WHERE session_id IS NULL
       ) main_track ON c.id = main_track.company_id
-      LEFT JOIN (
-        SELECT 
-          company_id,
-          COUNT(DISTINCT session_id) as total_sessions,
-          AVG(total_time_seconds) as avg_time_seconds,
-          MAX(visit_end_time) as latest_visit
-        FROM enhanced_tracking 
-        WHERE session_id IS NOT NULL
-        GROUP BY company_id
-      ) visit_stats ON c.id = visit_stats.company_id
       WHERE (c.state = 'Alabama' OR c.state = 'Arkansas')
       ORDER BY c.state, c.city, c.name
     `);
 
-    // Get frame data for all businesses
-    const framesResult = await query(`
-      SELECT company_id, slug, url 
-      FROM company_frames 
-      WHERE company_id = ANY($1)
-    `, [result.rows.map((b: any) => b.id)]);
-
-    // Organize frame data by company
-    const framesByCompany: Record<string, Record<string, string>> = {};
-    framesResult.rows.forEach((frame: any) => {
-      if (!framesByCompany[frame.company_id]) {
-        framesByCompany[frame.company_id] = {};
-      }
-      framesByCompany[frame.company_id][frame.slug] = frame.url;
-    });
-
-    // Convert dates to strings for serialization and add frame data
+    // Convert dates to strings for serialization and ensure required fields
     const businesses = result.rows.map((business: any) => ({
       ...business,
-      frames: framesByCompany[business.id] || {},
+      total_views: business.total_views || 0,
       last_viewed_at: business.last_viewed_at ? (business.last_viewed_at instanceof Date ? business.last_viewed_at.toISOString() : business.last_viewed_at) : null,
-      created_at: business.created_at ? (business.created_at instanceof Date ? business.created_at.toISOString() : business.created_at) : null,
-      updated_at: business.updated_at ? (business.updated_at instanceof Date ? business.updated_at.toISOString() : business.updated_at) : null,
-      latest_visit: business.latest_visit ? (business.latest_visit instanceof Date ? business.latest_visit.toISOString() : business.latest_visit) : null,
     }));
 
     return {
