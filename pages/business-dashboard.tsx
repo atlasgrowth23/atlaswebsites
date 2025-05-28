@@ -609,6 +609,22 @@ export const getServerSideProps: GetServerSideProps = async () => {
       ORDER BY c.state, c.city, c.name
     `);
 
+    // Get frame data for all businesses
+    const framesResult = await query(`
+      SELECT company_id, slug, url 
+      FROM company_frames 
+      WHERE company_id = ANY($1)
+    `, [result.rows.map((b: any) => b.id)]);
+
+    // Organize frame data by company
+    const framesByCompany: Record<string, Record<string, string>> = {};
+    framesResult.rows.forEach((frame: any) => {
+      if (!framesByCompany[frame.company_id]) {
+        framesByCompany[frame.company_id] = {};
+      }
+      framesByCompany[frame.company_id][frame.slug] = frame.url;
+    });
+
     // Convert dates to strings for serialization
     const businesses = result.rows.map((business: any) => ({
       ...business,
