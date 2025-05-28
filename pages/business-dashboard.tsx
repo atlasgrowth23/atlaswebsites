@@ -209,6 +209,10 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                       <p><strong>Reviews:</strong> <a href={(business as any).reviews_link} target="_blank" className="text-blue-600 hover:underline">View on Google</a></p>
                     )}
                     
+                    {business.total_views > 0 && (
+                      <p><strong>Analytics:</strong> <Link href={`/session-analytics?company=${business.id}`} className="text-blue-600 hover:underline">View Sessions</Link></p>
+                    )}
+                    
                     {/* Reviews & Rating */}
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <p><strong>Rating:</strong> {(business as any).rating || 'N/A'}/5</p>
