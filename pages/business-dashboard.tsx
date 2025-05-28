@@ -61,6 +61,22 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
 
   const saveCustomizations = async (business: Business) => {
     try {
+      // Auto-add image domains to Next.js config
+      const imageUrls = [customizations.hero_img, customizations.about_img, customizations.logo]
+        .filter(url => url && url.trim() !== '');
+      
+      for (const imageUrl of imageUrls) {
+        try {
+          await fetch('/api/update-image-domains', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl })
+          });
+        } catch (error) {
+          console.log('Note: Could not auto-add domain for', imageUrl);
+        }
+      }
+
       // Save images
       await fetch('/api/template-customizations', {
         method: 'POST',
@@ -87,7 +103,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
         });
       }
 
-      alert('✅ Customizations saved!');
+      alert('✅ Customizations saved! Image domains automatically added to config.');
       setExpandedCard(null);
       window.location.reload();
     } catch (error) {
