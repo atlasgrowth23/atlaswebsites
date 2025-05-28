@@ -5,7 +5,7 @@ const nextConfig = {
   // Configure image domains
   images: {
     domains: [
-      'images.unsplash.com', 
+        'images.unsplash.com', 
       'media.istockphoto.com',
       'lh3.googleusercontent.com',
       'lh5.googleusercontent.com',
@@ -14,8 +14,9 @@ const nextConfig = {
       't4.ftcdn.net',
       'localhost',
       'vercel.app',
-      'replit.dev'
-    ],
+      'replit.dev',
+        'assets.zyrosite.com'
+      ],
     remotePatterns: [
       {
         protocol: 'https',

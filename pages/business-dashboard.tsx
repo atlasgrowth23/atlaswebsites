@@ -84,6 +84,27 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
         }
       }
 
+      // Process logo if provided
+      let processedLogoUrl = customizations.logo;
+      if (customizations.logo && customizations.logo.trim() !== '') {
+        try {
+          const logoResponse = await fetch('/api/process-logo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              companySlug: business.slug,
+              logoUrl: customizations.logo
+            })
+          });
+          const logoResult = await logoResponse.json();
+          if (logoResult.processedUrl) {
+            processedLogoUrl = logoResult.processedUrl;
+          }
+        } catch (error) {
+          console.log('Note: Could not process logo, using original URL');
+        }
+      }
+
       // Save images
       await fetch('/api/template-customizations', {
         method: 'POST',
@@ -93,7 +114,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
           customizations: {
             hero_img: customizations.hero_img,
             about_img: customizations.about_img,
-            logo: customizations.logo
+            logo: processedLogoUrl
           }
         })
       });
@@ -158,13 +179,121 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                 onChange={(e) => setSiteFilter(e.target.value as any)}
                 className="px-3 py-2 border rounded-md"
               >
-                <option value="all">All Businesses</option>
-                <option value="has_site">Has Custom Site</option>
-                <option value="no_site">No Custom Site</option>
+                <option value="all">All Websites</option>
+                <option value="has_site">Has Website</option>
+                <option value="no_site">No Website</option>
               </select>
-              <div className="text-sm text-gray-500 flex items-center">
-                Tracking: {businesses.filter(b => b.tracking_enabled).length} active
+              <select
+                value={trackingFilter}
+                onChange={(e) => setTrackingFilter(e.target.value as any)}
+                className="px-3 py-2 border rounded-md"
+              >
+                <option value="all">All Tracking</option>
+                <option value="enabled">Tracking On</option>
+                <option value="disabled">Tracking Off</option>
+              </select>
+            </div>
+            
+            {/* Numeric Filters Row */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-4">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Min Rating</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  placeholder="0"
+                  value={minRating}
+                  onChange={(e) => setMinRating(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md"
+                />
               </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Max Rating</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="0.1"
+                  placeholder="5"
+                  value={maxRating}
+                  onChange={(e) => setMaxRating(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Min Reviews</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={minReviews}
+                  onChange={(e) => setMinReviews(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Max Reviews</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="∞"
+                  value={maxReviews}
+                  onChange={(e) => setMaxReviews(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Min Photos</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  value={minPhotos}
+                  onChange={(e) => setMinPhotos(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Max Photos</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="∞"
+                  value={maxPhotos}
+                  onChange={(e) => setMaxPhotos(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-md"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center mt-4">
+              <div className="text-sm text-gray-500">
+                Showing {filteredBusinesses.length} of {businesses.length} businesses
+              </div>
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setStateFilter('all');
+                  setSiteFilter('all');
+                  setTrackingFilter('all');
+                  setMinRating('');
+                  setMaxRating('');
+                  setMinReviews('');
+                  setMaxReviews('');
+                  setMinPhotos('');
+                  setMaxPhotos('');
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                Clear All Filters
+              </button>
             </div>
           </div>
 
