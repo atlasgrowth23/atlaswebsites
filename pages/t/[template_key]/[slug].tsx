@@ -128,7 +128,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     console.log('Company ID:', company.id);
     console.log('Added company frames:', company_frames);
     console.log('Added template frames:', template_frames);
-    console.log('Processed logo URL:', logoUrl);
+    console.log('Logo URL:', company.logoUrl);
     
     return {
       props: {
