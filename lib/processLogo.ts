@@ -65,18 +65,19 @@ export async function processLogo(slug: string, url: string | null): Promise<str
       if (isSmall) {
         // For small logos, use different upscaling approach
         sharpInstance = sharpInstance
-          .resize(1200, 630, { 
-            fit: 'contain', 
-            background: { r: 255, g: 255, b: 255, alpha: 1 },
-            kernel: sharp.kernel.lanczos3 // Better upscaling algorithm
+          .resize(400, 400, { 
+            fit: 'inside', 
+            background: { r: 0, g: 0, b: 0, alpha: 0 }, // Transparent background
+            kernel: sharp.kernel.lanczos3,
+            withoutEnlargement: true
           })
           .sharpen({ sigma: 1.2, m1: 1.0, m2: 2.0 }); // More aggressive sharpening
       } else {
         // For larger logos, preserve quality
         sharpInstance = sharpInstance
-          .resize(1200, 630, { 
-            fit: 'contain', 
-            background: { r: 255, g: 255, b: 255, alpha: 1 },
+          .resize(400, 400, { 
+            fit: 'inside', 
+            background: { r: 0, g: 0, b: 0, alpha: 0 }, // Transparent background
             withoutEnlargement: true
           })
           .sharpen(); // Standard sharpening
