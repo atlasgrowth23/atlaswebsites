@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
@@ -9,20 +9,46 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ company }) => {
-  // Get hero image URL using the photo helper
-  const heroImage = getPhotoUrl(company, 'hero_img', 'moderntrust');
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Hero slides with different images and text
+  const heroSlides = [
+    {
+      image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
+      title: `Stay Cool This Summer in`,
+      subtitle: (company as any).display_city || company.city || 'Your Area',
+      description: "Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs."
+    },
+    {
+      image: getPhotoUrl(company, 'about_img', 'moderntrust'),
+      title: `Professional HVAC Service in`,
+      subtitle: (company as any).display_city || company.city || 'Your Area',
+      description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
+    }
+  ];
+
+  // Auto-rotate slides every 6 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [heroSlides.length]);
+
+  const currentHero = heroSlides[currentSlide];
 
   return (
     <div className="relative min-h-[85vh] lg:min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
-      {/* Background with gradient overlay for more depth */}
+      {/* Background with animated transitions */}
       <div className="absolute inset-0">
         <Image 
-          src={heroImage || '/stock/moderntrust/hero_img.svg'} 
+          src={currentHero.image} 
           alt={`Professional services by ${company?.name || 'our company'}`}
           fill
-          className="object-cover object-center"
+          className="object-cover object-center transition-opacity duration-1000"
           priority
           sizes="100vw"
+          key={currentSlide}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
       </div>
@@ -33,13 +59,12 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
 
           
           <h1 className="text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold mb-6 text-white leading-tight">
-            <span className="block">Stay Cool This</span> 
-            <span className="block">Summer in</span>
-            <span className="text-primary">{(company as any).display_city || company.city || 'Your Area'}</span>
+            <span className="block">{currentHero.title}</span> 
+            <span className="text-primary">{currentHero.subtitle}</span>
           </h1>
 
           <p className="text-lg lg:text-xl text-white/90 mb-8 max-w-xl leading-relaxed">
-            Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs.
+            {currentHero.description}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 mt-8">

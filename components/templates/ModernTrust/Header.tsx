@@ -11,10 +11,11 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Smart rating logic - same as reviews section
+  // Smart rating logic - hide stars under 4.5, show count for 20+ reviews
   const totalReviews = parseInt((company as any).reviews) || 0;
   const rating = parseFloat((company as any).rating) || 0;
-  const showRatings = totalReviews >= 3 && rating >= 3;
+  const showRatings = totalReviews >= 3 && rating >= 4.5;
+  const showReviewCount = totalReviews >= 20 && rating >= 4.5;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -87,6 +88,9 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                     ))}
                   </div>
                   <span className="ml-2 text-white font-bold">{Number(rating).toFixed(1)}</span>
+                  {showReviewCount && (
+                    <span className="ml-2 text-xs text-white/80">({totalReviews} reviews)</span>
+                  )}
                 </div>
                 <p className="text-xs text-white/80 font-medium">Trusted HVAC Service</p>
               </div>

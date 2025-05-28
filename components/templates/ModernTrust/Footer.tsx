@@ -56,37 +56,58 @@ const Footer: React.FC<FooterProps> = ({ company }) => {
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-300 hover:text-blue-400 transition-colors">
+                <Link href="#financing" className="text-gray-300 hover:text-blue-400 transition-colors">
                   Financing Options
                 </Link>
               </li>
               <li>
-                <Link href="#" className="text-gray-300 hover:text-blue-400 transition-colors">
+                <Link href="#service-areas" className="text-gray-300 hover:text-blue-400 transition-colors">
                   Service Areas
                 </Link>
               </li>
             </ul>
           </div>
           
-          {/* Hours */}
+          {/* Hours - From Database */}
           <div>
             <h3 className="text-xl font-bold mb-4">Business Hours</h3>
             <ul className="space-y-2 text-gray-300">
-              <li className="flex justify-between">
-                <span>Monday - Friday:</span>
-                <span>8:00 AM - 6:00 PM</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Saturday:</span>
-                <span>9:00 AM - 3:00 PM</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Sunday:</span>
-                <span>Closed</span>
-              </li>
-              <li className="mt-4 pt-4 border-t border-gray-700">
-                <span className="font-semibold text-blue-400">24/7 Emergency Service Available</span>
-              </li>
+              {(company as any).hours ? (
+                <>
+                  <li className="flex justify-between">
+                    <span>Monday - Friday:</span>
+                    <span>{(company as any).hours}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Saturday:</span>
+                    <span>{(company as any).saturday_hours || 'By Appointment'}</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Sunday:</span>
+                    <span>{(company as any).sunday_hours || 'Closed'}</span>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex justify-between">
+                    <span>Monday - Friday:</span>
+                    <span>8:00 AM - 6:00 PM</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Saturday:</span>
+                    <span>9:00 AM - 3:00 PM</span>
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Sunday:</span>
+                    <span>Closed</span>
+                  </li>
+                </>
+              )}
+              {(company as any).emergency_service && (
+                <li className="mt-4 pt-4 border-t border-blue-600/30">
+                  <span className="font-semibold text-blue-400">24/7 Emergency Service Available</span>
+                </li>
+              )}
             </ul>
           </div>
         </div>
