@@ -123,6 +123,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
           companyId: business.id,
           customizations: {
             hero_img: customizations.hero_img,
+            hero_img_2: customizations.hero_img_2,
             about_img: customizations.about_img,
             logo: processedLogoUrl
           }
@@ -289,7 +290,11 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    // Filters are already applied in real-time, this just provides visual feedback
+                    const filteredCount = filteredBusinesses.length;
+                    alert(`Filters applied! Showing ${filteredCount} businesses.`);
+                  }}
                   className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 font-medium"
                 >
                   Apply Filters
@@ -470,13 +475,23 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                         <div className="bg-white p-6 rounded-lg border shadow-sm">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image URL</label>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image 1 URL</label>
                               <input
                                 type="url"
-                                placeholder="https://example.com/hero.jpg"
+                                placeholder="https://example.com/hero1.jpg"
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 value={customizations.hero_img}
                                 onChange={(e) => setCustomizations({...customizations, hero_img: e.target.value})}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image 2 URL (Slideshow)</label>
+                              <input
+                                type="url"
+                                placeholder="https://example.com/hero2.jpg"
+                                className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                value={customizations.hero_img_2}
+                                onChange={(e) => setCustomizations({...customizations, hero_img_2: e.target.value})}
                               />
                             </div>
                             <div>
