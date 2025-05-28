@@ -252,6 +252,8 @@ export const getServerSideProps: GetServerSideProps = async ({ query: urlQuery }
         et.browser_name,
         et.country,
         et.city,
+        et.longitude,
+        et.latitude,
         et.page_interactions
       FROM enhanced_tracking et
       JOIN companies c ON et.company_id = c.id

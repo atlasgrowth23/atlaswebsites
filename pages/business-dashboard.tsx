@@ -26,6 +26,13 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState<'all' | 'Alabama' | 'Arkansas'>('all');
   const [siteFilter, setSiteFilter] = useState<'all' | 'has_site' | 'no_site'>('all');
+  const [trackingFilter, setTrackingFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [minRating, setMinRating] = useState('');
+  const [maxRating, setMaxRating] = useState('');
+  const [minReviews, setMinReviews] = useState('');
+  const [maxReviews, setMaxReviews] = useState('');
+  const [minPhotos, setMinPhotos] = useState('');
+  const [maxPhotos, setMaxPhotos] = useState('');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [customizations, setCustomizations] = useState({
     custom_domain: '',
