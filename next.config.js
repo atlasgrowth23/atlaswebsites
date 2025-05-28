@@ -56,6 +56,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**.replit.dev',
       },
+      {
+        protocol: 'https',
+        hostname: '**',
+        pathname: '/**',
+      },
     ],
     // Allow unoptimized images for dev mode
     unoptimized: process.env.NODE_ENV === 'development'

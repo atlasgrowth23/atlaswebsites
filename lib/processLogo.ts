@@ -11,12 +11,12 @@ export async function processLogo(slug: string, url: string | null): Promise<str
   }
   
   const logosDir = path.join(process.cwd(), 'public', 'logos');
-  const outPath = path.join(logosDir, `${slug}.png`);
+  const outPath = path.join(logosDir, `${slug}.webp`);
   
   try {
     // Check if logo already processed
     await fs.access(outPath);
-    return `/logos/${slug}.png`;
+    return `/logos/${slug}.webp`;
   } catch (_) {
     // Create logos directory if it doesn't exist
     try {
