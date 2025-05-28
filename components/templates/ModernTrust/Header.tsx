@@ -11,8 +11,10 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Check if ratings should be shown (rating exists)
-  const showRatings = company.rating && company.rating > 0;
+  // Smart rating logic - same as reviews section
+  const totalReviews = parseInt(company.reviews) || 0;
+  const rating = parseFloat(company.rating) || 0;
+  const showRatings = totalReviews >= 3 && rating >= 3;
 
   useEffect(() => {
     const handleScroll = () => {

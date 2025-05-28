@@ -80,7 +80,7 @@ const GoogleReviews: React.FC<GoogleReviewsProps> = ({ company }) => {
                   </svg>
                 ))}
                 <span className="ml-2 text-gray-600 font-medium">
-                  {rating.toFixed(1)} Stars • {totalReviews} Reviews
+                  {Number(rating).toFixed(1)} Stars • {totalReviews} Reviews
                 </span>
               </>
             )}
@@ -153,6 +153,23 @@ const GoogleReviews: React.FC<GoogleReviewsProps> = ({ company }) => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+          
+          {/* Read More Reviews Button */}
+          {company.location_reviews_link && (
+            <div className="text-center mt-8">
+              <a
+                href={company.location_reviews_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Read More Reviews
+                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
             </div>
           )}
         </div>

@@ -157,7 +157,7 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
             Service Area Coverage
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            We proudly serve a 25-mile radius around {company.city}, {company.state} and surrounding counties
+            We proudly serve {company.city}, {company.state} and surrounding areas
           </p>
         </div>
 
@@ -192,8 +192,8 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
               
               <div className="mb-6 text-center">
                 <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="font-semibold text-gray-900 text-lg">25-Mile Radius</div>
-                  <div className="text-sm text-gray-600">from {company.city}, {company.state}</div>
+                  <div className="font-semibold text-gray-900 text-lg">Service Area</div>
+                  <div className="text-sm text-gray-600">{company.city}, {company.state} & Surrounding Areas</div>
                 </div>
               </div>
 
