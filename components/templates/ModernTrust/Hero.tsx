@@ -20,7 +20,7 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
       description: "Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs."
     },
     {
-      image: getPhotoUrl(company, 'about_img', 'moderntrust'),
+      image: getPhotoUrl(company, 'hero_img_2', 'moderntrust'),
       title: `Professional HVAC Service in`,
       subtitle: (company as any).display_city || company.city || 'Your Area',
       description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
