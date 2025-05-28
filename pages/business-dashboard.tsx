@@ -178,8 +178,11 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                   </div>
                   
                   <div className="space-y-2 text-sm text-gray-600">
-                    <p><strong>Location:</strong> {business.city}, {business.state}</p>
+                    <p><strong>Location:</strong> {business.city}, {business.state} {(business as any).postal_code}</p>
                     {business.phone && <p><strong>Phone:</strong> {business.phone}</p>}
+                    {(business as any).location_reviews_link && (
+                      <p><strong>Reviews:</strong> <a href={(business as any).location_reviews_link} target="_blank" className="text-blue-600 hover:underline">View Reviews</a></p>
+                    )}
                     {business.total_views !== undefined && business.total_views > 0 && (
                       <p><strong>Total Views:</strong> {business.total_views}</p>
                     )}
@@ -215,22 +218,22 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                       <div>
                         <h4 className="font-semibold text-gray-800 mb-4 text-lg">📊 Website Analytics</h4>
                         <div className="bg-white p-6 rounded-lg border shadow-sm">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                             <div className="text-center">
                               <div className="text-2xl font-bold text-blue-600">{business.total_views || 0}</div>
                               <div className="text-xs text-gray-500">Total Views</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-green-600">{Math.floor((business.total_views || 0) * 0.7)}</div>
-                              <div className="text-xs text-gray-500">Unique Visitors</div>
+                              <div className="text-2xl font-bold text-green-600">
+                                {business.tracking_enabled ? 'Active' : 'Paused'}
+                              </div>
+                              <div className="text-xs text-gray-500">Status</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-purple-600">{Math.floor((business.total_views || 0) * 0.4)}</div>
-                              <div className="text-xs text-gray-500">This Month</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-orange-600">2:34</div>
-                              <div className="text-xs text-gray-500">Avg. Time</div>
+                              <div className="text-2xl font-bold text-purple-600">
+                                {business.last_viewed_at ? 'Recent' : 'None'}
+                              </div>
+                              <div className="text-xs text-gray-500">Activity</div>
                             </div>
                           </div>
                           

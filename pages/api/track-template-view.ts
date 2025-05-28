@@ -11,19 +11,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Check if tracking is enabled for this company
     const trackingStatus = await queryOne(`
-      SELECT tracking_enabled FROM prospect_tracking WHERE company_id = $1
+      SELECT tracking_enabled FROM enhanced_tracking WHERE company_id = $1
     `, [companyId]);
     
     if (trackingStatus && trackingStatus.tracking_enabled) {
       // Update view counts
       await query(`
-        UPDATE prospect_tracking 
+        UPDATE enhanced_tracking 
         SET 
           total_views = total_views + 1,
-          template_views = template_views || jsonb_build_object($2::text, COALESCE((template_views->>$2::text)::integer, 0) + 1),
           last_viewed_at = CURRENT_TIMESTAMP
         WHERE company_id = $1
-      `, [companyId, templateKey]);
+      `, [companyId]);
       
       console.log('Template view tracked:', { companySlug, templateKey, companyId });
     } else {
