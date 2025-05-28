@@ -48,26 +48,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { companyId, templateKey, customizations } = req.body;
 
       // Save to company_frames table that templates actually use
+      console.log('Saving customizations:', customizations);
+      
       for (const [frameKey, imageUrl] of Object.entries(customizations)) {
-        if (imageUrl && imageUrl.toString().trim()) {
+        if (imageUrl && imageUrl.toString().trim() !== '') {
           // Insert or update company frame
           await query(`
             INSERT INTO company_frames (company_id, slug, url)
             VALUES ($1, $2, $3)
             ON CONFLICT (company_id, slug)
             DO UPDATE SET 
-              url = EXCLUDED.url
+              url = EXCLUDED.url,
+              updated_at = NOW()
           `, [companyId, frameKey, imageUrl]);
           
-          console.log(`Saved company frame: ${frameKey} = ${imageUrl}`);
-        } else {
-          // Remove frame if value is empty
+          console.log(`✅ Saved company frame: ${frameKey} = ${imageUrl}`);
+        } else if (imageUrl === '') {
+          // Remove frame if explicitly set to empty
           await query(`
             DELETE FROM company_frames 
             WHERE company_id = $1 AND slug = $2
           `, [companyId, frameKey]);
           
-          console.log(`Removed company frame: ${frameKey}`);
+          console.log(`❌ Removed company frame: ${frameKey}`);
         }
       }
 
