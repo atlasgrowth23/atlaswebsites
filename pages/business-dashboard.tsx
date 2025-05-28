@@ -517,31 +517,49 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                               <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image 2 URL (Slideshow)</label>
                               <input
                                 type="url"
-                                placeholder="https://example.com/hero2.jpg"
+                                placeholder={getBusinessFrameUrl(business, 'hero_img_2') || "https://example.com/hero2.jpg"}
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 value={customizations.hero_img_2}
                                 onChange={(e) => setCustomizations({...customizations, hero_img_2: e.target.value})}
                               />
+                              {getBusinessFrameUrl(business, 'hero_img_2') && (
+                                <div className="mt-2">
+                                  <img src={getBusinessFrameUrl(business, 'hero_img_2')} alt="Current hero 2" className="w-32 h-20 object-cover rounded border" />
+                                  <p className="text-xs text-gray-500 mt-1">Current hero image 2</p>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">About Image URL</label>
                               <input
                                 type="url"
-                                placeholder="https://example.com/about.jpg"
+                                placeholder={getBusinessFrameUrl(business, 'about_img') || "https://example.com/about.jpg"}
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 value={customizations.about_img}
                                 onChange={(e) => setCustomizations({...customizations, about_img: e.target.value})}
                               />
+                              {getBusinessFrameUrl(business, 'about_img') && (
+                                <div className="mt-2">
+                                  <img src={getBusinessFrameUrl(business, 'about_img')} alt="Current about" className="w-32 h-20 object-cover rounded border" />
+                                  <p className="text-xs text-gray-500 mt-1">Current about image</p>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
                               <input
                                 type="url"
-                                placeholder="https://example.com/logo.svg"
+                                placeholder={getBusinessLogoUrl(business) || "https://example.com/logo.svg"}
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                 value={customizations.logo}
                                 onChange={(e) => setCustomizations({...customizations, logo: e.target.value})}
                               />
+                              {getBusinessLogoUrl(business) && (
+                                <div className="mt-2">
+                                  <img src={getBusinessLogoUrl(business)} alt="Current logo" className="w-16 h-16 object-contain rounded border" />
+                                  <p className="text-xs text-gray-500 mt-1">Current logo</p>
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">Custom Domain</label>
@@ -625,9 +643,10 @@ export const getServerSideProps: GetServerSideProps = async () => {
       framesByCompany[frame.company_id][frame.slug] = frame.url;
     });
 
-    // Convert dates to strings for serialization
+    // Convert dates to strings for serialization and add frame data
     const businesses = result.rows.map((business: any) => ({
       ...business,
+      frames: framesByCompany[business.id] || {},
       last_viewed_at: business.last_viewed_at ? (business.last_viewed_at instanceof Date ? business.last_viewed_at.toISOString() : business.last_viewed_at) : null,
       created_at: business.created_at ? (business.created_at instanceof Date ? business.created_at.toISOString() : business.created_at) : null,
       updated_at: business.updated_at ? (business.updated_at instanceof Date ? business.updated_at.toISOString() : business.updated_at) : null,
