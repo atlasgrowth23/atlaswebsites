@@ -42,14 +42,16 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {company.logoUrl && (
-                <div className="flex-shrink-0 relative w-16 h-16">
+                <div className="flex items-center">
                   <Image 
                     src={company.logoUrl}
                     alt={`${company.name} logo`}
-                    fill
-                    className="object-contain"
+                    width={64}
+                    height={64}
+                    className="object-contain max-w-16 max-h-16"
                     priority
                     quality={95}
+                    style={{ width: 'auto', height: 'auto' }}
                   />
                 </div>
               )}
@@ -84,14 +86,16 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
         <div className="hidden md:flex justify-between items-center">
           <div className="flex items-center space-x-3 flex-1">
             {company.logoUrl && (
-              <div className="flex-shrink-0 relative w-20 h-20 lg:w-24 lg:h-24">
+              <div className="flex items-center">
                 <Image 
                   src={company.logoUrl}
                   alt={`${company.name} logo`}
-                  fill
-                  className="object-contain"
+                  width={96}
+                  height={96}
+                  className="object-contain max-w-24 max-h-24"
                   priority
                   quality={95}
+                  style={{ width: 'auto', height: 'auto' }}
                 />
               </div>
             )}

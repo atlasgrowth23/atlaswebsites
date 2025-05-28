@@ -1,0 +1,54 @@
+1 Why the logo still shows a white rim and looks half-sized
+a. 90 % of the time it’s the wrapper, not the <img>
+A parent <div> (often Tailwind p-2, bg-white, ring, or border) is adding internal padding or a white background.
+
+Open DevTools, click the parent node, and toggle box-model highlights—you’ll see the extra 4–8 px of padding in blue.
+
+Quick fix Remove those classes or set:
+
+html
+Copy
+Edit
+<div class="flex items-center">
+  <!-- no padding / bg classes here -->
+  <img src={business.logoUrl}
+       alt="Brand logo"
+       style="width:180px;height:auto;object-fit:contain" />
+</div>
+b. The image itself may have transparent padding
+If the PNG/SVG file includes blank pixels, it shows up as “white border” on a white header.
+
+Run it through Sharp’s trim() (or TinyPNG) once when you ingest the file:
+
+ts
+Copy
+Edit
+sharp(buffer)
+  .trim()      // removes uniform edges
+  .resize({ width: 300 })
+  .webp({ quality: 82 })
+c. “object-fit: contain” vs. “unset”
+object-fit: contain stretches the logo until it hits the short side of the wrapper—good for odd aspect ratios.
+object-fit: unset keeps the natural size. Decide which works best, but don’t mix both. 
+Next.js
+
+2 Why a new logo URL updates once and then refuses to change
+Common culprit	What’s happening	How to break the loop
+Same file path, new pixels	You upload a logo → CDN caches it. Next upload uses the identical filename, so every layer (CDN, <img> cache) thinks nothing changed.	Save each upload under a new key, e.g. logos/{uuid}@1x.webp. Store that unique URL in the DB so the browser sees a fresh path.
+Missed ISR revalidate	API updates DB but the page you’re viewing is still the old static build.	Double-check that your on-demand revalidate route targets the exact tag/slug of the rendered page, and that the call returns {"revalidated": true}. 
+Stack Overflow
+Client state not mutated	The admin form writes to the DB but local SWR/React-Query cache still holds stale data till a full refresh.	Call mutate('/api/business/{id}') (or equivalent) after a successful PUT so the UI reflects the change instantly.
+
+3 Why the whole page “reloads in a weird way” and feels slow
+Full document reload instead of SPA navigation
+If the form’s <button> lacks type="button" and is inside a <form>, the browser does a classic POST → full refresh. Add type="submit" plus preventDefault() and handle the PUT via fetch/Axios; use router.refresh() only after the API returns.
+
+ISR round-trip
+On-demand ISR spins up a Vercel build worker for a few seconds; your browser polls the new HTML in the meantime, which looks like a blank flash. Minimising this lag:
+
+Don’t invalidate the entire site—just the /[companySlug] route.
+
+Show a “Saving…” toast so the user knows it’s intentional.
+
+Large images blocking the main thread
+If you still let hero images through at 3–4 MB each, first paint waits on them. Make sure every new hero/about image goes through Sharp before you write its URL to the DB (that’s why we created the helper). After this, LCP should drop below 2 s on 4 G.
