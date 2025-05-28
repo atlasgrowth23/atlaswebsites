@@ -352,9 +352,9 @@ export const getServerSideProps: GetServerSideProps = async () => {
     // Convert dates to strings for serialization
     const businesses = result.rows.map((business: any) => ({
       ...business,
-      last_viewed_at: business.last_viewed_at ? business.last_viewed_at.toISOString() : null,
-      created_at: business.created_at ? business.created_at.toISOString() : null,
-      updated_at: business.updated_at ? business.updated_at.toISOString() : null,
+      last_viewed_at: business.last_viewed_at ? (business.last_viewed_at instanceof Date ? business.last_viewed_at.toISOString() : business.last_viewed_at) : null,
+      created_at: business.created_at ? (business.created_at instanceof Date ? business.created_at.toISOString() : business.created_at) : null,
+      updated_at: business.updated_at ? (business.updated_at instanceof Date ? business.updated_at.toISOString() : business.updated_at) : null,
     }));
 
     return {
