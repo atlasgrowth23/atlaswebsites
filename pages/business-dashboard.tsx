@@ -79,7 +79,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
   const saveCustomizations = async (business: Business) => {
     try {
       // Auto-add image domains to Next.js config
-      const imageUrls = [customizations.hero_img, customizations.about_img, customizations.logo]
+      const imageUrls = [customizations.hero_img, customizations.hero_img_2, customizations.about_img, customizations.logo]
         .filter(url => url && url.trim() !== '');
       
       for (const imageUrl of imageUrls) {
