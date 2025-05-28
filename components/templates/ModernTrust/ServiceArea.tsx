@@ -183,30 +183,19 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
             </div>
           </div>
 
-          {/* Counties and Info */}
+          {/* Service Info */}
           <div className="order-1 lg:order-2">
             <div className="bg-blue-50 rounded-xl p-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                Counties We Serve
+                Service Area
               </h3>
               
-              {nearbyCounties.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  {nearbyCounties.map((county, index) => (
-                    <div key={index} className="bg-white rounded-lg p-3 text-center shadow-sm">
-                      <div className="font-semibold text-gray-900">{county.name}</div>
-                      <div className="text-sm text-gray-600">{county.state}</div>
-                    </div>
-                  ))}
+              <div className="mb-6 text-center">
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <div className="font-semibold text-gray-900 text-lg">25-Mile Radius</div>
+                  <div className="text-sm text-gray-600">from {company.city}, {company.state}</div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="bg-white rounded-lg p-3 text-center shadow-sm">
-                    <div className="font-semibold text-gray-900">Primary</div>
-                    <div className="text-sm text-gray-600">{company.state}</div>
-                  </div>
-                </div>
-              )}
+              </div>
 
               <div className="space-y-4">
                 <div className="flex items-center">
