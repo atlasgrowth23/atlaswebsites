@@ -12,8 +12,8 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Smart rating logic - same as reviews section
-  const totalReviews = parseInt(company.reviews) || 0;
-  const rating = parseFloat(company.rating) || 0;
+  const totalReviews = parseInt((company as any).reviews) || 0;
+  const rating = parseFloat((company as any).rating) || 0;
   const showRatings = totalReviews >= 3 && rating >= 3;
 
   useEffect(() => {
@@ -86,7 +86,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                       </svg>
                     ))}
                   </div>
-                  <span className="ml-2 text-white font-bold">{typeof company.rating === 'number' ? company.rating.toFixed(1) : company.rating}</span>
+                  <span className="ml-2 text-white font-bold">{Number(rating).toFixed(1)}</span>
                 </div>
                 <p className="text-xs text-white/80 font-medium">Trusted HVAC Service</p>
               </div>
@@ -162,7 +162,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
                   ))}
                 </div>
                 <div className="ml-2">
-                  <span className="text-sm font-bold text-white">{typeof company.rating === 'number' ? company.rating.toFixed(1) : company.rating}</span>
+                  <span className="text-sm font-bold text-white">{Number(rating).toFixed(1)}</span>
                   <span className="text-xs text-white/70 ml-1">(Verified)</span>
                 </div>
               </div>
