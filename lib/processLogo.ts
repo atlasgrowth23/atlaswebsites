@@ -16,13 +16,11 @@ export async function processLogo(slug: string, url: string | null): Promise<str
   }
   
   const logosDir = path.join(process.cwd(), 'public', 'logos');
-  const outPath = path.join(logosDir, `${slug}.webp`);
+  // Add timestamp to ensure unique filename for each update
+  const timestamp = Date.now();
+  const outPath = path.join(logosDir, `${slug}-${timestamp}.webp`);
   
   try {
-    // Check if logo already processed
-    await fs.access(outPath);
-    return `/logos/${slug}.webp`;
-  } catch (_) {
     // Create logos directory if it doesn't exist
     try {
       await fs.mkdir(logosDir, { recursive: true });
@@ -91,10 +89,13 @@ export async function processLogo(slug: string, url: string | null): Promise<str
         })
         .toFile(outPath);
       
-      return `/logos/${slug}.webp`;
+      return `/logos/${slug}-${timestamp}.webp`;
     } catch (error) {
       console.error(`Error processing logo for ${slug}:`, error);
       return null;
     }
+  } catch (dirError) {
+    console.error('Error creating logos directory:', dirError);
+    return null;
   }
 }

@@ -42,18 +42,16 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {company.logoUrl && (
-                <div className="flex items-center">
-                  <Image 
-                    src={company.logoUrl}
-                    alt={`${company.name} logo`}
-                    width={64}
-                    height={64}
-                    className="object-contain max-w-16 max-h-16"
-                    priority
-                    quality={95}
-                    style={{ width: 'auto', height: 'auto' }}
-                  />
-                </div>
+                <Image 
+                  src={company.logoUrl}
+                  alt="Brand Logo"
+                  width={120}
+                  height={60}
+                  className="noBorder radius0 none"
+                  style={{ width: '120px !important', objectFit: 'unset' }}
+                  priority
+                  quality={95}
+                />
               )}
               <div>
                 <h1 className="text-sm font-bold tracking-tight text-white leading-tight break-words">
@@ -86,18 +84,16 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
         <div className="hidden md:flex justify-between items-center">
           <div className="flex items-center space-x-3 flex-1">
             {company.logoUrl && (
-              <div className="flex items-center">
-                <Image 
-                  src={company.logoUrl}
-                  alt={`${company.name} logo`}
-                  width={96}
-                  height={96}
-                  className="object-contain max-w-24 max-h-24"
-                  priority
-                  quality={95}
-                  style={{ width: 'auto', height: 'auto' }}
-                />
-              </div>
+              <Image 
+                src={company.logoUrl}
+                alt="Brand Logo"
+                width={180}
+                height={80}
+                className="noBorder radius0 none"
+                style={{ width: '180px !important', objectFit: 'unset' }}
+                priority
+                quality={95}
+              />
             )}
             <h1 className="text-xl lg:text-2xl xl:text-3xl font-bold tracking-tight text-white">
               {company.name}
