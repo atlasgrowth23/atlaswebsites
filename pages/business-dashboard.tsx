@@ -196,12 +196,41 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                   <div className="space-y-2 text-sm text-gray-600">
                     <p><strong>Location:</strong> {business.city}, {business.state} {(business as any).postal_code}</p>
                     {business.phone && <p><strong>Phone:</strong> {business.phone}</p>}
-                    {(business as any).location_reviews_link && (
-                      <p><strong>Reviews:</strong> <a href={(business as any).location_reviews_link} target="_blank" className="text-blue-600 hover:underline">View Reviews</a></p>
+                    
+                    {/* Website URL */}
+                    {(business as any).site ? (
+                      <p><strong>Website:</strong> <a href={(business as any).site} target="_blank" className="text-blue-600 hover:underline">{(business as any).site}</a></p>
+                    ) : (
+                      <p><strong>Website:</strong> <span className="text-gray-400">No website</span></p>
                     )}
-                    {business.total_views !== undefined && business.total_views > 0 && (
-                      <p><strong>Total Views:</strong> {business.total_views}</p>
-                    )}
+                    
+                    {/* Reviews & Rating */}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <p><strong>Rating:</strong> {(business as any).rating || 'N/A'}/5</p>
+                      <p><strong>Total Reviews:</strong> {(business as any).reviews || 0}</p>
+                      <p><strong>Photos:</strong> {(business as any).photos_count || 0}</p>
+                      <p><strong>Views:</strong> {business.total_views || 0}</p>
+                    </div>
+                    
+                    {/* Review Timeline */}
+                    <div className="grid grid-cols-4 gap-1 text-xs bg-gray-50 p-2 rounded">
+                      <div className="text-center">
+                        <div className="font-semibold">{(business as any).r_30 || 0}</div>
+                        <div className="text-gray-500">30d</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold">{(business as any).r_60 || 0}</div>
+                        <div className="text-gray-500">60d</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold">{(business as any).r_90 || 0}</div>
+                        <div className="text-gray-500">90d</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold">{(business as any).r_365 || 0}</div>
+                        <div className="text-gray-500">1yr</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -379,6 +408,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
       last_viewed_at: business.last_viewed_at ? (business.last_viewed_at instanceof Date ? business.last_viewed_at.toISOString() : business.last_viewed_at) : null,
       created_at: business.created_at ? (business.created_at instanceof Date ? business.created_at.toISOString() : business.created_at) : null,
       updated_at: business.updated_at ? (business.updated_at instanceof Date ? business.updated_at.toISOString() : business.updated_at) : null,
+      latest_visit: business.latest_visit ? (business.latest_visit instanceof Date ? business.latest_visit.toISOString() : business.latest_visit) : null,
     }));
 
     return {
