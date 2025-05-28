@@ -37,9 +37,19 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
   const [customizations, setCustomizations] = useState({
     custom_domain: '',
     hero_img: '',
+    hero_img_2: '',
     about_img: '',
     logo: ''
   });
+
+  // Helper functions to get current business images
+  const getBusinessFrameUrl = (business: Business, frameName: string) => {
+    return (business as any)[`${frameName}_url`] || '';
+  };
+
+  const getBusinessLogoUrl = (business: Business) => {
+    return (business as any).logo_url || '';
+  };
 
   const filteredBusinesses = businesses.filter(business => {
     const matchesSearch = business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -277,23 +287,31 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
               <div className="text-sm text-gray-500">
                 Showing {filteredBusinesses.length} of {businesses.length} businesses
               </div>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setStateFilter('all');
-                  setSiteFilter('all');
-                  setTrackingFilter('all');
-                  setMinRating('');
-                  setMaxRating('');
-                  setMinReviews('');
-                  setMaxReviews('');
-                  setMinPhotos('');
-                  setMaxPhotos('');
-                }}
-                className="text-sm text-blue-600 hover:text-blue-800 underline"
-              >
-                Clear All Filters
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 font-medium"
+                >
+                  Apply Filters
+                </button>
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setStateFilter('all');
+                    setSiteFilter('all');
+                    setTrackingFilter('all');
+                    setMinRating('');
+                    setMaxRating('');
+                    setMinReviews('');
+                    setMaxReviews('');
+                    setMinPhotos('');
+                    setMaxPhotos('');
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-800 underline"
+                >
+                  Clear All Filters
+                </button>
+              </div>
             </div>
           </div>
 

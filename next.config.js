@@ -15,7 +15,8 @@ const nextConfig = {
       'localhost',
       'vercel.app',
       'replit.dev',
-        'assets.zyrosite.com'
+        'assets.zyrosite.com',
+        'cbe1ed99-3526-45ea-acb4-7d87b19b3d41-00-16zbfl49bmyv8.riker.replit.dev'
       ],
     remotePatterns: [
       {
