@@ -349,9 +349,17 @@ export const getServerSideProps: GetServerSideProps = async () => {
       ORDER BY c.state, c.city, c.name
     `);
 
+    // Convert dates to strings for serialization
+    const businesses = result.rows.map((business: any) => ({
+      ...business,
+      last_viewed_at: business.last_viewed_at ? business.last_viewed_at.toISOString() : null,
+      created_at: business.created_at ? business.created_at.toISOString() : null,
+      updated_at: business.updated_at ? business.updated_at.toISOString() : null,
+    }));
+
     return {
       props: {
-        businesses: result.rows || [],
+        businesses,
       },
     };
   } catch (error) {
