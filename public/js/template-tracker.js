@@ -1,9 +1,16 @@
-// Enhanced template view tracking with timing
+// Enhanced template view tracking with proper session management
 (() => {
   // Only run on template pages
   if (!window.location.pathname.startsWith('/t/')) {
     return;
   }
+
+  // Prevent multiple tracker instances
+  if (window.__TRACKER_RUNNING__) {
+    console.log('Tracker already running, skipping');
+    return;
+  }
+  window.__TRACKER_RUNNING__ = true;
 
   // Extract the template and company info from the URL
   const pathParts = window.location.pathname.split('/');
@@ -21,12 +28,22 @@
     return;
   }
 
-  // Track timing data
-  const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  // Generate or retrieve session ID (persist across potential page reloads)
+  const pageKey = `${companyId}_${templateKey}_${companySlug}`;
+  let sessionId = sessionStorage.getItem(`tracker_session_${pageKey}`);
+  if (!sessionId) {
+    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    sessionStorage.setItem(`tracker_session_${pageKey}`, sessionId);
+  }
+
   const startTime = Date.now();
   let lastActivity = startTime;
   let totalActiveTime = 0;
   let isActive = true;
+  let hasInitialTracked = false;
+  let updateInterval = null;
+  let inactivityTimeout = null;
+  let visitorLocation = null;
 
   // Track user activity to measure engagement time
   const trackActivity = () => {
@@ -36,6 +53,46 @@
     }
     lastActivity = now;
     isActive = true;
+    
+    // Reset inactivity timeout
+    if (inactivityTimeout) {
+      clearTimeout(inactivityTimeout);
+    }
+    
+    // Stop tracking after 5 minutes of inactivity
+    inactivityTimeout = setTimeout(() => {
+      isActive = false;
+      console.log('User inactive for 5 minutes, stopping tracking updates');
+      if (updateInterval) {
+        clearInterval(updateInterval);
+        updateInterval = null;
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+  };
+
+  // Get visitor's location (with permission)
+  const getVisitorLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          visitorLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          };
+          console.log('Visitor location obtained:', visitorLocation);
+        },
+        (error) => {
+          console.log('Geolocation permission denied or failed:', error.message);
+          // Don't track location if permission denied
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    }
   };
 
   // Track mouse movement, scrolling, clicking
@@ -44,14 +101,10 @@
   document.addEventListener('click', trackActivity);
   document.addEventListener('keypress', trackActivity);
 
-  // Mark as inactive after 30 seconds of no activity
-  setInterval(() => {
-    if (Date.now() - lastActivity > 30000) {
-      isActive = false;
-    }
-  }, 5000);
+  // Try to get location (will ask for permission)
+  getVisitorLocation();
 
-  // Send tracking data with timing
+  // Send tracking data
   const sendTrackingData = (isInitial = false) => {
     const timeOnPage = Math.floor((Date.now() - startTime) / 1000);
     const activeTime = Math.floor(totalActiveTime / 1000);
@@ -66,36 +119,79 @@
         templateKey,
         companyId,
         sessionId,
-        timeOnPage: activeTime > 0 ? activeTime : timeOnPage,
+        timeOnPage: activeTime > 0 ? activeTime : Math.min(timeOnPage, 30), // Cap at 30 seconds if no activity
         userAgent: navigator.userAgent,
         referrer: document.referrer,
-        isInitial
+        isInitial,
+        location: visitorLocation
       }),
     })
     .then(response => response.json())
     .then(data => {
-      console.log('Template view tracked:', data);
+      console.log('Template view tracked:', { sessionId, timeOnPage: activeTime > 0 ? activeTime : timeOnPage, isInitial });
     })
     .catch(error => {
       console.error('Error tracking template view:', error);
     });
   };
 
-  // Initial tracking after 3 seconds
-  setTimeout(() => sendTrackingData(true), 3000);
-
-  // Update tracking every 15 seconds while user is active
-  setInterval(() => {
-    if (totalActiveTime > 0) {
-      sendTrackingData(false);
+  // Initial tracking after short delay to ensure page is loaded
+  setTimeout(() => {
+    if (!hasInitialTracked) {
+      hasInitialTracked = true;
+      sendTrackingData(true);
+      
+      // Start periodic updates only after initial tracking
+      updateInterval = setInterval(() => {
+        if (isActive) {
+          // Always send updates if page is active, even with minimal activity
+          const currentActiveTime = Math.floor(totalActiveTime / 1000);
+          const totalTime = Math.floor((Date.now() - startTime) / 1000);
+          
+          // Use active time if > 0, otherwise use total time (capped at reasonable amount)
+          const timeToSend = currentActiveTime > 0 ? currentActiveTime : Math.min(totalTime, 30);
+          
+          if (timeToSend > 0) {
+            sendTrackingData(false);
+          }
+        }
+      }, 5000); // Update every 5 seconds instead of 30
     }
-  }, 15000);
+  }, 500); // Reduced from 3 seconds to 500ms
 
+  // Prevent duplicate exit tracking
+  let hasTrackedExit = false;
+  
   // Final tracking when user leaves
-  window.addEventListener('beforeunload', () => sendTrackingData(false));
+  const trackExit = () => {
+    if (!hasTrackedExit && hasInitialTracked) {
+      hasTrackedExit = true;
+      
+      // Clear intervals
+      if (updateInterval) {
+        clearInterval(updateInterval);
+      }
+      if (inactivityTimeout) {
+        clearTimeout(inactivityTimeout);
+      }
+      
+      // Clear session storage
+      sessionStorage.removeItem(`tracker_session_${pageKey}`);
+      
+      // Send final tracking
+      sendTrackingData(false);
+      
+      console.log('Session ended:', sessionId);
+    }
+  };
+  
+  window.addEventListener('beforeunload', trackExit);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      sendTrackingData(false);
+      trackExit();
     }
   });
+  
+  // Initial activity tracking
+  trackActivity();
 })();

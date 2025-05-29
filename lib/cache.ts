@@ -149,7 +149,7 @@ export const cacheHelpers = {
         const result = await query(`
           SELECT 
             c.id, c.name, c.slug, c.city, c.state, c.phone, c.email_1, c.custom_domain,
-            c.hours, c.saturday_hours, c.sunday_hours, c.emergency_service,
+            c.hours, c.saturday_hours, c.sunday_hours, c.emergency_service, c.reviews_link, c.location_reviews_link,
             main_track.tracking_enabled,
             main_track.total_views,
             main_track.last_viewed_at,

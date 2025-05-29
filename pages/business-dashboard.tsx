@@ -17,6 +17,7 @@ interface Business {
   tracking_enabled?: boolean;
   total_views?: number;
   last_viewed_at?: string;
+  reviews_link?: string;
 }
 
 interface BusinessDashboardProps {
@@ -484,8 +485,8 @@ export default function BusinessDashboard({ businesses, totalCount, currentPage,
                     )}
                     
                     {/* Reviews Link */}
-                    {(business as any).reviews_link && (
-                      <p><strong>Reviews:</strong> <a href={(business as any).reviews_link} target="_blank" className="text-blue-600 hover:underline">View on Google</a></p>
+                    {(business.reviews_link || (business as any).location_reviews_link) && (
+                      <p><strong>Reviews:</strong> <a href={business.reviews_link || (business as any).location_reviews_link} target="_blank" className="text-blue-600 hover:underline">View on Google</a></p>
                     )}
                     
                     {(business.total_views || 0) > 0 && (

@@ -24,9 +24,10 @@ interface SessionAnalyticsProps {
   sessions: SessionAnalytic[];
   companyId?: string;
   companyName?: string;
+  totalViews: number;
 }
 
-export default function SessionAnalytics({ sessions, companyId, companyName }: SessionAnalyticsProps) {
+export default function SessionAnalytics({ sessions, companyId, companyName, totalViews }: SessionAnalyticsProps) {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   const getDeviceType = (userAgent: string) => {
@@ -49,6 +50,28 @@ export default function SessionAnalytics({ sessions, companyId, companyName }: S
     return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      // Use a consistent format that works on both server and client
+      return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      // Use a consistent format for date and time
+      return date.toISOString().replace('T', ' ').substring(0, 19); // YYYY-MM-DD HH:MM:SS
+    } catch (error) {
+      return '';
+    }
+  };
+
   const selectedSessionData = selectedSession 
     ? sessions.find(s => s.session_id === selectedSession)
     : null;
@@ -68,7 +91,7 @@ export default function SessionAnalytics({ sessions, companyId, companyName }: S
                 )}
               </h1>
               <p className="text-gray-600 mt-2">
-                {sessions.length} visitor sessions tracked
+                {totalViews} total views • {sessions.length} detailed sessions
               </p>
             </div>
             <Link 
@@ -143,7 +166,7 @@ export default function SessionAnalytics({ sessions, companyId, companyName }: S
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(session.visit_start_time).toLocaleDateString()}
+                          {formatDate(session.visit_start_time)}
                         </td>
                       </tr>
                     ))}
@@ -194,11 +217,11 @@ export default function SessionAnalytics({ sessions, companyId, companyName }: S
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">Visit Time</h3>
                     <p className="text-sm text-gray-900">
-                      {new Date(selectedSessionData.visit_start_time).toLocaleString()}
+                      {formatDateTime(selectedSessionData.visit_start_time)}
                     </p>
                     {selectedSessionData.visit_end_time && (
                       <p className="text-sm text-gray-500">
-                        to {new Date(selectedSessionData.visit_end_time).toLocaleString()}
+                        to {formatDateTime(selectedSessionData.visit_end_time)}
                       </p>
                     )}
                   </div>
@@ -208,6 +231,21 @@ export default function SessionAnalytics({ sessions, companyId, companyName }: S
                       <h3 className="text-sm font-medium text-gray-500">Referrer</h3>
                       <p className="text-sm text-gray-900 break-all">
                         {selectedSessionData.referrer_url}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {(selectedSessionData.latitude && selectedSessionData.longitude) && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-500">Location</h3>
+                      <p className="text-sm text-gray-900">
+                        {selectedSessionData.city && selectedSessionData.country 
+                          ? `${selectedSessionData.city}, ${selectedSessionData.country}`
+                          : 'Location available'
+                        }
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {selectedSessionData.latitude.toFixed(4)}, {selectedSessionData.longitude.toFixed(4)}
                       </p>
                     </div>
                   )}
@@ -271,11 +309,19 @@ export const getServerSideProps: GetServerSideProps = async ({ query: urlQuery }
     
     const result = await query(sqlQuery, params);
     
-    // Get company name if filtering by company
+    // Get company name and total views if filtering by company
     let companyName = null;
+    let totalViews = 0;
     if (companyId) {
       const companyResult = await query('SELECT name FROM companies WHERE id = $1', [companyId]);
       companyName = companyResult.rows[0]?.name || null;
+      
+      // Get total views from main tracking record
+      const viewsResult = await query('SELECT total_views FROM enhanced_tracking WHERE company_id = $1 AND session_id IS NULL', [companyId]);
+      totalViews = viewsResult.rows[0]?.total_views || 0;
+    } else {
+      // If no company filter, count all sessions as total views
+      totalViews = result.rows.length;
     }
     
     // Convert dates to strings for serialization
@@ -290,6 +336,7 @@ export const getServerSideProps: GetServerSideProps = async ({ query: urlQuery }
         sessions,
         companyId: companyId || null,
         companyName,
+        totalViews,
       },
     };
   } catch (error) {
@@ -299,6 +346,7 @@ export const getServerSideProps: GetServerSideProps = async ({ query: urlQuery }
         sessions: [],
         companyId: null,
         companyName: null,
+        totalViews: 0,
       },
     };
   }
