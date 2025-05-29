@@ -46,7 +46,7 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
           src={heroSlides[currentSlide].image} 
           alt={`Professional services by ${company?.name || 'our company'}`}
           fill
-          className="object-cover object-center transition-opacity duration-1000 ease-in-out"
+          className="object-cover object-center transition-opacity duration-1000 ease-in-out animate-[slideIn_2s_ease-out_forwards]"
           priority
           quality={90}
           sizes="100vw"
