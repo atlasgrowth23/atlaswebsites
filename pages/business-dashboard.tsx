@@ -3,6 +3,7 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { query } from '@/lib/db';
+import { cacheHelpers } from '@/lib/cache';
 
 interface Business {
   id: string;
@@ -20,9 +21,12 @@ interface Business {
 
 interface BusinessDashboardProps {
   businesses: Business[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
 }
 
-export default function BusinessDashboard({ businesses }: BusinessDashboardProps) {
+export default function BusinessDashboard({ businesses, totalCount, currentPage, totalPages }: BusinessDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState<'all' | 'Alabama' | 'Arkansas'>('all');
   const [siteFilter, setSiteFilter] = useState<'all' | 'has_site' | 'no_site'>('all');
@@ -41,16 +45,71 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
     about_img: '',
     logo: ''
   });
+  const [imagePreviewErrors, setImagePreviewErrors] = useState<{[key: string]: boolean}>({});
+  const [logoProcessingStatus, setLogoProcessingStatus] = useState<{[key: string]: string}>({});
 
   // Initialize form with current database values when expanding a card
   const initializeCustomizations = (business: Business) => {
-    setCustomizations({
+    const currentValues = {
       custom_domain: (business as any).custom_domain || '',
       hero_img: getBusinessFrameUrl(business, 'hero_img') || '',
       hero_img_2: getBusinessFrameUrl(business, 'hero_img_2') || '',
       about_img: getBusinessFrameUrl(business, 'about_img') || '',
       logo: getBusinessLogoUrl(business) || ''
-    });
+    };
+    
+    console.log('Initializing customizations for', business.name, currentValues);
+    setCustomizations(currentValues);
+    setImagePreviewErrors({});
+  };
+
+  // Handle image preview error
+  const handleImageError = (imageKey: string) => {
+    setImagePreviewErrors(prev => ({ ...prev, [imageKey]: true }));
+  };
+
+  // Check if image URL is valid for preview
+  const isValidImageUrl = (url: string) => {
+    return url && url.trim() !== '' && !imagePreviewErrors[url];
+  };
+
+  // Poll for logo processing completion
+  const pollLogoProcessing = async (jobId: string, businessId: string) => {
+    const maxAttempts = 60; // 5 minutes max (60 * 5 seconds)
+    let attempts = 0;
+
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        setLogoProcessingStatus(prev => ({ ...prev, [businessId]: 'timeout' }));
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/logo-job-status?jobId=${jobId}`);
+        const result = await response.json();
+
+        if (result.success && result.job) {
+          const { status } = result.job;
+          
+          if (status === 'completed') {
+            setLogoProcessingStatus(prev => ({ ...prev, [businessId]: 'completed' }));
+            setTimeout(() => window.location.reload(), 1000);
+            return;
+          } else if (status === 'failed') {
+            setLogoProcessingStatus(prev => ({ ...prev, [businessId]: 'failed' }));
+            return;
+          }
+        }
+
+        attempts++;
+        setTimeout(poll, 5000); // Poll every 5 seconds
+      } catch (error) {
+        console.error('Error polling logo status:', error);
+        setTimeout(poll, 5000);
+      }
+    };
+
+    poll();
   };
 
   // Helper functions to get current business images from database
@@ -128,11 +187,14 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
         }
       }
 
-      // Process logo if provided
+      // Process logo asynchronously if provided
       let processedLogoUrl = customizations.logo;
+      let logoJobId = null;
+      
       if (customizations.logo && customizations.logo.trim() !== '') {
         try {
-          const logoResponse = await fetch('/api/process-logo', {
+          // Start async logo processing
+          const logoResponse = await fetch('/api/process-logo-async', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -141,11 +203,12 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
             })
           });
           const logoResult = await logoResponse.json();
-          if (logoResult.processedUrl) {
-            processedLogoUrl = logoResult.processedUrl;
+          if (logoResult.jobId) {
+            logoJobId = logoResult.jobId;
+            setLogoProcessingStatus(prev => ({ ...prev, [business.id]: 'processing' }));
           }
         } catch (error) {
-          console.log('Note: Could not process logo, using original URL');
+          console.log('Note: Could not queue logo processing, using original URL');
         }
       }
 
@@ -187,9 +250,15 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
         });
       }
 
-      alert('✅ Customizations saved! Image domains automatically added to config.');
-      setExpandedCard(null);
-      window.location.reload();
+      if (logoJobId) {
+        alert('✅ Customizations saved! Logo is being processed in the background. Page will refresh when complete.');
+        // Poll for logo completion
+        pollLogoProcessing(logoJobId, business.id);
+      } else {
+        alert('✅ Customizations saved! Image domains automatically added to config.');
+        setExpandedCard(null);
+        window.location.reload();
+      }
     } catch (error) {
       alert('❌ Error saving customizations');
     }
@@ -206,7 +275,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
         <div className="bg-white shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <h1 className="text-3xl font-bold">Business Dashboard</h1>
-            <p className="text-gray-600 mt-2">{filteredBusinesses.length} businesses</p>
+            <p className="text-gray-600 mt-2">{filteredBusinesses.length} of {totalCount} businesses (Page {currentPage} of {totalPages})</p>
           </div>
         </div>
 
@@ -419,7 +488,7 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                       <p><strong>Reviews:</strong> <a href={(business as any).reviews_link} target="_blank" className="text-blue-600 hover:underline">View on Google</a></p>
                     )}
                     
-                    {business.total_views > 0 && (
+                    {(business.total_views || 0) > 0 && (
                       <p><strong>Analytics:</strong> <Link href={`/session-analytics?company=${business.id}`} className="text-blue-600 hover:underline">View Sessions</Link></p>
                     )}
                     
@@ -529,64 +598,128 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                               <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image 1 URL</label>
                               <input
                                 type="url"
-                                placeholder={getBusinessFrameUrl(business, 'hero_img') || "https://example.com/hero1.jpg"}
+                                placeholder="https://example.com/hero1.jpg"
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                value={customizations.hero_img}
+                                value={customizations.hero_img || getBusinessFrameUrl(business, 'hero_img') || ''}
                                 onChange={(e) => setCustomizations({...customizations, hero_img: e.target.value})}
                               />
-                              {getBusinessFrameUrl(business, 'hero_img') && (
-                                <div className="mt-2">
-                                  <img src={getBusinessFrameUrl(business, 'hero_img')} alt="Current hero" className="w-32 h-20 object-cover rounded border" />
-                                  <p className="text-xs text-gray-500 mt-1">Current hero image</p>
-                                </div>
+                              <div className="mt-2 grid grid-cols-2 gap-4">
+                                {getBusinessFrameUrl(business, 'hero_img') && (
+                                  <div>
+                                    <img src={getBusinessFrameUrl(business, 'hero_img')} alt="Current hero" className="w-full h-20 object-cover rounded border" />
+                                    <p className="text-xs text-gray-500 mt-1">Current</p>
+                                  </div>
+                                )}
+                                {isValidImageUrl(customizations.hero_img) && customizations.hero_img !== getBusinessFrameUrl(business, 'hero_img') && (
+                                  <div>
+                                    <img 
+                                      src={customizations.hero_img} 
+                                      alt="Preview hero" 
+                                      className="w-full h-20 object-cover rounded border" 
+                                      onError={() => handleImageError(customizations.hero_img)}
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">Preview</p>
+                                  </div>
+                                )}
+                              </div>
+                              {imagePreviewErrors[customizations.hero_img] && (
+                                <p className="text-xs text-red-500 mt-1">⚠️ Unable to load image preview</p>
                               )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">Hero Image 2 URL (Slideshow)</label>
                               <input
                                 type="url"
-                                placeholder={getBusinessFrameUrl(business, 'hero_img_2') || "https://example.com/hero2.jpg"}
+                                placeholder="https://example.com/hero2.jpg"
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                value={customizations.hero_img_2}
+                                value={customizations.hero_img_2 || getBusinessFrameUrl(business, 'hero_img_2') || ''}
                                 onChange={(e) => setCustomizations({...customizations, hero_img_2: e.target.value})}
                               />
-                              {getBusinessFrameUrl(business, 'hero_img_2') && (
-                                <div className="mt-2">
-                                  <img src={getBusinessFrameUrl(business, 'hero_img_2')} alt="Current hero 2" className="w-32 h-20 object-cover rounded border" />
-                                  <p className="text-xs text-gray-500 mt-1">Current hero image 2</p>
-                                </div>
+                              <div className="mt-2 grid grid-cols-2 gap-4">
+                                {getBusinessFrameUrl(business, 'hero_img_2') && (
+                                  <div>
+                                    <img src={getBusinessFrameUrl(business, 'hero_img_2')} alt="Current hero 2" className="w-full h-20 object-cover rounded border" />
+                                    <p className="text-xs text-gray-500 mt-1">Current</p>
+                                  </div>
+                                )}
+                                {isValidImageUrl(customizations.hero_img_2) && customizations.hero_img_2 !== getBusinessFrameUrl(business, 'hero_img_2') && (
+                                  <div>
+                                    <img 
+                                      src={customizations.hero_img_2} 
+                                      alt="Preview hero 2" 
+                                      className="w-full h-20 object-cover rounded border" 
+                                      onError={() => handleImageError(customizations.hero_img_2)}
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">Preview</p>
+                                  </div>
+                                )}
+                              </div>
+                              {imagePreviewErrors[customizations.hero_img_2] && (
+                                <p className="text-xs text-red-500 mt-1">⚠️ Unable to load image preview</p>
                               )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">About Image URL</label>
                               <input
                                 type="url"
-                                placeholder={getBusinessFrameUrl(business, 'about_img') || "https://example.com/about.jpg"}
+                                placeholder="https://example.com/about.jpg"
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                value={customizations.about_img}
+                                value={customizations.about_img || getBusinessFrameUrl(business, 'about_img') || ''}
                                 onChange={(e) => setCustomizations({...customizations, about_img: e.target.value})}
                               />
-                              {getBusinessFrameUrl(business, 'about_img') && (
-                                <div className="mt-2">
-                                  <img src={getBusinessFrameUrl(business, 'about_img')} alt="Current about" className="w-32 h-20 object-cover rounded border" />
-                                  <p className="text-xs text-gray-500 mt-1">Current about image</p>
-                                </div>
+                              <div className="mt-2 grid grid-cols-2 gap-4">
+                                {getBusinessFrameUrl(business, 'about_img') && (
+                                  <div>
+                                    <img src={getBusinessFrameUrl(business, 'about_img')} alt="Current about" className="w-full h-20 object-cover rounded border" />
+                                    <p className="text-xs text-gray-500 mt-1">Current</p>
+                                  </div>
+                                )}
+                                {isValidImageUrl(customizations.about_img) && customizations.about_img !== getBusinessFrameUrl(business, 'about_img') && (
+                                  <div>
+                                    <img 
+                                      src={customizations.about_img} 
+                                      alt="Preview about" 
+                                      className="w-full h-20 object-cover rounded border" 
+                                      onError={() => handleImageError(customizations.about_img)}
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">Preview</p>
+                                  </div>
+                                )}
+                              </div>
+                              {imagePreviewErrors[customizations.about_img] && (
+                                <p className="text-xs text-red-500 mt-1">⚠️ Unable to load image preview</p>
                               )}
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">Logo URL</label>
                               <input
                                 type="url"
-                                placeholder={getBusinessLogoUrl(business) || "https://example.com/logo.svg"}
+                                placeholder="https://example.com/logo.svg"
                                 className="w-full px-3 py-3 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                value={customizations.logo}
+                                value={customizations.logo || getBusinessLogoUrl(business) || ''}
                                 onChange={(e) => setCustomizations({...customizations, logo: e.target.value})}
                               />
-                              {getBusinessLogoUrl(business) && (
-                                <div className="mt-2">
-                                  <img src={getBusinessLogoUrl(business)} alt="Current logo" className="w-16 h-16 object-contain rounded border" />
-                                  <p className="text-xs text-gray-500 mt-1">Current logo</p>
-                                </div>
+                              <div className="mt-2 grid grid-cols-2 gap-4">
+                                {getBusinessLogoUrl(business) && (
+                                  <div>
+                                    <img src={getBusinessLogoUrl(business)} alt="Current logo" className="w-full h-16 object-contain rounded border" />
+                                    <p className="text-xs text-gray-500 mt-1">Current</p>
+                                  </div>
+                                )}
+                                {isValidImageUrl(customizations.logo) && customizations.logo !== getBusinessLogoUrl(business) && (
+                                  <div>
+                                    <img 
+                                      src={customizations.logo} 
+                                      alt="Preview logo" 
+                                      className="w-full h-16 object-contain rounded border" 
+                                      onError={() => handleImageError(customizations.logo)}
+                                    />
+                                    <p className="text-xs text-green-600 mt-1">Preview</p>
+                                  </div>
+                                )}
+                              </div>
+                              {imagePreviewErrors[customizations.logo] && (
+                                <p className="text-xs text-red-500 mt-1">⚠️ Unable to load image preview</p>
                               )}
                             </div>
                             <div>
@@ -605,7 +738,31 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
                     </div>
 
                     {/* Save Button */}
-                    <div className="mt-6 flex justify-end">
+                    <div className="mt-6 flex justify-between items-center">
+                      {logoProcessingStatus[business.id] && (
+                        <div className="flex items-center text-sm">
+                          {logoProcessingStatus[business.id] === 'processing' && (
+                            <span className="text-blue-600">
+                              🔄 Processing logo...
+                            </span>
+                          )}
+                          {logoProcessingStatus[business.id] === 'completed' && (
+                            <span className="text-green-600">
+                              ✅ Logo processed successfully!
+                            </span>
+                          )}
+                          {logoProcessingStatus[business.id] === 'failed' && (
+                            <span className="text-red-600">
+                              ❌ Logo processing failed
+                            </span>
+                          )}
+                          {logoProcessingStatus[business.id] === 'timeout' && (
+                            <span className="text-orange-600">
+                              ⏱️ Logo processing taking longer than expected
+                            </span>
+                          )}
+                        </div>
+                      )}
                       <button 
                         onClick={() => saveCustomizations(business)}
                         className="bg-green-600 text-white py-2 px-6 rounded hover:bg-green-700"
@@ -618,33 +775,84 @@ export default function BusinessDashboard({ businesses }: BusinessDashboardProps
               </div>
             ))}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex justify-center">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => window.location.href = `?page=${currentPage - 1}`}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center space-x-1">
+                  {[...Array(totalPages)].map((_, i) => {
+                    const pageNum = i + 1;
+                    const isCurrentPage = pageNum === currentPage;
+                    const showPage = pageNum === 1 || pageNum === totalPages || 
+                                   (pageNum >= currentPage - 2 && pageNum <= currentPage + 2);
+                    
+                    if (!showPage) {
+                      if (pageNum === currentPage - 3 || pageNum === currentPage + 3) {
+                        return <span key={pageNum} className="px-2">...</span>;
+                      }
+                      return null;
+                    }
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => window.location.href = `?page=${pageNum}`}
+                        className={`px-3 py-2 border rounded-md ${
+                          isCurrentPage 
+                            ? 'bg-blue-500 text-white border-blue-500' 
+                            : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  onClick={() => window.location.href = `?page=${currentPage + 1}`}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-
-
       </div>
     </>
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
-    const result = await query(`
-      SELECT 
-        c.id, c.name, c.slug, c.city, c.state, c.phone, c.email_1, c.custom_domain,
-        main_track.tracking_enabled,
-        main_track.total_views,
-        main_track.last_viewed_at
+    const page = parseInt(context.query.page as string) || 1;
+    const limit = 20; // Show 20 businesses per page
+
+    // Get total count
+    const countResult = await query(`
+      SELECT COUNT(*) as total
       FROM companies c
-      LEFT JOIN (
-        SELECT company_id, tracking_enabled, total_views, last_viewed_at 
-        FROM enhanced_tracking WHERE session_id IS NULL
-      ) main_track ON c.id = main_track.company_id
       WHERE (c.state = 'Alabama' OR c.state = 'Arkansas')
-      ORDER BY c.state, c.city, c.name
     `);
+    const totalCount = parseInt(countResult.rows[0]?.total || '0');
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Get paginated data using cache
+    const businessRows = await cacheHelpers.getBusinessList(page, limit);
 
     // Convert dates to strings for serialization and ensure required fields
-    const businesses = result.rows.map((business: any) => ({
+    const businesses = businessRows.map((business: any) => ({
       ...business,
       total_views: business.total_views || 0,
       last_viewed_at: business.last_viewed_at ? (business.last_viewed_at instanceof Date ? business.last_viewed_at.toISOString() : business.last_viewed_at) : null,
@@ -653,6 +861,9 @@ export const getServerSideProps: GetServerSideProps = async () => {
     return {
       props: {
         businesses,
+        totalCount,
+        currentPage: page,
+        totalPages,
       },
     };
   } catch (error) {
@@ -660,6 +871,9 @@ export const getServerSideProps: GetServerSideProps = async () => {
     return {
       props: {
         businesses: [],
+        totalCount: 0,
+        currentPage: 1,
+        totalPages: 1,
       },
     };
   }

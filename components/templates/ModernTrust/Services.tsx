@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Company } from '@/types';
+import ServiceModal from './ServiceModal';
 
 interface ServicesProps {
   company: Company;
@@ -70,6 +71,13 @@ const heatingServices = [
 const Services: React.FC<ServicesProps> = ({ company }) => {
   // State for active service type
   const [activeType, setActiveType] = useState<'cooling' | 'heating'>('cooling');
+  
+  // State for modal
+  const [selectedService, setSelectedService] = useState<{
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+  } | null>(null);
   
   // Determine which services to display
   const services = activeType === 'cooling' ? coolingServices : heatingServices;
@@ -202,7 +210,10 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
               
               {/* Action button */}
               <div className="mt-8 text-center">
-                <button className={`${activeColors.text} font-semibold flex items-center mx-auto`}>
+                <button 
+                  onClick={() => setSelectedService(service)}
+                  className={`${activeColors.text} font-semibold flex items-center mx-auto hover:underline transition-all transform hover:scale-105`}
+                >
                   Learn More
                   <svg className="w-5 h-5 ml-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -213,6 +224,17 @@ const Services: React.FC<ServicesProps> = ({ company }) => {
           ))}
         </div>
       </div>
+
+      {/* Service Modal */}
+      {selectedService && (
+        <ServiceModal
+          isOpen={!!selectedService}
+          onClose={() => setSelectedService(null)}
+          service={selectedService}
+          company={company}
+          serviceType={activeType}
+        />
+      )}
     </div>
   );
 };

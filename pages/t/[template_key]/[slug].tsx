@@ -69,13 +69,14 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { template_key, slug } = params;
   
   try {
-    // Get company data with geocoded location data and customizations
+    // Get company data with geocoded location data and working hours
     const result = await query(`
       SELECT c.*, 
              COALESCE(c.city, g.locality) as display_city,
              COALESCE(c.state, g.administrative_area_level_1) as display_state,
              COALESCE(c.postal_code, g.postal_code) as display_postal_code,
-             g.formatted_address
+             g.formatted_address,
+             c.hours, c.saturday_hours, c.sunday_hours, c.emergency_service
       FROM companies c
       LEFT JOIN geocoded_locations g ON c.id = g.company_id
       WHERE c.slug = $1 
