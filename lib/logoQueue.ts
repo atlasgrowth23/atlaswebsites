@@ -72,7 +72,7 @@ class LogoQueue {
       // Update job with success
       job.status = 'completed';
       job.completedAt = new Date();
-      job.processedUrl = processedUrl;
+      job.processedUrl = processedUrl || undefined;
       
     } catch (error) {
       // Update job with failure
@@ -88,7 +88,7 @@ class LogoQueue {
   cleanupOldJobs(maxAgeHours: number = 24): void {
     const cutoff = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
     
-    for (const [jobId, job] of this.jobs.entries()) {
+    for (const [jobId, job] of Array.from(this.jobs.entries())) {
       if (job.createdAt < cutoff && ['completed', 'failed'].includes(job.status)) {
         this.jobs.delete(jobId);
       }

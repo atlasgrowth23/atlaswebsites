@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
+declare global {
+  interface Window {
+    google: any;
+  }
+  var google: any;
+}
+
 interface ServiceAreaProps {
   company: any;
 }
@@ -110,13 +117,13 @@ const ServiceArea: React.FC<ServiceAreaProps> = ({ company }) => {
 
       const promises = radiusPoints.map(point => 
         new Promise<void>((resolve) => {
-          geocoder.geocode({ location: point }, (results, status) => {
+          geocoder.geocode({ location: point }, (results: any, status: any) => {
             if (status === 'OK' && results) {
-              results.forEach(result => {
-                result.address_components.forEach(component => {
+              results.forEach((result: any) => {
+                result.address_components.forEach((component: any) => {
                   if (component.types.includes('administrative_area_level_2')) {
                     const countyName = component.long_name.replace(' County', '');
-                    const state = result.address_components.find(c => 
+                    const state = result.address_components.find((c: any) => 
                       c.types.includes('administrative_area_level_1')
                     )?.short_name || '';
                     counties.add(`${countyName}, ${state}`);

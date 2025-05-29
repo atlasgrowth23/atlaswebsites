@@ -150,7 +150,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
         } catch (frameError) {
           console.error(`Error processing frame ${frameKey}:`, frameError);
-          errors.push(`Failed to process ${frameKey}: ${frameError.message}`);
+          errors.push(`Failed to process ${frameKey}: ${frameError instanceof Error ? frameError.message : String(frameError)}`);
         }
       }
 

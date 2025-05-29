@@ -83,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('Error updating image domains:', error);
     return res.status(500).json({ 
       error: 'Failed to update image domains',
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 }
