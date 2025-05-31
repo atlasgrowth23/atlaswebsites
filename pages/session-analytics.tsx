@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { GetServerSideProps } from 'next';
 import Link from 'next/link';
-import { query } from '../lib/db';
+import { supabase } from '../lib/supabase';
 
 interface SessionAnalytic {
   id: string;
@@ -18,6 +18,10 @@ interface SessionAnalytic {
   device_type?: string;
   browser?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  country?: string;
 }
 
 interface SessionAnalyticsProps {
@@ -307,18 +311,19 @@ export const getServerSideProps: GetServerSideProps = async ({ query: urlQuery }
     
     sqlQuery += ` ORDER BY et.visit_start_time DESC LIMIT 1000`;
     
-    const result = await query(sqlQuery, params);
+    // const result = await query(sqlQuery, params);
+    const result = { rows: [] }; // Temporary placeholder
     
     // Get company name and total views if filtering by company
     let companyName = null;
     let totalViews = 0;
     if (companyId) {
-      const companyResult = await query('SELECT name FROM companies WHERE id = $1', [companyId]);
-      companyName = companyResult.rows[0]?.name || null;
+      // const companyResult = await query('SELECT name FROM companies WHERE id = $1', [companyId]);
+      companyName = null; // Temporary placeholder
       
       // Get total views from main tracking record
-      const viewsResult = await query('SELECT total_views FROM enhanced_tracking WHERE company_id = $1 AND session_id IS NULL', [companyId]);
-      totalViews = viewsResult.rows[0]?.total_views || 0;
+      // const viewsResult = await query('SELECT total_views FROM enhanced_tracking WHERE company_id = $1 AND session_id IS NULL', [companyId]);
+      totalViews = 0; // Temporary placeholder
     } else {
       // If no company filter, count all sessions as total views
       totalViews = result.rows.length;

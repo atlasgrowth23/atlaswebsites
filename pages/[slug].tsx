@@ -1,7 +1,7 @@
 import { GetStaticPaths, GetStaticProps } from 'next';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
-import { queryOne, queryMany } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { Company } from '@/types';
 import { processLogo } from '@/lib/processLogo';
 
@@ -27,37 +27,25 @@ export default function RedirectPage({ company }: { company: Company }) {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  try {
-    // Fetch all company slugs from Replit PostgreSQL
-    const companies = await queryMany(`SELECT slug FROM companies`);
-
-    const paths = companies?.map((company) => ({
-      params: { slug: company.slug },
-    })) || [];
-
-    return {
-      paths,
-      fallback: 'blocking',
-    };
-  } catch (err) {
-    console.error('Error fetching company slugs:', err);
-    return {
-      paths: [],
-      fallback: 'blocking',
-    };
-  }
+  // Skip pre-generating paths during build to avoid database connection issues
+  return {
+    paths: [],
+    fallback: 'blocking',
+  };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const slug = params?.slug as string;
   
   try {
-    // Fetch company data from Replit PostgreSQL
-    const company = await queryOne(`
-      SELECT * FROM companies WHERE slug = $1
-    `, [slug]);
+    // Fetch company data from Supabase
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('slug', slug)
+      .single();
 
-    if (!company) {
+    if (error || !company) {
       return {
         notFound: true,
       };

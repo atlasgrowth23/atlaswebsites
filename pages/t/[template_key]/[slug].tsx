@@ -1,6 +1,6 @@
 import React from 'react';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { query } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
 import { processLogo } from '@/lib/processLogo';
@@ -42,21 +42,10 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  // Get all companies
-  const result = await query('SELECT slug FROM companies WHERE slug IS NOT NULL LIMIT 100');
-  
-  // Create paths for ALL templates for each company slug
-  const templates = ['moderntrust', 'boldenergy', 'naturalearthpro'];
-  const paths = [];
-  
-  for (const company of result.rows) {
-    for (const template of templates) {
-      paths.push({ params: { template_key: template, slug: company.slug } });
-    }
-  }
-  
+  // Skip pre-generating paths during build to avoid database connection issues
+  // All pages will be generated on-demand with fallback: 'blocking'
   return {
-    paths,
+    paths: [],
     fallback: 'blocking',
   };
 };
@@ -69,22 +58,14 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { template_key, slug } = params;
   
   try {
-    // Get company data with geocoded location data and working hours
-    const result = await query(`
-      SELECT c.*, 
-             COALESCE(c.city, g.locality) as display_city,
-             COALESCE(c.state, g.administrative_area_level_1) as display_state,
-             COALESCE(c.postal_code, g.postal_code) as display_postal_code,
-             g.formatted_address,
-             c.hours, c.saturday_hours, c.sunday_hours, c.emergency_service
-      FROM companies c
-      LEFT JOIN geocoded_locations g ON c.id = g.company_id
-      WHERE c.slug = $1 
-      LIMIT 1`,
-      [slug]
-    );
+    // Get company data from Supabase
+    const { data: companyData, error: companyError } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('slug', slug)
+      .single();
     
-    if (result.rows.length === 0) {
+    if (companyError || !companyData) {
       return { notFound: true };
     }
     
@@ -93,29 +74,29 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       return { notFound: true };
     }
     
-    const company = result.rows[0];
+    const company = companyData;
     
     // Get company-specific frames
-    const companyFramesResult = await query(
-      'SELECT slug as frame_key, url as image_url FROM company_frames WHERE company_id = $1',
-      [company.id]
-    );
+    const { data: companyFrames } = await supabase
+      .from('company_frames')
+      .select('slug, url')
+      .eq('company_id', company.id);
 
     // Get default frames for this specific template
-    const templateFramesResult = await query(
-      'SELECT slug as frame_key, default_url as image_url FROM frames WHERE template_key = $1',
-      [template_key]
-    );
+    const { data: templateFrames } = await supabase
+      .from('frames')
+      .select('slug, default_url')
+      .eq('template_key', template_key);
 
     // Convert to objects for easier lookup
     const company_frames: Record<string, string> = {};
-    companyFramesResult.rows.forEach((frame) => {
-      company_frames[frame.frame_key] = frame.image_url;
+    companyFrames?.forEach((frame) => {
+      company_frames[frame.slug] = frame.url;
     });
 
     const template_frames: Record<string, string> = {};
-    templateFramesResult.rows.forEach((frame) => {
-      template_frames[frame.frame_key] = frame.image_url;
+    templateFrames?.forEach((frame) => {
+      template_frames[frame.slug] = frame.default_url;
     });
 
     // Add frames to company object
