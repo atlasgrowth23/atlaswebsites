@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv('supabase_ready_fixed_domain (2).csv')
+df = pd.read_csv('supabase_ready_fixed_domain.csv')
 # Find every slug that appears more than once
 dupes = df['slug'][df['slug'].duplicated(keep=False)].unique()
 
