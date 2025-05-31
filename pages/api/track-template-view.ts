@@ -28,7 +28,7 @@ async function getLocationFromIP(req: NextApiRequest) {
       };
     }
   } catch (error) {
-    console.log('IP geolocation failed:', error.message);
+    console.log('IP geolocation failed:', error instanceof Error ? error.message : 'Unknown error');
   }
   
   return null;

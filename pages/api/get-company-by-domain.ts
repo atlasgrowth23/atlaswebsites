@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { query } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -13,18 +13,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Find company with this custom domain
-    const result = await query(
-      'SELECT id, name, slug, custom_domain FROM companies WHERE custom_domain = $1 LIMIT 1',
-      [domain]
-    );
+    // Find company with this custom domain using Supabase
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select('id, name, slug, custom_domain')
+      .eq('custom_domain', domain)
+      .single();
 
-    if (result.rows && result.rows.length > 0) {
-      const company = result.rows[0];
-      res.status(200).json(company);
-    } else {
-      res.status(404).json({ message: 'No company found for this domain' });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return res.status(404).json({ message: 'No company found for this domain' });
+      }
+      throw error;
     }
+
+    res.status(200).json(company);
   } catch (error) {
     console.error('Database error:', error);
     res.status(500).json({ message: 'Internal server error' });
