@@ -103,16 +103,12 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     company.template_frames = template_frames;
     
     // Handle logo based on predicted_label  
-    // For now, ALL companies show name as text until we upload actual logos
-    company.logoUrl = null; // This forces text display for all companies
-    
-    // TODO: When logos are uploaded to storage, uncomment this:
-    // if (company.predicted_label === 'logo' && company.logo_storage_path) {
-    //   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    //   company.logoUrl = `${supabaseUrl}/storage/v1/object/public/images${company.logo_storage_path}`;
-    // } else {
-    //   company.logoUrl = null;
-    // }
+    if (company.predicted_label === 'logo' && company.logo_storage_path) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      company.logoUrl = `${supabaseUrl}/storage/v1/object/public/images${company.logo_storage_path}`;
+    } else {
+      company.logoUrl = null; // Show company name as text
+    }
     
     console.log('✅ Company loaded:', company.name, 'Logo mode:', company.predicted_label);
     
