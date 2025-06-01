@@ -120,7 +120,8 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
       revalidate: 60 * 10, // Revalidate every 10 minutes
     };
   } catch (error) {
-    console.error('Error fetching company data:', error);
+    console.error('❌ Template page error:', error);
+    console.error('❌ Params:', { template_key, slug });
     return { notFound: true };
   }
 }
