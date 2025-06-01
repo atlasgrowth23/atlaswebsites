@@ -36,7 +36,7 @@ export default function CompanyDetail({ company }: CompanyDetailProps) {
                 <div className="space-y-2">
                   <p><strong>Location:</strong> {company.city}, {company.state}</p>
                   {company.phone && <p><strong>Phone:</strong> {company.phone}</p>}
-                  {company.email && <p><strong>Email:</strong> {company.email}</p>}
+                  {company.email_1 && <p><strong>Email:</strong> {company.email_1}</p>}
                   <p><strong>Slug:</strong> {company.slug}</p>
                 </div>
               </div>
