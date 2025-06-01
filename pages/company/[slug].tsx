@@ -249,15 +249,7 @@ export async function getServerSideProps({ params }: any) {
     (company as any).logoUrl = logoUrl;
 
     // Tracking data temporarily disabled during migration
-    const trackingData = null;
-
-    // Convert Date objects to strings for JSON serialization
-    const serializedTrackingData = trackingData ? {
-      ...trackingData,
-      activated_at: trackingData.activated_at ? trackingData.activated_at.toISOString() : null,
-      last_viewed_at: trackingData.last_viewed_at ? trackingData.last_viewed_at.toISOString() : null,
-      created_at: trackingData.created_at ? trackingData.created_at.toISOString() : null,
-    } : null;
+    const serializedTrackingData = null;
 
     return {
       props: {
