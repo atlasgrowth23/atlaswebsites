@@ -76,13 +76,41 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     
     const company = companyData;
     
-    // STRIPPED DOWN VERSION - NO FRAMES FOR NOW
-    console.log('✅ Found company:', company.name, company.slug);
+    // Get company frames and template frames from database/storage
+    const { data: companyFrames } = await supabaseAdmin
+      .from('company_frames')
+      .select('slug, url')
+      .eq('company_id', company.id);
+
+    const { data: templateFrames } = await supabaseAdmin
+      .from('frames')
+      .select('slug, default_url')
+      .eq('template_key', template_key);
+
+    // Convert to objects for easy lookup
+    const company_frames: Record<string, string> = {};
+    companyFrames?.forEach((frame) => {
+      company_frames[frame.slug] = frame.url;
+    });
+
+    const template_frames: Record<string, string> = {};
+    templateFrames?.forEach((frame) => {
+      template_frames[frame.slug] = frame.default_url;
+    });
+
+    // Add frame data to company
+    company.company_frames = company_frames;
+    company.template_frames = template_frames;
     
-    // Just use basic company data
-    company.logoUrl = company.logo || '/images/default-logo.svg';
-    company.company_frames = {};
-    company.template_frames = {};
+    // Handle logo based on predicted_label
+    if (company.predicted_label === 'logo' && company.logo_storage_path) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      company.logoUrl = `${supabaseUrl}/storage/v1/object/public/images${company.logo_storage_path}`;
+    } else {
+      company.logoUrl = null; // Will show company name as text
+    }
+    
+    console.log('✅ Company loaded:', company.name, 'Logo mode:', company.predicted_label);
     
     return {
       props: {
