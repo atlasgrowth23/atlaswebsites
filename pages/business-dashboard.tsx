@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { query } from '@/lib/db';
+import { getAllCompanies } from '@/lib/supabase-db';
 import { cacheHelpers } from '@/lib/cache';
 
 interface Business {
@@ -840,23 +840,34 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const page = parseInt(context.query.page as string) || 1;
     const limit = 20; // Show 20 businesses per page
 
-    // Get total count
-    const countResult = await query(`
-      SELECT COUNT(*) as total
-      FROM companies c
-      WHERE (c.state = 'Alabama' OR c.state = 'Arkansas')
-    `);
-    const totalCount = parseInt(countResult.rows[0]?.total || '0');
+    // Get all companies and filter for Alabama/Arkansas
+    const allCompanies = await getAllCompanies(2000);
+    const filteredCompanies = allCompanies.filter(
+      company => company.state === 'Alabama' || company.state === 'Arkansas'
+    );
+
+    const totalCount = filteredCompanies.length;
     const totalPages = Math.ceil(totalCount / limit);
 
-    // Get paginated data using cache
-    const businessRows = await cacheHelpers.getBusinessList(page, limit);
+    // Paginate the results
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedCompanies = filteredCompanies.slice(startIndex, endIndex);
 
-    // Convert dates to strings for serialization and ensure required fields
-    const businesses = businessRows.map((business: any) => ({
-      ...business,
-      total_views: business.total_views || 0,
-      last_viewed_at: business.last_viewed_at ? (business.last_viewed_at instanceof Date ? business.last_viewed_at.toISOString() : business.last_viewed_at) : null,
+    // Map to business format expected by the component
+    const businesses = paginatedCompanies.map((company: any) => ({
+      id: company.id,
+      name: company.name,
+      slug: company.slug,
+      city: company.city,
+      state: company.state,
+      phone: company.phone,
+      email_1: company.email_1,
+      custom_domain: company.custom_domain,
+      tracking_enabled: false, // Default for now
+      total_views: 0, // Default for now
+      last_viewed_at: null,
+      reviews_link: company.reviews_link,
     }));
 
     return {

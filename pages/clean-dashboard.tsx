@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
-import { query } from '@/lib/db';
+import { getAllCompanies } from '@/lib/supabase-db';
 import { Company } from '@/types';
 
 interface CleanDashboardProps {
@@ -179,18 +179,21 @@ export default function CleanDashboard({ companies }: CleanDashboardProps) {
 
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
-    const result = await query(`
-      SELECT *
-      FROM companies
-      WHERE (state = 'Alabama' OR state = 'Arkansas')
-      ORDER BY state, city, name
-    `);
-
-    const companies = result.rows || [];
+    const companies = await getAllCompanies(1000); // Get more companies
+    
+    // Filter for Alabama and Arkansas, then sort
+    const filteredCompanies = companies
+      .filter(company => company.state === 'Alabama' || company.state === 'Arkansas')
+      .sort((a, b) => {
+        // Sort by state, then city, then name
+        if (a.state !== b.state) return a.state!.localeCompare(b.state!);
+        if (a.city !== b.city) return (a.city || '').localeCompare(b.city || '');
+        return a.name.localeCompare(b.name);
+      });
 
     return {
       props: {
-        companies,
+        companies: filteredCompanies,
       },
     };
   } catch (error) {
