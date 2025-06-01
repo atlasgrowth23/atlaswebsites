@@ -3,7 +3,7 @@ import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getCompanyBySlug } from '@/lib/supabase-db';
+import { getCompanyBySlug, getAllCompanies } from '@/lib/supabase-db';
 import { Company } from '@/types';
 import { processLogo } from '@/lib/processLogo';
 
