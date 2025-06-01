@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Company } from '@/types';
+import { getLogoUrl } from '@/lib/photo';
 
 interface HeaderProps {
   company: Company;
