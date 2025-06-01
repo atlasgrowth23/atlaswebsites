@@ -103,9 +103,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       }
 
-      // Verify company exists
-      const company = await queryOne('SELECT id, slug FROM companies WHERE id = $1', [validatedCompanyId]);
-      if (!company) {
+      // Verify company exists using Supabase
+      const { supabase } = await import('@/lib/supabase');
+      const { data: company, error } = await supabase
+        .from('companies')
+        .select('id, slug')
+        .eq('id', validatedCompanyId)
+        .single();
+        
+      if (error || !company) {
         return res.status(404).json({ 
           error: 'Company not found',
           code: 'COMPANY_NOT_FOUND'
@@ -127,24 +133,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (imageUrl && imageUrl.toString().trim() !== '') {
             const validatedUrl = validateImageUrl(imageUrl);
             
-            // Insert or update company frame using upsert
-            await query(`
-              INSERT INTO company_frames (company_id, slug, url, updated_at)
-              VALUES ($1, $2, $3, NOW())
-              ON CONFLICT (company_id, slug)
-              DO UPDATE SET 
-                url = EXCLUDED.url,
-                updated_at = EXCLUDED.updated_at
-            `, [validatedCompanyId, frameKey, validatedUrl]);
+            // Insert or update company frame using Supabase
+            await setCompanyFrame(validatedCompanyId, frameKey, validatedUrl);
             
             updatedFrames.push(frameKey);
             console.log(`✅ Saved company frame: ${frameKey} = ${validatedUrl}`);
           } else if (imageUrl === '') {
-            // Remove frame if explicitly set to empty
-            await query(`
-              DELETE FROM company_frames 
-              WHERE company_id = $1 AND slug = $2
-            `, [validatedCompanyId, frameKey]);
+            // Remove frame if explicitly set to empty using Supabase
+            const { supabase } = await import('@/lib/supabase');
+            await supabase
+              .from('company_frames')
+              .delete()
+              .eq('company_id', validatedCompanyId)
+              .eq('slug', frameKey);
             
             console.log(`❌ Removed company frame: ${frameKey}`);
           }
