@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Company } from '@/types';
-import { getLogoUrl } from '@/lib/photo';
+// Logo URL is already set on company object by template page
 
 interface HeaderProps {
   company: Company;

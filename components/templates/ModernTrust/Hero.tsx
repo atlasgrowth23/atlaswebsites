@@ -13,13 +13,13 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
   // Hero slides with different images and text
   const heroSlides = [
     {
-      image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
+      image: getPhotoUrl(company, 'hero_img', 'moderntrust') || '/images/default-hero.jpg',
       title: `Stay Cool This Summer in`,
       subtitle: (company as any).display_city || company.city || 'Your Area',
       description: "Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs."
     },
     {
-      image: getPhotoUrl(company, 'hero_img_2', 'moderntrust'),
+      image: getPhotoUrl(company, 'hero_img_2', 'moderntrust') || '/images/default-hero.jpg',
       title: `Professional HVAC Service in`,
       subtitle: (company as any).display_city || company.city || 'Your Area',
       description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
