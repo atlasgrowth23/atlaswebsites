@@ -192,7 +192,15 @@ export default function VisitLogs({ visits, totalVisits }: VisitLogsProps) {
 
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
-    const result = await query(`
+    // Temporarily disabled for Supabase migration
+    return {
+      props: {
+        visits: [],
+        totalVisits: 0,
+      },
+    };
+    
+    /* const result = await query(`
       SELECT 
         et.id,
         et.company_id,
