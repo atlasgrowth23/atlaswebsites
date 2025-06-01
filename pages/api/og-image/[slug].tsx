@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { queryOne } from '@/lib/db';
+import { getCompanyBySlug } from '@/lib/supabase-db';
 import { processLogo } from '@/lib/processLogo';
 import fs from 'fs';
 import path from 'path';
@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // Get company data
-    const company = await queryOne(`SELECT * FROM companies WHERE slug = $1`, [slug]);
+    const company = await getCompanyBySlug(slug as string);
     
     if (!company) {
       return res.status(404).json({ error: 'Company not found' });

@@ -304,42 +304,25 @@ const Dashboard: NextPage<DashboardProps> = ({ companies, trackingData: initialT
 
 export async function getServerSideProps() {
   try {
-    // Fetch companies with geocoded location data, sorted by location
-    const companies = await queryMany(`
-      SELECT c.id, c.slug, c.name, 
-             COALESCE(c.city, g.locality) as city,
-             COALESCE(c.state, g.administrative_area_level_1) as state,
-             c.latitude, c.longitude
-      FROM companies c
-      LEFT JOIN geocoded_locations g ON c.id = g.company_id
-      ORDER BY 
-        COALESCE(c.state, g.administrative_area_level_1),
-        COALESCE(c.city, g.locality),
-        c.latitude,
-        c.longitude,
-        c.name
-    `);
+    // Fetch companies using Supabase
+    const companies = await getAllCompanies(1000);
+    
+    // Filter and sort companies (simplified without geocoded data for now)
+    const filteredCompanies = companies
+      .filter(company => company.state === 'Alabama' || company.state === 'Arkansas')
+      .sort((a, b) => {
+        if (a.state !== b.state) return a.state!.localeCompare(b.state!);
+        if (a.city !== b.city) return (a.city || '').localeCompare(b.city || '');
+        return a.name.localeCompare(b.name);
+      });
 
-    // Fetch tracking data
-    const trackingData = await queryMany(`
-      SELECT pt.*, c.name, c.slug 
-      FROM prospect_tracking pt
-      JOIN companies c ON c.id::text = pt.company_id
-      ORDER BY pt.activated_at DESC NULLS LAST
-    `);
-
-    // Convert Date objects to strings for JSON serialization
-    const serializedTrackingData = (trackingData || []).map((item: any) => ({
-      ...item,
-      activated_at: item.activated_at ? item.activated_at.toISOString() : null,
-      last_viewed_at: item.last_viewed_at ? item.last_viewed_at.toISOString() : null,
-      created_at: item.created_at ? item.created_at.toISOString() : null,
-    }));
+    // Tracking data temporarily disabled during migration
+    const trackingData: TrackingData[] = [];
 
     return {
       props: {
-        companies: companies || [],
-        trackingData: serializedTrackingData,
+        companies: filteredCompanies || [],
+        trackingData: trackingData,
       },
     };
   } catch (err) {
