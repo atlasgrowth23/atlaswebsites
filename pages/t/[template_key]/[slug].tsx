@@ -76,41 +76,13 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     
     const company = companyData;
     
-    // Get company-specific frames
-    const { data: companyFrames } = await supabase
-      .from('company_frames')
-      .select('slug, url')
-      .eq('company_id', company.id);
-
-    // Get default frames for this specific template
-    const { data: templateFrames } = await supabase
-      .from('frames')
-      .select('slug, default_url')
-      .eq('template_key', template_key);
-
-    // Convert to objects for easier lookup
-    const company_frames: Record<string, string> = {};
-    companyFrames?.forEach((frame) => {
-      company_frames[frame.slug] = frame.url;
-    });
-
-    const template_frames: Record<string, string> = {};
-    templateFrames?.forEach((frame) => {
-      template_frames[frame.slug] = frame.default_url;
-    });
-
-    // Add frames to company object
-    company.company_frames = company_frames;
-    company.template_frames = template_frames;
+    // STRIPPED DOWN VERSION - NO FRAMES FOR NOW
+    console.log('✅ Found company:', company.name, company.slug);
     
-    // Use logo URL directly from frames or company data - no processing during render
-    company.logoUrl = company_frames['logo_url'] || company.logo;
-    
-    // Log what frames we're using
-    console.log('Company ID:', company.id);
-    console.log('Added company frames:', company_frames);
-    console.log('Added template frames:', template_frames);
-    console.log('Logo URL:', company.logoUrl);
+    // Just use basic company data
+    company.logoUrl = company.logo || '/images/default-logo.svg';
+    company.company_frames = {};
+    company.template_frames = {};
     
     return {
       props: {
