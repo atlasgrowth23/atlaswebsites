@@ -43,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               {company.logoUrl && (
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-2 rounded-xl shadow-sm">
+                <div>
                   <Image 
                     src={company.logoUrl}
                     alt="Brand Logo"
@@ -109,7 +109,7 @@ const Header: React.FC<HeaderProps> = ({ company }) => {
         <div className="hidden md:flex justify-between items-center">
           <div className="flex items-center space-x-4 flex-1">
             {company.logoUrl && (
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-xl shadow-sm">
+              <div>
                 <Image 
                   src={company.logoUrl}
                   alt="Brand Logo"
