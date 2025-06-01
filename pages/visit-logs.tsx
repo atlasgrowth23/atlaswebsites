@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next';
 import { useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { query } from '@/lib/db';
+import { getAllCompanies } from '@/lib/supabase-db';
 
 interface VisitLog {
   id: string;

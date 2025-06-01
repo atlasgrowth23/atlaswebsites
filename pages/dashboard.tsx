@@ -4,7 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Company } from '@/types';
-import { queryMany } from '@/lib/db';
+import { getAllCompanies } from '@/lib/supabase-db';
 
 interface TrackingData {
   company_id: string;

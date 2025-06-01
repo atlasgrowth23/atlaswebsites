@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { query } from '@/lib/db';
+import { updateCompany } from '@/lib/supabase-db';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -14,10 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // First, update the database with the custom domain
-    await query(
-      'UPDATE companies SET custom_domain = $1 WHERE id = $2',
-      [customDomain, companyId]
-    );
+    await updateCompany(companyId, { custom_domain: customDomain });
 
     // Add domain to Vercel project (using your correct project ID)
     const vercelResponse = await fetch(`https://api.vercel.com/v10/projects/prj_4M9ztyh53V76lUdsEHPIw88UT5wC/domains`, {

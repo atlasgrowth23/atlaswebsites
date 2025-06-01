@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { query, queryOne } from '@/lib/db';
+import { setCompanyFrame, getCompanyBySlug } from '@/lib/supabase-db';
 import { cacheHelpers } from '@/lib/cache';
 
 // Input validation
