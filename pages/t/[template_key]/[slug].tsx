@@ -104,8 +104,14 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     
     // Handle logo based on predicted_label  
     if (company.predicted_label === 'logo' && company.logo_storage_path) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      company.logoUrl = `${supabaseUrl}/storage/v1/object/public/images${company.logo_storage_path}`;
+      // Check if it's already a full HTTP URL (real Google logo)
+      if (company.logo_storage_path.startsWith('http')) {
+        company.logoUrl = company.logo_storage_path;
+      } else {
+        // It's a storage path, build Supabase URL
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        company.logoUrl = `${supabaseUrl}/storage/v1/object/public/images${company.logo_storage_path}`;
+      }
     } else {
       company.logoUrl = null; // Show company name as text
     }
