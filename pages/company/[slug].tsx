@@ -7,222 +7,79 @@ import { getCompanyBySlug, getAllCompanies } from '@/lib/supabase-db';
 import { Company } from '@/types';
 import { processLogo } from '@/lib/processLogo';
 
-interface TrackingData {
-  company_id: string;
-  tracking_enabled: boolean;
-  total_views: number;
-  template_views: Record<string, number>;
-  last_viewed_at: string;
-  activated_at: string;
-}
-
 interface CompanyDetailProps {
   company: Company;
-  trackingData: TrackingData | null;
 }
 
-export default function CompanyDetail({ company, trackingData: initialTrackingData }: CompanyDetailProps) {
-  const [trackingData, setTrackingData] = useState(initialTrackingData);
-  const [feedback, setFeedback] = useState('');
-
-  const handleTrackingToggle = async (action: 'activate' | 'deactivate') => {
-    try {
-      const response = await fetch('/api/prospect-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          companyId: company.id?.toString(),
-          action
-        })
-      });
-      
-      if (response.ok) {
-        setFeedback(action === 'activate' ? '✅ Tracking Activated!' : '⏹️ Tracking Stopped');
-        
-        // Refresh tracking data
-        const trackingResponse = await fetch('/api/prospect-tracking');
-        const data = await trackingResponse.json();
-        const updatedTracking = data.trackingData.find((t: any) => t.company_id === company.id?.toString());
-        setTrackingData(updatedTracking || null);
-        
-        // Clear feedback after 3 seconds
-        setTimeout(() => setFeedback(''), 3000);
-      }
-    } catch (error) {
-      console.error('Error toggling tracking:', error);
-      setFeedback('❌ Error occurred');
-    }
-  };
-
-  const isTracking = trackingData?.tracking_enabled || false;
-
+export default function CompanyDetail({ company }: CompanyDetailProps) {
   return (
     <>
       <Head>
         <title>{company.name} - Company Details</title>
-        <meta name="description" content={`Detailed analytics and management for ${company.name}`} />
+        <meta name="description" content={`Details for ${company.name}`} />
       </Head>
 
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Link href="/dashboard" className="text-blue-600 hover:text-blue-800">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          {/* Header */}
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
+              <Link href="/business-dashboard" className="text-blue-600 hover:text-blue-800">
                 ← Back to Dashboard
               </Link>
             </div>
             
-            <div className="flex items-center gap-6">
-              {company.logoUrl && (
-                <Image 
-                  src={company.logoUrl}
-                  alt={`${company.name} logo`}
-                  width={80}
-                  height={60}
-                  className="object-contain bg-white rounded-lg shadow-sm p-2"
-                />
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
-                <p className="text-gray-600 mt-1">
-                  {company.city && company.state ? `${company.city}, ${company.state}` : 'HVAC Services'}
-                </p>
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium mt-2 ${
-                  isTracking ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {isTracking ? '📊 Tracking Active' : '⏸️ Tracking Inactive'}
+                <h3 className="text-lg font-semibold mb-3">Company Information</h3>
+                <div className="space-y-2">
+                  <p><strong>Location:</strong> {company.city}, {company.state}</p>
+                  {company.phone && <p><strong>Phone:</strong> {company.phone}</p>}
+                  {company.email && <p><strong>Email:</strong> {company.email}</p>}
+                  <p><strong>Slug:</strong> {company.slug}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
+                <div className="space-y-3">
+                  <Link 
+                    href={`/templates/${company.slug}`}
+                    className="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded hover:bg-blue-700"
+                  >
+                    Select Template
+                  </Link>
+                  <Link 
+                    href={`/t/moderntrust/${company.slug}`}
+                    target="_blank"
+                    className="block w-full bg-green-600 text-white text-center py-2 px-4 rounded hover:bg-green-700"
+                  >
+                    View Live Site
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* Analytics Panel */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-xl font-bold mb-6">Website Analytics</h2>
-                
-                {isTracking && trackingData ? (
-                  <div className="space-y-6">
-                    {/* Key Metrics */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-blue-900">{trackingData.total_views || 0}</div>
-                        <div className="text-sm text-blue-600">Total Views</div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-green-900">
-                          {trackingData.last_viewed_at ? new Date(trackingData.last_viewed_at).toLocaleDateString() : 'Never'}
-                        </div>
-                        <div className="text-sm text-green-600">Last Viewed</div>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg">
-                        <div className="text-2xl font-bold text-purple-900">
-                          {trackingData.activated_at ? new Date(trackingData.activated_at).toLocaleDateString() : 'Never'}
-                        </div>
-                        <div className="text-sm text-purple-600">Tracking Since</div>
-                      </div>
-                    </div>
-
-                    {/* Template Views */}
-                    {trackingData.template_views && Object.keys(trackingData.template_views).length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3">Template Preferences</h3>
-                        <div className="space-y-2">
-                          {Object.entries(trackingData.template_views).map(([template, views]) => (
-                            <div key={template} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                              <span className="font-medium capitalize">{template}</span>
-                              <span className="text-lg font-bold">{views} views</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+          {/* Templates Section */}
+          <div className="bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-2xl font-semibold mb-4">Available Templates</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {['moderntrust', 'boldenergy', 'naturalearthpro'].map((template) => (
+                <div key={template} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <h3 className="font-semibold capitalize mb-2">{template.replace(/([A-Z])/g, ' $1').trim()}</h3>
+                  <div className="space-y-2">
+                    <Link 
+                      href={`/t/${template}/${company.slug}`}
+                      target="_blank"
+                      className="block w-full bg-blue-600 text-white text-center py-2 px-3 rounded hover:bg-blue-700 text-sm"
+                    >
+                      Preview
+                    </Link>
                   </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="text-gray-400 text-6xl mb-4">📊</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
-                    <p className="text-gray-600">Activate tracking to start collecting analytics data for this company.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Actions Panel */}
-            <div className="space-y-6">
-              
-              {/* Feedback Message */}
-              {feedback && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
-                  {feedback}
                 </div>
-              )}
-
-              {/* Tracking Control */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Prospect Tracking</h3>
-                <button
-                  onClick={() => handleTrackingToggle(isTracking ? 'deactivate' : 'activate')}
-                  className={`w-full py-3 px-6 rounded-lg font-bold transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5 ${
-                    isTracking 
-                      ? 'bg-red-600 hover:bg-red-700 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-                >
-                  {isTracking ? '🛑 Stop Tracking' : '🚀 Send to Prospect'}
-                </button>
-              </div>
-
-              {/* Template Selection */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Website Templates</h3>
-                <div className="space-y-3">
-                  <Link href={`/templates/${company.slug}`}>
-                    <button className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-all duration-300 hover:shadow-lg">
-                      Choose Template Style
-                    </button>
-                  </Link>
-                  <Link href={`/template-editor?slug=${company.slug}`}>
-                    <button className="w-full py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-all duration-300 hover:shadow-lg">
-                      🎨 Customize Templates
-                    </button>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Quick Links */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-                <div className="space-y-2">
-                  <a 
-                    href={`/t/moderntrust/${company.slug}`} 
-                    target="_blank" 
-                    className="block w-full py-2 px-4 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  >
-                    🔗 ModernTrust Style
-                  </a>
-                  <a 
-                    href={`/t/boldenergy/${company.slug}`} 
-                    target="_blank" 
-                    className="block w-full py-2 px-4 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                  >
-                    🔗 BoldEnergy Style
-                  </a>
-                  <a 
-                    href={`/t/naturalearthpro/${company.slug}`} 
-                    target="_blank" 
-                    className="block w-full py-2 px-4 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                  >
-                    🔗 NaturalEarthPro Style
-                  </a>
-                </div>
-              </div>
-
+              ))}
             </div>
           </div>
         </div>
@@ -231,7 +88,14 @@ export default function CompanyDetail({ company, trackingData: initialTrackingDa
   );
 }
 
-export async function getServerSideProps({ params }: any) {
+export const getStaticPaths: GetStaticPaths = async () => {
+  return {
+    paths: [],
+    fallback: 'blocking'
+  };
+};
+
+export const getStaticProps: GetStaticProps = async ({ params }) => {
   try {
     const slug = params?.slug as string;
 
@@ -248,14 +112,11 @@ export async function getServerSideProps({ params }: any) {
     const logoUrl = await processLogo(company.slug, company.logo || null);
     (company as any).logoUrl = logoUrl;
 
-    // Tracking data temporarily disabled during migration
-    const serializedTrackingData = null;
-
     return {
       props: {
         company,
-        trackingData: serializedTrackingData,
       },
+      revalidate: 3600
     };
   } catch (error) {
     console.error('Error fetching company data:', error);
