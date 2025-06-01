@@ -58,7 +58,7 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <Hero company={company} />
         <About company={company} />
         <Services company={company} />
-        <GoogleReviews company={company} />
+        {/* <GoogleReviews company={company} /> */}
         <ServiceArea company={company} />
       </main>
       <Footer company={company} />

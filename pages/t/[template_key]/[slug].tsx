@@ -1,6 +1,6 @@
 import React from 'react';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
 import { processLogo } from '@/lib/processLogo';
@@ -59,7 +59,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   
   try {
     // Get company data from Supabase
-    const { data: companyData, error: companyError } = await supabase
+    const { data: companyData, error: companyError } = await supabaseAdmin
       .from('companies')
       .select('*')
       .eq('slug', slug)
