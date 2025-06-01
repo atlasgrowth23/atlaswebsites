@@ -235,11 +235,8 @@ export async function getServerSideProps({ params }: any) {
   try {
     const slug = params?.slug as string;
 
-    // Get company data
-    const company = await queryOne(`
-      SELECT * FROM companies 
-      WHERE slug = $1
-    `, [slug]);
+    // Get company data using Supabase
+    const company = await getCompanyBySlug(slug);
 
     if (!company) {
       return {
@@ -248,14 +245,11 @@ export async function getServerSideProps({ params }: any) {
     }
 
     // Process logo
-    const logoUrl = await processLogo(company.slug, company.logo);
-    company.logoUrl = logoUrl;
+    const logoUrl = await processLogo(company.slug, company.logo || null);
+    (company as any).logoUrl = logoUrl;
 
-    // Get tracking data
-    const trackingData = await queryOne(`
-      SELECT * FROM prospect_tracking 
-      WHERE company_id = $1
-    `, [company.id]);
+    // Tracking data temporarily disabled during migration
+    const trackingData = null;
 
     // Convert Date objects to strings for JSON serialization
     const serializedTrackingData = trackingData ? {

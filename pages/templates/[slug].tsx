@@ -239,12 +239,13 @@ export default function TemplateSelection({ company }: TemplateSelectionProps) {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   try {
-    const result = await query('SELECT slug FROM companies WHERE slug IS NOT NULL');
-    const companies = result.rows || [];
+    const companies = await getAllCompanies(1000);
     
-    const paths = companies.map((company: any) => ({
-      params: { slug: company.slug }
-    }));
+    const paths = companies
+      .filter(company => company.slug)
+      .map((company: any) => ({
+        params: { slug: company.slug }
+      }));
 
     return {
       paths,
@@ -263,8 +264,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { slug } = params!;
 
   try {
-    const result = await query('SELECT * FROM companies WHERE slug = $1', [slug]);
-    const company = result.rows?.[0];
+    const company = await getCompanyBySlug(slug as string);
 
     if (!company) {
       return {
@@ -273,7 +273,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
     }
 
     // Process logo
-    const logoUrl = await processLogo(company.slug, company.logo);
+    const logoUrl = await processLogo(company.slug, company.logo || null);
 
     const processedCompany = {
       ...company,

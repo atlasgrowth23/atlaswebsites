@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Process logo if available
-    const logoUrl = await processLogo(company.slug, company.logo);
+    const logoUrl = await processLogo(company.slug, company.logo || null);
     
     if (logoUrl) {
       // Serve the processed logo directly
