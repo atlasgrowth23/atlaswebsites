@@ -277,9 +277,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
 
     const processedCompany = {
       ...company,
-      logoUrl,
-      company_frames: company.company_frames || {},
-      template_frames: company.template_frames || {}
+      logoUrl
     };
 
     return {
