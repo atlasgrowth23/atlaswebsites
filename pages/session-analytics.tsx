@@ -278,62 +278,87 @@ export const getServerSideProps: GetServerSideProps = async ({ query: urlQuery }
   try {
     const companyId = urlQuery.company as string;
     
-    let sqlQuery = `
-      SELECT DISTINCT
-        et.id,
-        et.company_id,
-        c.name as company_name,
-        et.session_id,
-        et.template_key,
-        et.total_time_seconds,
-        et.user_agent,
-        et.referrer_url,
-        et.visit_start_time,
-        et.visit_end_time,
-        et.device_type,
-        et.browser_name,
-        et.country,
-        et.city,
-        et.longitude,
-        et.latitude,
-        et.page_interactions
-      FROM enhanced_tracking et
-      JOIN companies c ON et.company_id = c.id
-      WHERE et.session_id IS NOT NULL
-    `;
-    
-    const params: any[] = [];
+    // Build query for template views with company info
+    let query = supabase
+      .from('template_views')
+      .select(`
+        id,
+        company_id,
+        companies!inner(name),
+        session_id,
+        template_key,
+        total_time_seconds,
+        user_agent,
+        referrer_url,
+        visit_start_time,
+        visit_end_time,
+        device_type,
+        browser_name,
+        country,
+        city,
+        longitude,
+        latitude,
+        page_interactions
+      `)
+      .not('session_id', 'is', null)
+      .order('visit_start_time', { ascending: false })
+      .limit(1000);
     
     if (companyId) {
-      sqlQuery += ` AND et.company_id = $1`;
-      params.push(companyId);
+      query = query.eq('company_id', companyId);
     }
     
-    sqlQuery += ` ORDER BY et.visit_start_time DESC LIMIT 1000`;
+    const { data: templateViews, error } = await query;
     
-    // const result = await query(sqlQuery, params);
-    const result = { rows: [] }; // Temporary placeholder
+    if (error) {
+      console.error('Error fetching template views:', error);
+      throw error;
+    }
     
     // Get company name and total views if filtering by company
     let companyName = null;
     let totalViews = 0;
+    
     if (companyId) {
-      // const companyResult = await query('SELECT name FROM companies WHERE id = $1', [companyId]);
-      companyName = null; // Temporary placeholder
+      const { data: companyData } = await supabase
+        .from('companies')
+        .select('name')
+        .eq('id', companyId)
+        .single();
       
-      // Get total views from main tracking record
-      // const viewsResult = await query('SELECT total_views FROM enhanced_tracking WHERE company_id = $1 AND session_id IS NULL', [companyId]);
-      totalViews = 0; // Temporary placeholder
+      companyName = companyData?.name || null;
+      
+      // Get total views count for this company
+      const { count } = await supabase
+        .from('template_views')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId);
+      
+      totalViews = count || 0;
     } else {
       // If no company filter, count all sessions as total views
-      totalViews = result.rows.length;
+      totalViews = templateViews?.length || 0;
     }
     
-    // Convert dates to strings for serialization
-    const sessions = result.rows.map((session: any) => ({
-      ...session,
-      visit_start_time: session.visit_start_time ? (session.visit_start_time instanceof Date ? session.visit_start_time.toISOString() : session.visit_start_time) : null,
-      visit_end_time: session.visit_end_time ? (session.visit_end_time instanceof Date ? session.visit_end_time.toISOString() : session.visit_end_time) : null,
+    // Format sessions data
+    const sessions = (templateViews || []).map((view: any) => ({
+      id: view.id,
+      company_id: view.company_id,
+      company_name: view.companies?.name || 'Unknown Company',
+      session_id: view.session_id,
+      template_key: view.template_key,
+      total_time_seconds: view.total_time_seconds || 0,
+      user_agent: view.user_agent || '',
+      referrer_url: view.referrer_url || '',
+      visit_start_time: view.visit_start_time,
+      visit_end_time: view.visit_end_time,
+      device_type: view.device_type,
+      browser_name: view.browser_name,
+      country: view.country,
+      city: view.city,
+      longitude: view.longitude,
+      latitude: view.latitude,
+      page_interactions: view.page_interactions || 0
     }));
 
     return {

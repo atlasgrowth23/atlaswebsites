@@ -861,13 +861,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       slug: company.slug,
       city: company.city,
       state: company.state,
-      phone: company.phone,
-      email_1: company.email_1,
-      custom_domain: company.custom_domain,
+      phone: company.phone || null,
+      email_1: company.email_1 || null,
+      custom_domain: company.custom_domain || null,
       tracking_enabled: false, // Default for now
       total_views: 0, // Default for now
       last_viewed_at: null,
-      reviews_link: company.reviews_link,
+      reviews_link: company.reviews_link || null,
     }));
 
     return {
