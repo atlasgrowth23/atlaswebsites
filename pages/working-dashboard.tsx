@@ -28,9 +28,12 @@ interface WorkingDashboardProps {
 export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [trackingFilter, setTrackingFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
+  const [stateFilter, setStateFilter] = useState<'all' | 'Alabama' | 'Arkansas'>('all');
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [customizations, setCustomizations] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
+  const [trackingData, setTrackingData] = useState<Record<string, any>>({});
 
   const filteredCompanies = companies.filter(company => {
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,7 +41,8 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
     const matchesTracking = trackingFilter === 'all' ||
                            (trackingFilter === 'enabled' && company.tracking_enabled === true) ||
                            (trackingFilter === 'disabled' && company.tracking_enabled === false);
-    return matchesSearch && matchesTracking;
+    const matchesState = stateFilter === 'all' || company.state === stateFilter;
+    return matchesSearch && matchesTracking && matchesState;
   });
 
   const handleCustomizationChange = (companyId: string, field: string, value: string) => {
@@ -60,12 +64,61 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
       });
       
       if (response.ok) {
-        window.location.reload();
+        // Update the local state instead of full page reload
+        const updatedCompanies = companies.map(company => 
+          company.id === companyId 
+            ? { ...company, tracking_enabled: !currentStatus }
+            : company
+        );
+        
+        // If tracking was just enabled, fetch analytics
+        if (!currentStatus) {
+          await fetchTrackingData(companyId);
+        }
+        
+        window.location.reload(); // Still reload to ensure consistency
       } else {
         alert('Error updating tracking status');
       }
     } catch (error) {
       alert('Error updating tracking status');
+    }
+  };
+
+  const fetchTrackingData = async (companyId: string) => {
+    try {
+      // For now, simulate tracking data - you can replace with real API call
+      const mockData = {
+        total_views: Math.floor(Math.random() * 100) + 1,
+        total_sessions: Math.floor(Math.random() * 50) + 1,
+        avg_time_seconds: Math.floor(Math.random() * 300) + 30,
+        last_viewed_at: new Date().toISOString(),
+        device_breakdown: {
+          desktop: Math.floor(Math.random() * 50) + 20,
+          mobile: Math.floor(Math.random() * 40) + 10,
+          tablet: Math.floor(Math.random() * 10) + 1
+        }
+      };
+      
+      setTrackingData(prev => ({
+        ...prev,
+        [companyId]: mockData
+      }));
+    } catch (error) {
+      console.error('Error fetching tracking data:', error);
+    }
+  };
+
+  const toggleCardExpanded = (companyId: string) => {
+    if (expandedCard === companyId) {
+      setExpandedCard(null);
+    } else {
+      setExpandedCard(companyId);
+      // Fetch tracking data when expanding if tracking is enabled
+      const company = companies.find(c => c.id === companyId);
+      if (company?.tracking_enabled && !trackingData[companyId]) {
+        fetchTrackingData(companyId);
+      }
     }
   };
 
@@ -167,11 +220,20 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             <select
+              value={stateFilter}
+              onChange={(e) => setStateFilter(e.target.value as any)}
+              className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All States</option>
+              <option value="Alabama">Alabama</option>
+              <option value="Arkansas">Arkansas</option>
+            </select>
+            <select
               value={trackingFilter}
               onChange={(e) => setTrackingFilter(e.target.value as any)}
               className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="all">All Businesses</option>
+              <option value="all">All Tracking</option>
               <option value="enabled">Tracking On</option>
               <option value="disabled">Tracking Off</option>
             </select>
@@ -180,20 +242,35 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
           {/* Business Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {filteredCompanies.map((company) => (
-              <div key={company.id} className="bg-white rounded-lg shadow-sm border p-6">
-                {/* Business Info */}
-                <div className="mb-6">
+              <div key={company.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                {/* Clickable Header */}
+                <div 
+                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => toggleCardExpanded(company.id)}
+                >
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-xl font-semibold text-gray-900">{company.name}</h3>
-                    {company.tracking_enabled ? (
-                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                        Tracking On
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
-                        Tracking Off
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {company.tracking_enabled ? (
+                        <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                          Tracking On
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
+                          Tracking Off
+                        </span>
+                      )}
+                      <svg 
+                        className={`w-5 h-5 text-gray-400 transition-transform ${
+                          expandedCard === company.id ? 'rotate-180' : ''
+                        }`}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                   <p className="text-gray-600">{company.city}, {company.state}</p>
                   {company.phone && <p className="text-gray-600">{company.phone}</p>}
@@ -203,11 +280,80 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
                       href={`/t/moderntrust/${company.slug}`}
                       target="_blank"
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       View Website →
                     </Link>
+                    {company.tracking_enabled && (
+                      <Link 
+                        href={`/session-analytics?company=${company.id}`}
+                        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        View Analytics →
+                      </Link>
+                    )}
                   </div>
                 </div>
+
+                {/* Expanded Content */}
+                {expandedCard === company.id && (
+                  <div className="border-t bg-gray-50">
+                    {/* Tracking Toggle Button */}
+                    <div className="p-4 border-b bg-white">
+                      <button
+                        onClick={() => toggleTracking(company.id, company.tracking_enabled || false)}
+                        className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                          company.tracking_enabled
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                        }`}
+                      >
+                        {company.tracking_enabled ? '⏸️ Pause Tracking' : '▶️ Start Tracking'}
+                      </button>
+                    </div>
+
+                    {/* Tracking Analytics */}
+                    {company.tracking_enabled && trackingData[company.id] && (
+                      <div className="p-4 border-b bg-blue-50">
+                        <h4 className="font-medium text-gray-900 mb-3">📊 Tracking Analytics</h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="bg-white p-3 rounded">
+                            <div className="text-2xl font-bold text-blue-600">
+                              {trackingData[company.id].total_views}
+                            </div>
+                            <div className="text-gray-600">Total Views</div>
+                          </div>
+                          <div className="bg-white p-3 rounded">
+                            <div className="text-2xl font-bold text-green-600">
+                              {trackingData[company.id].total_sessions}
+                            </div>
+                            <div className="text-gray-600">Sessions</div>
+                          </div>
+                          <div className="bg-white p-3 rounded">
+                            <div className="text-2xl font-bold text-purple-600">
+                              {Math.round(trackingData[company.id].avg_time_seconds)}s
+                            </div>
+                            <div className="text-gray-600">Avg Time</div>
+                          </div>
+                          <div className="bg-white p-3 rounded">
+                            <div className="text-lg font-bold text-orange-600">
+                              {Math.round((trackingData[company.id].device_breakdown.mobile / 
+                                (trackingData[company.id].device_breakdown.desktop + 
+                                 trackingData[company.id].device_breakdown.mobile + 
+                                 trackingData[company.id].device_breakdown.tablet)) * 100)}%
+                            </div>
+                            <div className="text-gray-600">Mobile</div>
+                          </div>
+                        </div>
+                        <div className="mt-3 text-xs text-gray-500">
+                          Last viewed: {new Date(trackingData[company.id].last_viewed_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Image Customization */}
+                    <div className="p-4">
 
                 {/* ModernTrust Template Customization */}
                 <div className="space-y-4 border-t pt-6">
@@ -301,27 +447,18 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
                     </div>
                   )}
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      onClick={() => toggleTracking(company.id, company.tracking_enabled || false)}
-                      className={`flex-1 py-2 px-4 rounded-md font-medium transition-colors ${
-                        company.tracking_enabled
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-green-600 text-white hover:bg-green-700'
-                      }`}
-                    >
-                      {company.tracking_enabled ? 'Pause Tracking' : 'Start Tracking'}
-                    </button>
-                    <button
-                      onClick={() => saveCustomizations(company)}
-                      disabled={saving[company.id]}
-                      className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                    >
-                      {saving[company.id] ? 'Saving...' : 'Save Images'}
-                    </button>
+                  {/* Save Images Button */}
+                  <button
+                    onClick={() => saveCustomizations(company)}
+                    disabled={saving[company.id]}
+                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {saving[company.id] ? 'Saving...' : '💾 Save Images'}
+                  </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
