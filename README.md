@@ -84,6 +84,14 @@ The platform supports three ways to access business websites:
 
 Routing is handled by Next.js middleware and the domain handler API.
 
+### Custom Domain Management
+
+Businesses can configure custom domains through the admin pipeline interface:
+- Add custom domains via domain management modal
+- Automatic Vercel domain configuration
+- DNS setup instructions provided
+- Domain verification status tracking
+
 ## Deployment
 
 We've included a deployment preparation script to make deployment easier:
