@@ -10,13 +10,18 @@ export async function middleware(request: NextRequest) {
     return new Response('MIDDLEWARE IS WORKING! Domain: ' + hostname, { status: 200 });
   }
   
-  // Skip middleware for localhost and Vercel/Replit domains
+  // Skip middleware for localhost and development domains only
   if (!hostname || 
       hostname.includes('localhost') || 
-      hostname.includes('.vercel.app') || 
       hostname.includes('.replit.dev') ||
       hostname.includes('replit.com')) {
     console.log('Skipping middleware for:', hostname);
+    return NextResponse.next();
+  }
+
+  // Skip for main Vercel app domain but allow custom domains
+  if (hostname === 'atlaswebsites.vercel.app') {
+    console.log('Skipping middleware for main Vercel domain:', hostname);
     return NextResponse.next();
   }
 
