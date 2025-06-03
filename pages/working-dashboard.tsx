@@ -120,7 +120,7 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
         fetch(`/api/analytics-summary?companyId=${companyId}`)
       ]);
       
-      let trackingData = {
+      let trackingData: any = {
         total_views: 0,
         total_sessions: 0,
         avg_time_seconds: 0,
@@ -129,7 +129,8 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
           desktop: 0,
           mobile: 0,
           tablet: 0
-        }
+        },
+        recent_sessions: []
       };
 
       // Parse template views data

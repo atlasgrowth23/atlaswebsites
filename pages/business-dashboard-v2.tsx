@@ -316,10 +316,10 @@ export async function getServerSideProps() {
 
     // Create tracking data from companies with tracking_enabled field
     const trackingData: TrackingData[] = filteredCompanies
-      .filter(company => company.tracking_enabled)
+      .filter(company => (company as any).tracking_enabled)
       .map(company => ({
         company_id: company.id?.toString() || '',
-        tracking_enabled: company.tracking_enabled || false,
+        tracking_enabled: (company as any).tracking_enabled || false,
         total_views: 0, // TODO: Get from template_views table
         template_views: {},
         last_viewed_at: '',
