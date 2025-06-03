@@ -1,24 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { get } from '@vercel/edge-config';
-
-async function getCompanySlugFromDB(hostname: string): Promise<string | null> {
-  try {
-    const baseUrl = process.env.VERCEL_URL?.startsWith('http') 
-      ? process.env.VERCEL_URL 
-      : `https://${process.env.VERCEL_URL || 'localhost:3000'}`;
-    const response = await fetch(`${baseUrl}/api/get-company-by-domain?domain=${hostname}`, {
-      headers: { 'User-Agent': 'middleware-fallback' }
-    });
-    
-    if (response.ok) {
-      const data = await response.json();
-      return data.template_key && data.slug ? `${data.template_key}/${data.slug}` : null;
-    }
-  } catch (error) {
-    console.error('DB fallback error:', error);
-  }
-  return null;
-}
+import { createClient } from '@supabase/supabase-js';
 
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host');
@@ -31,29 +12,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  let companySlug: string | null = null;
-
   try {
-    // Try Edge Config first (super fast)
-    const domainMap = await get('custom_domains') as Record<string, string> | null;
-    
-    if (domainMap && domainMap[hostname]) {
-      companySlug = domainMap[hostname];
+    // Direct Supabase lookup - no Edge Config bullshit
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: company } = await supabase
+      .from('companies')
+      .select('slug, template_key')
+      .eq('custom_domain', hostname)
+      .single();
+
+    if (company && company.slug && company.template_key) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/t/${company.template_key}/${company.slug}`;
+      return NextResponse.rewrite(url);
     }
   } catch (error) {
-    console.error('Edge Config error:', error);
-  }
-
-  // Fallback to database if not found in Edge Config
-  if (!companySlug) {
-    companySlug = await getCompanySlugFromDB(hostname);
-  }
-
-  // If we found a company slug, rewrite to template
-  if (companySlug) {
-    const url = request.nextUrl.clone();
-    url.pathname = `/t/${companySlug}`;
-    return NextResponse.rewrite(url);
+    console.error('Middleware error:', error);
   }
 
   // No custom domain found, continue normally
