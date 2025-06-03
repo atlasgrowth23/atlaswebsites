@@ -5,9 +5,7 @@ export async function middleware(request: NextRequest) {
   
   console.log('🔥 MIDDLEWARE RUNNING for hostname:', hostname, 'path:', request.nextUrl.pathname);
   
-  console.log('Processing custom domain:', hostname);
-  
-  // Skip middleware for localhost and development domains only
+  // Skip middleware for localhost and development domains
   if (!hostname || 
       hostname.includes('localhost') || 
       hostname.includes('.replit.dev') ||
@@ -17,12 +15,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Skip for main Vercel app domain and your business domains
-  if (hostname === 'atlaswebsites.vercel.app' || hostname === 'atlasgrowth.ai') {
+  if (hostname === 'atlaswebsites.vercel.app' || 
+      hostname === 'atlasgrowth.ai' ||
+      hostname.includes('.vercel.app')) {
     console.log('Skipping middleware for main domain:', hostname);
     return NextResponse.next();
   }
 
-  // This is a custom domain - find which business it belongs to
+  // Only proceed if this looks like a custom domain (not a vercel domain)
+  console.log('Processing potential custom domain:', hostname);
   try {
     // Strip www from domain for database lookup
     const domainToLookup = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
