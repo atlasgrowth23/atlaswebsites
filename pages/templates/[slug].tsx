@@ -98,7 +98,7 @@ export default function TemplateSelection({ company }: TemplateSelectionProps) {
           </div>
           
           <p className="text-xl text-gray-600 mb-4">
-            Choose your preferred template style
+            Choose your prefenrred template style
           </p>
           
           <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
