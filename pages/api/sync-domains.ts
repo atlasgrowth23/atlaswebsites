@@ -36,9 +36,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
+    console.log('Domain map to sync:', domainMap);
+    console.log('EDGE_CONFIG:', process.env.EDGE_CONFIG ? 'Set' : 'Not set');
+    console.log('VERCEL_TOKEN:', process.env.VERCEL_TOKEN ? 'Set' : 'Not set');
+
     // Sync to Vercel Edge Config
-    if (process.env.EDGE_CONFIG) {
+    if (process.env.EDGE_CONFIG && process.env.VERCEL_TOKEN) {
       const edgeConfigUrl = `${process.env.EDGE_CONFIG}/items`;
+      console.log('Syncing to:', edgeConfigUrl);
       
       const response = await fetch(edgeConfigUrl, {
         method: 'PATCH',
@@ -57,9 +62,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       });
 
+      console.log('Edge Config response status:', response.status);
+      const responseText = await response.text();
+      console.log('Edge Config response:', responseText);
+
       if (!response.ok) {
-        throw new Error(`Edge Config sync failed: ${response.statusText}`);
+        throw new Error(`Edge Config sync failed: ${response.status} ${responseText}`);
       }
+    } else {
+      throw new Error('Missing EDGE_CONFIG or VERCEL_TOKEN environment variables');
     }
 
     res.status(200).json({ 
