@@ -61,7 +61,7 @@ export async function middleware(request: NextRequest) {
           return rewriteResponse;
         }
       } catch (parseError) {
-        console.log('JSON parse error:', parseError.message);
+        console.log('JSON parse error:', parseError);
         console.log('Response was HTML, not JSON:', responseText.substring(0, 200));
       }
     } else {
