@@ -63,16 +63,18 @@ const About: React.FC<AboutProps> = ({ company }) => {
             ref={imageRef}
             className="md:w-1/2 mb-10 md:mb-0 opacity-0 translate-x-[-20px] transition-all duration-1000 delay-300"
           >
-            <div className="relative rounded-lg overflow-hidden aspect-[4/3] shadow-lg">
-              <Image 
-                src={aboutImage || '/stock/moderntrust/about_img.svg'} 
-                alt={`${company.name} services`}
-                fill
-                className="object-cover"
-                quality={90}
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
-            </div>
+            {aboutImage && (
+              <div className="relative rounded-lg overflow-hidden aspect-[4/3] shadow-lg">
+                <Image 
+                  src={aboutImage} 
+                  alt={`${company.name} services`}
+                  fill
+                  className="object-cover"
+                  quality={90}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
+              </div>
+            )}
           </div>
           
           {/* Right column - Text content with animations */}

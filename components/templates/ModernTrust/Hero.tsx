@@ -13,18 +13,18 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
   // Hero slides with different images and text
   const heroSlides = [
     {
-      image: getPhotoUrl(company, 'hero_img', 'moderntrust') || '/images/default-hero.jpg',
+      image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
       title: `Stay Cool This Summer in`,
       subtitle: (company as any).display_city || company.city || 'Your Area',
       description: "Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs."
     },
     {
-      image: getPhotoUrl(company, 'hero_img_2', 'moderntrust') || '/images/default-hero.jpg',
+      image: getPhotoUrl(company, 'hero_img_2', 'moderntrust'),
       title: `Professional HVAC Service in`,
       subtitle: (company as any).display_city || company.city || 'Your Area',
       description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
     }
-  ];
+  ].filter(slide => slide.image); // Only include slides that have images
 
   // Auto-rotate slides every 6 seconds
   useEffect(() => {
@@ -41,22 +41,24 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
       {/* Background with optimized loading */}
       <div className="absolute inset-0">
         {/* Current slide */}
-        <Image 
-          key={`current-${currentSlide}`}
-          src={heroSlides[currentSlide].image} 
-          alt={`Professional services by ${company?.name || 'our company'}`}
-          fill
-          className="object-cover object-center transition-opacity duration-1000 ease-in-out animate-[slideIn_2s_ease-out_forwards]"
-          priority
-          quality={90}
-          sizes="100vw"
-        />
+        {heroSlides[currentSlide]?.image && (
+          <Image 
+            key={`current-${currentSlide}`}
+            src={heroSlides[currentSlide].image!} 
+            alt={`Professional services by ${company?.name || 'our company'}`}
+            fill
+            className="object-cover object-center transition-opacity duration-1000 ease-in-out animate-[slideIn_2s_ease-out_forwards]"
+            priority
+            quality={90}
+            sizes="100vw"
+          />
+        )}
         
         {/* Preload next slide for smooth transition */}
-        {heroSlides.length > 1 && (
+        {heroSlides.length > 1 && heroSlides[(currentSlide + 1) % heroSlides.length]?.image && (
           <Image 
             key={`preload-${(currentSlide + 1) % heroSlides.length}`}
-            src={heroSlides[(currentSlide + 1) % heroSlides.length].image} 
+            src={heroSlides[(currentSlide + 1) % heroSlides.length].image!} 
             alt={`Professional services by ${company?.name || 'our company'}`}
             fill
             className="object-cover object-center opacity-0"
