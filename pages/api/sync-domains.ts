@@ -42,9 +42,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Sync to Vercel Edge Config
     if (process.env.EDGE_CONFIG && process.env.VERCEL_TOKEN) {
-      // Extract base URL without token
-      const baseUrl = process.env.EDGE_CONFIG.split('?')[0];
-      const edgeConfigUrl = `${baseUrl}/items`;
+      // Use the Edge Config ID directly
+      const edgeConfigId = 'ecfg_1pza4nruemzox6yj3yq2nvnnobzo';
+      const edgeConfigUrl = `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`;
       console.log('Syncing to:', edgeConfigUrl);
       
       const response = await fetch(edgeConfigUrl, {
