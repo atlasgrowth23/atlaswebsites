@@ -3,7 +3,10 @@ import { get } from '@vercel/edge-config';
 
 async function getCompanySlugFromDB(hostname: string): Promise<string | null> {
   try {
-    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/get-company-by-domain?domain=${hostname}`, {
+    const baseUrl = process.env.VERCEL_URL?.startsWith('http') 
+      ? process.env.VERCEL_URL 
+      : `https://${process.env.VERCEL_URL || 'localhost:3000'}`;
+    const response = await fetch(`${baseUrl}/api/get-company-by-domain?domain=${hostname}`, {
       headers: { 'User-Agent': 'middleware-fallback' }
     });
     
