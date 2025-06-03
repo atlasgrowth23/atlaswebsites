@@ -39,22 +39,30 @@ export async function middleware(request: NextRequest) {
     console.log('API response status:', response.status);
     
     if (response.ok) {
-      const company = await response.json();
-      console.log('Found company:', company);
+      const responseText = await response.text();
+      console.log('Raw API response:', responseText.substring(0, 100));
       
-      if (company) {
-        // Rewrite to the company's template page
-        const url = request.nextUrl.clone();
-        url.pathname = `/t/moderntrust/${company.slug}`;
+      try {
+        const company = JSON.parse(responseText);
+        console.log('Found company:', company);
         
-        console.log('Rewriting to:', url.pathname);
-        
-        // Pass the custom domain info to the page
-        const response = NextResponse.rewrite(url);
-        response.headers.set('x-custom-domain', hostname);
-        response.headers.set('x-company-slug', company.slug);
-        
-        return response;
+        if (company && company.slug) {
+          // Rewrite to the company's template page
+          const url = request.nextUrl.clone();
+          url.pathname = `/t/moderntrust/${company.slug}`;
+          
+          console.log('Rewriting to:', url.pathname);
+          
+          // Pass the custom domain info to the page
+          const rewriteResponse = NextResponse.rewrite(url);
+          rewriteResponse.headers.set('x-custom-domain', hostname);
+          rewriteResponse.headers.set('x-company-slug', company.slug);
+          
+          return rewriteResponse;
+        }
+      } catch (parseError) {
+        console.log('JSON parse error:', parseError.message);
+        console.log('Response was HTML, not JSON:', responseText.substring(0, 200));
       }
     } else {
       console.log('API call failed:', await response.text());
