@@ -16,17 +16,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Skip for main Vercel app domain but allow custom domains
-  if (hostname === 'atlaswebsites.vercel.app') {
-    console.log('Skipping middleware for main Vercel domain:', hostname);
+  // Skip for main Vercel app domain and your business domains
+  if (hostname === 'atlaswebsites.vercel.app' || hostname === 'atlasgrowth.ai') {
+    console.log('Skipping middleware for main domain:', hostname);
     return NextResponse.next();
   }
 
   // This is a custom domain - find which business it belongs to
   try {
+    // Strip www from domain for database lookup
+    const domainToLookup = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
+    console.log('Looking up domain:', domainToLookup, '(original:', hostname + ')');
+    
     // Query database to find company with this custom domain
     // Use the current origin to avoid auth issues
-    const response = await fetch(`${request.nextUrl.origin}/api/get-company-by-domain?domain=${hostname}`, {
+    const response = await fetch(`${request.nextUrl.origin}/api/get-company-by-domain?domain=${domainToLookup}`, {
       headers: {
         'x-middleware': 'true'
       }
