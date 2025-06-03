@@ -3,7 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host');
   
-  console.log('Middleware triggered for hostname:', hostname);
+  console.log('🔥 MIDDLEWARE RUNNING for hostname:', hostname, 'path:', request.nextUrl.pathname);
+  
+  // TEST: If visiting apsflooring.info, show a test message
+  if (hostname === 'apsflooring.info' && request.nextUrl.pathname === '/') {
+    return new Response('MIDDLEWARE IS WORKING! Domain: ' + hostname, { status: 200 });
+  }
   
   // Skip middleware for localhost and Vercel/Replit domains
   if (!hostname || 
@@ -59,7 +64,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip internal Next.js routes
-    '/((?!_next|api|favicon.ico|logos|stock).*)',
+    // Match all routes except Next.js internals
+    '/((?!_next/static|_next/image|favicon.ico|logos|stock).*)',
+    // Explicitly match root
+    '/',
   ],
 };
