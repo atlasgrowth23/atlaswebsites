@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
+import DomainManagement from '@/components/DomainManagement';
 import { getAllCompanies } from '@/lib/supabase-db';
 
 interface Company {
@@ -14,6 +15,8 @@ interface Company {
   email_1?: string;
   site?: string;
   tracking_enabled?: boolean;
+  custom_domain?: string;
+  domain_verified?: boolean;
 }
 
 interface PipelineLead {
@@ -497,6 +500,30 @@ export default function Pipeline({ companies }: PipelineProps) {
                       >
                         📝 Notes
                       </button>
+                      
+                      <DomainManagement 
+                        company={lead.company} 
+                        onUpdate={(updatedCompany) => {
+                          // Update the lead in state
+                          setLeads(prevLeads => 
+                            prevLeads.map(l => 
+                              l.company_id === updatedCompany.id 
+                                ? { ...l, company: updatedCompany }
+                                : l
+                            )
+                          );
+                          // Update stage leads if viewing a stage
+                          if (selectedStage) {
+                            setStageLeads(prevStageLeads =>
+                              prevStageLeads.map(l =>
+                                l.company_id === updatedCompany.id
+                                  ? { ...l, company: updatedCompany }
+                                  : l
+                              )
+                            );
+                          }
+                        }}
+                      />
                     </div>
                   </div>
 
