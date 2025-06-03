@@ -5,10 +5,7 @@ export async function middleware(request: NextRequest) {
   
   console.log('🔥 MIDDLEWARE RUNNING for hostname:', hostname, 'path:', request.nextUrl.pathname);
   
-  // TEST: If visiting apsflooring.info, show a test message
-  if (hostname === 'apsflooring.info' && request.nextUrl.pathname === '/') {
-    return new Response('MIDDLEWARE IS WORKING! Domain: ' + hostname, { status: 200 });
-  }
+  console.log('Processing custom domain:', hostname);
   
   // Skip middleware for localhost and development domains only
   if (!hostname || 
@@ -28,9 +25,8 @@ export async function middleware(request: NextRequest) {
   // This is a custom domain - find which business it belongs to
   try {
     // Query database to find company with this custom domain
-    // Use your main Vercel domain for API calls
-    const apiOrigin = hostname.includes('.vercel.app') ? request.nextUrl.origin : 'https://atlaswebsites.vercel.app';
-    const response = await fetch(`${apiOrigin}/api/get-company-by-domain?domain=${hostname}`, {
+    // Use the current origin to avoid auth issues
+    const response = await fetch(`${request.nextUrl.origin}/api/get-company-by-domain?domain=${hostname}`, {
       headers: {
         'x-middleware': 'true'
       }
