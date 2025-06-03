@@ -7,18 +7,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { leadId, stage, notes = '' } = req.body;
+    const { leadId: originalLeadId, stage, notes = '' } = req.body;
 
-    if (!leadId || !stage) {
+    if (!originalLeadId || !stage) {
       return res.status(400).json({ error: 'Lead ID and stage are required' });
     }
 
     // Handle temp IDs (companies not yet in pipeline table)
-    let companyId = leadId;
+    let actualLeadId = originalLeadId;
+    let companyId = originalLeadId;
     let currentStage = 'new_lead';
     
-    if (leadId.startsWith('temp_')) {
-      companyId = leadId.replace('temp_', '');
+    if (originalLeadId.startsWith('temp_')) {
+      companyId = originalLeadId.replace('temp_', '');
       
       // Create pipeline entry if it doesn't exist
       const { data: newEntry, error: insertError } = await supabaseAdmin
@@ -36,13 +37,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(500).json({ error: 'Failed to create pipeline entry' });
       }
       
-      leadId = newEntry.id;
+      actualLeadId = newEntry.id;
     } else {
       // Get existing lead data
       const { data: currentLead } = await supabaseAdmin
         .from('lead_pipeline')
         .select('stage, company_id')
-        .eq('id', leadId)
+        .eq('id', originalLeadId)
         .single();
 
       if (!currentLead) {
@@ -73,7 +74,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { data: updatedLead, error } = await supabaseAdmin
       .from('lead_pipeline')
       .update(updateData)
-      .eq('id', leadId)
+      .eq('id', actualLeadId)
       .select()
       .single();
 
