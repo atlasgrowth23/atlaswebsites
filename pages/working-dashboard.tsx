@@ -12,7 +12,16 @@ interface CompanyWithTracking {
   state: string;
   phone?: string;
   email_1?: string;
+  site?: string;
+  reviews_link?: string;
+  rating?: number;
+  reviews?: number;
+  r_30?: number;
+  r_60?: number;
+  r_90?: number;
+  r_365?: number;
   tracking_enabled?: boolean;
+  tracking_paused?: boolean;
   company_frames?: {
     hero_img?: string;
     hero_img_2?: string;
@@ -29,7 +38,9 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [trackingFilter, setTrackingFilter] = useState<'all' | 'enabled' | 'disabled'>('all');
   const [stateFilter, setStateFilter] = useState<'all' | 'Alabama' | 'Arkansas'>('all');
+  const [siteFilter, setSiteFilter] = useState<'all' | 'has_site' | 'no_site'>('all');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<Record<string, 'analytics' | 'customize'>>({});
   const [customizations, setCustomizations] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
@@ -42,7 +53,10 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
                            (trackingFilter === 'enabled' && company.tracking_enabled === true) ||
                            (trackingFilter === 'disabled' && company.tracking_enabled === false);
     const matchesState = stateFilter === 'all' || company.state === stateFilter;
-    return matchesSearch && matchesTracking && matchesState;
+    const matchesSite = siteFilter === 'all' ||
+                       (siteFilter === 'has_site' && company.site) ||
+                       (siteFilter === 'no_site' && !company.site);
+    return matchesSearch && matchesTracking && matchesState && matchesSite;
   });
 
   const handleCustomizationChange = (companyId: string, field: string, value: string) => {
@@ -55,28 +69,41 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
     }));
   };
 
-  const toggleTracking = async (companyId: string, currentStatus: boolean) => {
+  const toggleTracking = async (companyId: string, currentStatus: boolean, isPaused: boolean = false) => {
     try {
+      const company = companies.find(c => c.id === companyId);
+      let newStatus;
+      let pausedStatus;
+      
+      if (currentStatus && !isPaused) {
+        // Currently active -> pause it
+        newStatus = true;
+        pausedStatus = true;
+      } else if (currentStatus && isPaused) {
+        // Currently paused -> resume it
+        newStatus = true;
+        pausedStatus = false;
+      } else {
+        // Currently off -> turn on
+        newStatus = true;
+        pausedStatus = false;
+      }
+
       const response = await fetch('/api/toggle-tracking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessId: companyId, enabled: !currentStatus })
+        body: JSON.stringify({ 
+          businessId: companyId, 
+          enabled: newStatus,
+          paused: pausedStatus
+        })
       });
       
       if (response.ok) {
-        // Update the local state instead of full page reload
-        const updatedCompanies = companies.map(company => 
-          company.id === companyId 
-            ? { ...company, tracking_enabled: !currentStatus }
-            : company
-        );
-        
-        // If tracking was just enabled, fetch analytics
-        if (!currentStatus) {
+        if (newStatus && !pausedStatus) {
           await fetchTrackingData(companyId);
         }
-        
-        window.location.reload(); // Still reload to ensure consistency
+        window.location.reload();
       } else {
         alert('Error updating tracking status');
       }
@@ -87,25 +114,58 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
 
   const fetchTrackingData = async (companyId: string) => {
     try {
-      // For now, simulate tracking data - you can replace with real API call
-      const mockData = {
-        total_views: Math.floor(Math.random() * 100) + 1,
-        total_sessions: Math.floor(Math.random() * 50) + 1,
-        avg_time_seconds: Math.floor(Math.random() * 300) + 30,
-        last_viewed_at: new Date().toISOString(),
+      // Fetch real tracking data from multiple sources
+      const [viewsRes, analyticsRes] = await Promise.all([
+        fetch(`/api/template-views?companyId=${companyId}`),
+        fetch(`/api/analytics-summary?companyId=${companyId}`)
+      ]);
+      
+      let trackingData = {
+        total_views: 0,
+        total_sessions: 0,
+        avg_time_seconds: 0,
+        last_viewed_at: null,
         device_breakdown: {
-          desktop: Math.floor(Math.random() * 50) + 20,
-          mobile: Math.floor(Math.random() * 40) + 10,
-          tablet: Math.floor(Math.random() * 10) + 1
+          desktop: 0,
+          mobile: 0,
+          tablet: 0
         }
       };
+
+      // Parse template views data
+      if (viewsRes.ok) {
+        const viewsData = await viewsRes.json();
+        trackingData.total_views = viewsData.total_views || 0;
+        trackingData.total_sessions = viewsData.unique_sessions || 0;
+        trackingData.last_viewed_at = viewsData.last_viewed_at;
+        trackingData.recent_sessions = viewsData.views || [];
+      }
+
+      // Parse analytics summary
+      if (analyticsRes.ok) {
+        const analyticsData = await analyticsRes.json();
+        trackingData.avg_time_seconds = analyticsData.avg_time_seconds || 0;
+        trackingData.device_breakdown = analyticsData.device_breakdown || trackingData.device_breakdown;
+      }
       
       setTrackingData(prev => ({
         ...prev,
-        [companyId]: mockData
+        [companyId]: trackingData
       }));
     } catch (error) {
       console.error('Error fetching tracking data:', error);
+      // Set empty data on error instead of fake data
+      setTrackingData(prev => ({
+        ...prev,
+        [companyId]: {
+          total_views: 0,
+          total_sessions: 0,
+          avg_time_seconds: 0,
+          last_viewed_at: null,
+          device_breakdown: { desktop: 0, mobile: 0, tablet: 0 },
+          recent_sessions: []
+        }
+      }));
     }
   };
 
@@ -114,12 +174,16 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
       setExpandedCard(null);
     } else {
       setExpandedCard(companyId);
-      // Fetch tracking data when expanding if tracking is enabled
+      setActiveTab(prev => ({ ...prev, [companyId]: 'analytics' }));
       const company = companies.find(c => c.id === companyId);
       if (company?.tracking_enabled && !trackingData[companyId]) {
         fetchTrackingData(companyId);
       }
     }
+  };
+
+  const setTab = (companyId: string, tab: 'analytics' | 'customize') => {
+    setActiveTab(prev => ({ ...prev, [companyId]: tab }));
   };
 
   const saveCustomizations = async (company: CompanyWithTracking) => {
@@ -128,8 +192,6 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
     
     try {
       const companyCustomizations = customizations[company.id] || {};
-      
-      // Only save fields that have values
       const fieldsToSave: any = {};
       
       if (companyCustomizations.hero_img?.trim()) {
@@ -145,8 +207,6 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
         fieldsToSave.logo_url = companyCustomizations.logo_url.trim();
       }
 
-      console.log('Saving customizations for', company.name, ':', fieldsToSave);
-
       if (Object.keys(fieldsToSave).length > 0) {
         const response = await fetch('/api/template-customizations', {
           method: 'POST',
@@ -158,12 +218,9 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
         });
 
         const result = await response.json();
-        console.log('Save result:', result);
 
         if (response.ok) {
           setSaveStatus(prev => ({ ...prev, [company.id]: '✅ Saved successfully!' }));
-          
-          // Clear the form after 2 seconds
           setTimeout(() => {
             setSaveStatus(prev => ({ ...prev, [company.id]: '' }));
             setCustomizations(prev => ({ ...prev, [company.id]: {} }));
@@ -178,7 +235,6 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
         }, 2000);
       }
     } catch (error) {
-      console.error('Save error:', error);
       setSaveStatus(prev => ({ ...prev, [company.id]: '❌ Save failed' }));
     } finally {
       setSaving(prev => ({ ...prev, [company.id]: false }));
@@ -237,6 +293,15 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
               <option value="enabled">Tracking On</option>
               <option value="disabled">Tracking Off</option>
             </select>
+            <select
+              value={siteFilter}
+              onChange={(e) => setSiteFilter(e.target.value as any)}
+              className="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">All Sites</option>
+              <option value="has_site">Has Site</option>
+              <option value="no_site">No Site</option>
+            </select>
           </div>
 
           {/* Business Cards */}
@@ -251,10 +316,25 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-xl font-semibold text-gray-900">{company.name}</h3>
                     <div className="flex items-center gap-2">
-                      {company.tracking_enabled ? (
-                        <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                          Tracking On
+                      {company.site ? (
+                        <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                          Has Site
                         </span>
+                      ) : (
+                        <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
+                          No Site
+                        </span>
+                      )}
+                      {company.tracking_enabled ? (
+                        company.tracking_paused ? (
+                          <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
+                            Tracking Paused
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
+                            Tracking On
+                          </span>
+                        )
                       ) : (
                         <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
                           Tracking Off
@@ -272,26 +352,53 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
                       </svg>
                     </div>
                   </div>
-                  <p className="text-gray-600">{company.city}, {company.state}</p>
-                  {company.phone && <p className="text-gray-600">{company.phone}</p>}
                   
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="text-gray-600">{company.city}, {company.state}</p>
+                      {company.phone && <p className="text-gray-600 text-sm">{company.phone}</p>}
+                    </div>
+                    {company.rating && (
+                      <div className="text-right">
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-500">★</span>
+                          <span className="font-medium">{company.rating}</span>
+                          <span className="text-gray-500 text-sm">({company.reviews || 0})</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mt-3">
                     <Link 
                       href={`/t/moderntrust/${company.slug}`}
                       target="_blank"
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      View Website →
+                      🌐 View Website
                     </Link>
-                    {company.tracking_enabled && (
-                      <Link 
-                        href={`/session-analytics?company=${company.id}`}
-                        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                    {company.site && (
+                      <a 
+                        href={company.site}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-800 text-sm font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        View Analytics →
-                      </Link>
+                        🔗 Original Site
+                      </a>
+                    )}
+                    {company.reviews_link && (
+                      <a 
+                        href={company.reviews_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-orange-600 hover:text-orange-800 text-sm font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        ⭐ Reviews
+                      </a>
                     )}
                   </div>
                 </div>
@@ -299,164 +406,318 @@ export default function WorkingDashboard({ companies }: WorkingDashboardProps) {
                 {/* Expanded Content */}
                 {expandedCard === company.id && (
                   <div className="border-t bg-gray-50">
-                    {/* Tracking Toggle Button */}
-                    <div className="p-4 border-b bg-white">
+                    {/* Review Metrics */}
+                    <div className="p-4 bg-white border-b">
+                      <h4 className="font-medium text-gray-900 mb-3">📈 Review Metrics</h4>
+                      <div className="grid grid-cols-3 gap-3 text-sm">
+                        <div className="bg-gray-50 p-3 rounded text-center">
+                          <div className="font-bold text-green-600">{company.r_30 || 0}</div>
+                          <div className="text-gray-600">R30</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded text-center">
+                          <div className="font-bold text-purple-600">{company.r_60 || 0}</div>
+                          <div className="text-gray-600">R60</div>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded text-center">
+                          <div className="font-bold text-orange-600">{company.r_90 || 0}</div>
+                          <div className="text-gray-600">R90</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-center">
+                        <div className="inline-block bg-gray-50 p-3 rounded">
+                          <div className="font-bold text-red-600">{company.r_365 || 0}</div>
+                          <div className="text-gray-600 text-sm">R365</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tab Navigation */}
+                    <div className="flex bg-white border-b">
                       <button
-                        onClick={() => toggleTracking(company.id, company.tracking_enabled || false)}
-                        className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-                          company.tracking_enabled
-                            ? 'bg-red-600 text-white hover:bg-red-700'
-                            : 'bg-green-600 text-white hover:bg-green-700'
+                        onClick={() => setTab(company.id, 'analytics')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                          activeTab[company.id] === 'analytics' || !activeTab[company.id]
+                            ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700'
+                            : 'text-gray-500 hover:text-gray-700'
                         }`}
                       >
-                        {company.tracking_enabled ? '⏸️ Pause Tracking' : '▶️ Start Tracking'}
+                        📊 Analytics & Tracking
+                      </button>
+                      <button
+                        onClick={() => setTab(company.id, 'customize')}
+                        className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                          activeTab[company.id] === 'customize'
+                            ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700'
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        🎨 Customize Template
                       </button>
                     </div>
 
-                    {/* Tracking Analytics */}
-                    {company.tracking_enabled && trackingData[company.id] && (
-                      <div className="p-4 border-b bg-blue-50">
-                        <h4 className="font-medium text-gray-900 mb-3">📊 Tracking Analytics</h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="bg-white p-3 rounded">
-                            <div className="text-2xl font-bold text-blue-600">
-                              {trackingData[company.id].total_views}
-                            </div>
-                            <div className="text-gray-600">Total Views</div>
-                          </div>
-                          <div className="bg-white p-3 rounded">
-                            <div className="text-2xl font-bold text-green-600">
-                              {trackingData[company.id].total_sessions}
-                            </div>
-                            <div className="text-gray-600">Sessions</div>
-                          </div>
-                          <div className="bg-white p-3 rounded">
-                            <div className="text-2xl font-bold text-purple-600">
-                              {Math.round(trackingData[company.id].avg_time_seconds)}s
-                            </div>
-                            <div className="text-gray-600">Avg Time</div>
-                          </div>
-                          <div className="bg-white p-3 rounded">
-                            <div className="text-lg font-bold text-orange-600">
-                              {Math.round((trackingData[company.id].device_breakdown.mobile / 
-                                (trackingData[company.id].device_breakdown.desktop + 
-                                 trackingData[company.id].device_breakdown.mobile + 
-                                 trackingData[company.id].device_breakdown.tablet)) * 100)}%
-                            </div>
-                            <div className="text-gray-600">Mobile</div>
-                          </div>
+                    {/* Tab Content */}
+                    {(activeTab[company.id] === 'analytics' || !activeTab[company.id]) && (
+                      <div className="p-4 bg-white">
+                        {/* Tracking Toggle */}
+                        <div className="mb-4 space-y-2">
+                          <button
+                            onClick={() => toggleTracking(company.id, company.tracking_enabled || false, company.tracking_paused || false)}
+                            className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                              company.tracking_enabled && !company.tracking_paused
+                                ? 'bg-yellow-600 text-white hover:bg-yellow-700'
+                                : company.tracking_enabled && company.tracking_paused
+                                ? 'bg-green-600 text-white hover:bg-green-700'
+                                : 'bg-green-600 text-white hover:bg-green-700'
+                            }`}
+                          >
+                            {company.tracking_enabled && !company.tracking_paused ? '⏸️ Pause Tracking' :
+                             company.tracking_enabled && company.tracking_paused ? '▶️ Resume Tracking' :
+                             '▶️ Start Tracking'}
+                          </button>
+                          
+                          {/* Stop Tracking Button - only show when paused */}
+                          {company.tracking_enabled && company.tracking_paused && (
+                            <button
+                              onClick={() => {
+                                // Force stop tracking completely
+                                fetch('/api/toggle-tracking', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ 
+                                    businessId: company.id, 
+                                    enabled: false,
+                                    paused: false
+                                  })
+                                }).then(() => window.location.reload());
+                              }}
+                              className="w-full py-2 px-4 rounded-md font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            >
+                              ❌ Stop Tracking Completely
+                            </button>
+                          )}
                         </div>
-                        <div className="mt-3 text-xs text-gray-500">
-                          Last viewed: {new Date(trackingData[company.id].last_viewed_at).toLocaleDateString()}
-                        </div>
+
+                        {/* Tracking Data */}
+                        {company.tracking_enabled && trackingData[company.id] && (
+                          <div className="space-y-4">
+                            {/* Summary Stats */}
+                            <div className="bg-blue-50 p-4 rounded-md">
+                              <h5 className="font-medium text-gray-900 mb-3">Quick Stats</h5>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div className="bg-white p-3 rounded text-center">
+                                  <div className="text-xl font-bold text-blue-600">
+                                    {trackingData[company.id].total_views}
+                                  </div>
+                                  <div className="text-gray-600">Views</div>
+                                </div>
+                                <div className="bg-white p-3 rounded text-center">
+                                  <div className="text-xl font-bold text-green-600">
+                                    {trackingData[company.id].total_sessions}
+                                  </div>
+                                  <div className="text-gray-600">Sessions</div>
+                                </div>
+                                <div className="bg-white p-3 rounded text-center">
+                                  <div className="text-xl font-bold text-purple-600">
+                                    {Math.round(trackingData[company.id].avg_time_seconds)}s
+                                  </div>
+                                  <div className="text-gray-600">Avg Time</div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Recent Sessions */}
+                            <div className="bg-white border rounded-md">
+                              <div className="p-4 border-b">
+                                <h5 className="font-medium text-gray-900">Recent Visits</h5>
+                              </div>
+                              <div className="max-h-64 overflow-y-auto">
+                                {trackingData[company.id].recent_sessions && trackingData[company.id].recent_sessions.length > 0 ? (
+                                  <div className="divide-y">
+                                    {trackingData[company.id].recent_sessions
+                                      .sort((a: any, b: any) => new Date(b.visit_start_time).getTime() - new Date(a.visit_start_time).getTime())
+                                      .slice(0, 10)
+                                      .map((session: any, index: number) => (
+                                      <div key={index} className="p-3 hover:bg-gray-50">
+                                        <div className="flex justify-between items-start">
+                                          <div className="flex-1">
+                                            <div className="text-sm font-medium text-gray-900">
+                                              Session {session.session_id?.split('_')[1]?.substring(0, 8)}...
+                                              {session.is_initial_visit && (
+                                                <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                                  First Visit
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                              {session.ip_address && `${session.ip_address} • `}
+                                              {session.device_type} • {session.browser_name}
+                                              {session.city && ` • ${session.city}, ${session.country}`}
+                                            </div>
+                                            <div className="flex gap-3 mt-1">
+                                              {session.total_time_seconds > 0 && (
+                                                <div className="text-xs text-blue-600">
+                                                  ⏱️ {Math.round(session.total_time_seconds)}s
+                                                </div>
+                                              )}
+                                              {session.page_interactions > 0 && (
+                                                <div className="text-xs text-purple-600">
+                                                  🖱️ {session.page_interactions} interactions
+                                                </div>
+                                              )}
+                                            </div>
+                                            {session.referrer_url && (
+                                              <div className="text-xs text-gray-400 mt-1 truncate">
+                                                From: {session.referrer_url}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="text-right">
+                                            <div className="text-xs text-gray-500">
+                                              {new Date(session.visit_start_time).toLocaleDateString()}
+                                            </div>
+                                            <div className="text-xs text-gray-400">
+                                              {new Date(session.visit_start_time).toLocaleTimeString()}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="p-6 text-center text-gray-500">
+                                    <p>No recent visits yet</p>
+                                    <p className="text-sm">Visitors will appear here when they view the website</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {company.tracking_enabled && !trackingData[company.id] && (
+                          <div className="text-center py-8 text-gray-500">
+                            <p>No tracking data available yet.</p>
+                            <p className="text-sm">
+                              {company.tracking_paused ? 
+                                'Resume tracking to continue collecting data.' : 
+                                'Start getting visitors to see analytics here!'}
+                            </p>
+                          </div>
+                        )}
+
+                        {!company.tracking_enabled && (
+                          <div className="text-center py-8 text-gray-500">
+                            <p>Tracking is currently disabled.</p>
+                            <p className="text-sm">Enable tracking above to start collecting analytics.</p>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {/* Image Customization */}
-                    <div className="p-4">
+                    {activeTab[company.id] === 'customize' && (
+                      <div className="p-4 bg-white">
+                        <h5 className="font-medium text-gray-900 mb-4">🖼️ ModernTrust Template Images</h5>
+                        
+                        <div className="space-y-4">
+                          {/* Hero Image 1 */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Hero Background Image 1
+                            </label>
+                            <input
+                              type="url"
+                              placeholder={getCurrentImageUrl(company, 'hero_img') || "https://images.unsplash.com/photo-..."}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              value={customizations[company.id]?.hero_img || ''}
+                              onChange={(e) => handleCustomizationChange(company.id, 'hero_img', e.target.value)}
+                            />
+                            {getCurrentImageUrl(company, 'hero_img') && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Current: {getCurrentImageUrl(company, 'hero_img').substring(0, 50)}...
+                              </p>
+                            )}
+                          </div>
 
-                {/* ModernTrust Template Customization */}
-                <div className="space-y-4 border-t pt-6">
-                  <h4 className="font-medium text-gray-900">ModernTrust Template Images</h4>
-                  
-                  {/* Hero Image 1 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hero Background Image 1
-                    </label>
-                    <input
-                      type="url"
-                      placeholder={getCurrentImageUrl(company, 'hero_img') || "https://images.unsplash.com/photo-..."}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                      value={customizations[company.id]?.hero_img || ''}
-                      onChange={(e) => handleCustomizationChange(company.id, 'hero_img', e.target.value)}
-                    />
-                    {getCurrentImageUrl(company, 'hero_img') && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Current: {getCurrentImageUrl(company, 'hero_img').substring(0, 50)}...
-                      </p>
-                    )}
-                  </div>
+                          {/* Hero Image 2 */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Hero Background Image 2 (Slideshow)
+                            </label>
+                            <input
+                              type="url"
+                              placeholder={getCurrentImageUrl(company, 'hero_img_2') || "https://images.unsplash.com/photo-..."}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              value={customizations[company.id]?.hero_img_2 || ''}
+                              onChange={(e) => handleCustomizationChange(company.id, 'hero_img_2', e.target.value)}
+                            />
+                            {getCurrentImageUrl(company, 'hero_img_2') && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Current: {getCurrentImageUrl(company, 'hero_img_2').substring(0, 50)}...
+                              </p>
+                            )}
+                          </div>
 
-                  {/* Hero Image 2 */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hero Background Image 2 (Slideshow)
-                    </label>
-                    <input
-                      type="url"
-                      placeholder={getCurrentImageUrl(company, 'hero_img_2') || "https://images.unsplash.com/photo-..."}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                      value={customizations[company.id]?.hero_img_2 || ''}
-                      onChange={(e) => handleCustomizationChange(company.id, 'hero_img_2', e.target.value)}
-                    />
-                    {getCurrentImageUrl(company, 'hero_img_2') && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Current: {getCurrentImageUrl(company, 'hero_img_2').substring(0, 50)}...
-                      </p>
-                    )}
-                  </div>
+                          {/* About Image */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              About Section Image
+                            </label>
+                            <input
+                              type="url"
+                              placeholder={getCurrentImageUrl(company, 'about_img') || "https://images.unsplash.com/photo-..."}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              value={customizations[company.id]?.about_img || ''}
+                              onChange={(e) => handleCustomizationChange(company.id, 'about_img', e.target.value)}
+                            />
+                            {getCurrentImageUrl(company, 'about_img') && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Current: {getCurrentImageUrl(company, 'about_img').substring(0, 50)}...
+                              </p>
+                            )}
+                          </div>
 
-                  {/* About Image */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      About Section Image
-                    </label>
-                    <input
-                      type="url"
-                      placeholder={getCurrentImageUrl(company, 'about_img') || "https://images.unsplash.com/photo-..."}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                      value={customizations[company.id]?.about_img || ''}
-                      onChange={(e) => handleCustomizationChange(company.id, 'about_img', e.target.value)}
-                    />
-                    {getCurrentImageUrl(company, 'about_img') && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Current: {getCurrentImageUrl(company, 'about_img').substring(0, 50)}...
-                      </p>
-                    )}
-                  </div>
+                          {/* Logo URL */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Logo URL
+                            </label>
+                            <input
+                              type="url"
+                              placeholder={getCurrentImageUrl(company, 'logo_url') || "https://logo-url.com/logo.svg"}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                              value={customizations[company.id]?.logo_url || ''}
+                              onChange={(e) => handleCustomizationChange(company.id, 'logo_url', e.target.value)}
+                            />
+                            {getCurrentImageUrl(company, 'logo_url') && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Current: {getCurrentImageUrl(company, 'logo_url').substring(0, 50)}...
+                              </p>
+                            )}
+                          </div>
 
-                  {/* Logo URL */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Logo URL
-                    </label>
-                    <input
-                      type="url"
-                      placeholder={getCurrentImageUrl(company, 'logo_url') || "https://logo-url.com/logo.svg"}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                      value={customizations[company.id]?.logo_url || ''}
-                      onChange={(e) => handleCustomizationChange(company.id, 'logo_url', e.target.value)}
-                    />
-                    {getCurrentImageUrl(company, 'logo_url') && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Current: {getCurrentImageUrl(company, 'logo_url').substring(0, 50)}...
-                      </p>
-                    )}
-                  </div>
+                          {/* Save Status */}
+                          {saveStatus[company.id] && (
+                            <div className={`p-3 rounded-md text-sm ${
+                              saveStatus[company.id].includes('✅') ? 'bg-green-50 text-green-800' :
+                              saveStatus[company.id].includes('❌') ? 'bg-red-50 text-red-800' :
+                              saveStatus[company.id].includes('⚠️') ? 'bg-yellow-50 text-yellow-800' :
+                              'bg-blue-50 text-blue-800'
+                            }`}>
+                              {saveStatus[company.id]}
+                            </div>
+                          )}
 
-                  {/* Save Status */}
-                  {saveStatus[company.id] && (
-                    <div className={`p-3 rounded-md text-sm ${
-                      saveStatus[company.id].includes('✅') ? 'bg-green-50 text-green-800' :
-                      saveStatus[company.id].includes('❌') ? 'bg-red-50 text-red-800' :
-                      saveStatus[company.id].includes('⚠️') ? 'bg-yellow-50 text-yellow-800' :
-                      'bg-blue-50 text-blue-800'
-                    }`}>
-                      {saveStatus[company.id]}
-                    </div>
-                  )}
-
-                  {/* Save Images Button */}
-                  <button
-                    onClick={() => saveCustomizations(company)}
-                    disabled={saving[company.id]}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                  >
-                    {saving[company.id] ? 'Saving...' : '💾 Save Images'}
-                  </button>
+                          {/* Save Images Button */}
+                          <button
+                            onClick={() => saveCustomizations(company)}
+                            disabled={saving[company.id]}
+                            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                          >
+                            {saving[company.id] ? 'Saving...' : '💾 Save Images'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -496,7 +757,16 @@ export const getServerSideProps: GetServerSideProps = async () => {
       state: company.state || null,
       phone: company.phone || null,
       email_1: company.email_1 || null,
+      site: company.site || null,
+      reviews_link: company.reviews_link || null,
+      rating: company.rating || null,
+      reviews: company.reviews || null,
+      r_30: company.r_30 || null,
+      r_60: company.r_60 || null,
+      r_90: company.r_90 || null,
+      r_365: company.r_365 || null,
       tracking_enabled: company.tracking_enabled || false,
+      tracking_paused: company.tracking_paused || false,
       company_frames: company.company_frames || null,
     }));
 

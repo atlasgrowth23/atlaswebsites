@@ -120,6 +120,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Update daily analytics in the background (don't wait for it)
     updateDailyAnalytics(companyId, deviceType).catch(console.error);
 
+    // Auto-update pipeline stage if this is a new visit and they're in "contacted" stage
+    if (!existingView && isInitial) {
+      autoUpdatePipelineStage(companyId).catch(console.error);
+    }
+
     return res.status(200).json({
       success: true,
       sessionId,
@@ -173,5 +178,53 @@ async function updateDailyAnalytics(companyId: string, deviceType: string) {
 
   } catch (error) {
     console.error('Error updating daily analytics:', error);
+  }
+}
+
+// Background function to auto-update pipeline stage
+async function autoUpdatePipelineStage(companyId: string) {
+  try {
+    // Check if company is in pipeline and in "contacted" stage
+    const { data: pipelineLead, error: pipelineError } = await supabaseAdmin
+      .from('lead_pipeline')
+      .select('id, stage')
+      .eq('company_id', companyId)
+      .single();
+
+    if (pipelineError || !pipelineLead) {
+      return; // Company not in pipeline, ignore
+    }
+
+    // Only auto-move if they're in "contacted" stage
+    if (pipelineLead.stage === 'contacted') {
+      // Update to "website_viewed" stage
+      const { error: updateError } = await supabaseAdmin
+        .from('lead_pipeline')
+        .update({
+          stage: 'website_viewed',
+          last_contact_date: new Date().toISOString()
+        })
+        .eq('id', pipelineLead.id);
+
+      if (updateError) {
+        console.error('Error updating pipeline stage:', updateError);
+        return;
+      }
+
+      // Log the automatic stage change
+      await supabaseAdmin
+        .from('contact_log')
+        .insert({
+          company_id: companyId,
+          stage_from: 'contacted',
+          stage_to: 'website_viewed',
+          notes: 'Auto-moved: First website visit detected',
+          created_by: 'system'
+        });
+
+      console.log(`✅ Auto-moved company ${companyId} to website_viewed stage`);
+    }
+  } catch (error) {
+    console.error('Error in auto pipeline stage update:', error);
   }
 }

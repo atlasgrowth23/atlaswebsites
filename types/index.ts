@@ -31,4 +31,6 @@ export interface Company {
   display_state?: string;
   display_postal_code?: string;
   formatted_address?: string;
+  // Added for tracking functionality
+  tracking_enabled?: boolean;
 }
