@@ -17,10 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('Querying companies table for custom_domain:', domain);
     
     // Find company with this custom domain using Supabase
+    // Check both with and without www prefix
     const { data: companies, error } = await supabase
       .from('companies')
       .select('id, name, slug, custom_domain')
-      .eq('custom_domain', domain);
+      .or(`custom_domain.eq.${domain},custom_domain.eq.www.${domain}`);
 
     console.log('Query result:', { companies, error });
 
