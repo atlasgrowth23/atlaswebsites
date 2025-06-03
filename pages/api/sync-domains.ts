@@ -47,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Update Edge Config via Vercel API
     console.log('VERCEL_TOKEN exists:', !!process.env.VERCEL_TOKEN);
     
-    const response = await fetch('https://api.vercel.com/v1/edge-config/ecfg_3tflnsm7igq5dby8jteql7r8vsh3/items', {
+    const response = await fetch('https://api.vercel.com/v1/edge-config/ecfg_bgv5df8qg5vai2ptqyldpbbysjo5/items', {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer wtXMcEx3zz7tWx6vibCb9BD9`,
