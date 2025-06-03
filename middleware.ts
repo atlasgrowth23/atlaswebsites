@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { get } from '@vercel/edge-config';
 
+async function getCompanySlugFromDB(hostname: string): Promise<string | null> {
+  try {
+    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/get-company-by-domain?domain=${hostname}`, {
+      headers: { 'User-Agent': 'middleware-fallback' }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return data.slug || null;
+    }
+  } catch (error) {
+    console.error('DB fallback error:', error);
+  }
+  return null;
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host');
   
@@ -12,21 +28,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  let companySlug: string | null = null;
+
   try {
-    // Get custom domains from Edge Config (super fast)
+    // Try Edge Config first (super fast)
     const domainMap = await get('custom_domains') as Record<string, string> | null;
     
     if (domainMap && domainMap[hostname]) {
-      const companySlug = domainMap[hostname];
-      
-      // Rewrite to company template
-      const url = request.nextUrl.clone();
-      url.pathname = `/t/moderntrust/${companySlug}`;
-      
-      return NextResponse.rewrite(url);
+      companySlug = domainMap[hostname];
     }
   } catch (error) {
-    console.error('Middleware error:', error);
+    console.error('Edge Config error:', error);
+  }
+
+  // Fallback to database if not found in Edge Config
+  if (!companySlug) {
+    companySlug = await getCompanySlugFromDB(hostname);
+  }
+
+  // If we found a company slug, rewrite to template
+  if (companySlug) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/t/moderntrust/${companySlug}`;
+    return NextResponse.rewrite(url);
   }
 
   // No custom domain found, continue normally

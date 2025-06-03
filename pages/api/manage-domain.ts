@@ -1,55 +1,77 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { updateCompany } from '@/lib/supabase-db';
+import { updateCompany, getCompanyById } from '@/lib/supabase-db';
+
+async function syncEdgeConfig() {
+  try {
+    const response = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/sync-domains`, {
+      method: 'POST'
+    });
+    if (!response.ok) {
+      console.error('Failed to sync Edge Config');
+    }
+  } catch (error) {
+    console.error('Edge Config sync error:', error);
+  }
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-
   const { companyId, customDomain } = req.body;
 
-  if (!companyId || !customDomain) {
-    return res.status(400).json({ message: 'Company ID and custom domain are required' });
-  }
-
-  try {
-    // First, update the database with the custom domain
-    await updateCompany(companyId, { custom_domain: customDomain });
-
-    // Add domain to Vercel project (using your correct project ID)
-    const vercelResponse = await fetch(`https://api.vercel.com/v10/projects/prj_4M9ztyh53V76lUdsEHPIw88UT5wC/domains`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.VERCEL_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: customDomain,
-      }),
-    });
-
-    if (!vercelResponse.ok) {
-      const errorData = await vercelResponse.text();
-      console.error('Vercel API error:', errorData);
-      
-      // Still return success for database update, but note the Vercel issue
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Domain saved to database. Please manually add to Vercel dashboard.',
-        vercelError: true 
-      });
+  if (req.method === 'POST') {
+    if (!companyId || !customDomain) {
+      return res.status(400).json({ message: 'Company ID and custom domain are required' });
     }
 
-    const vercelData = await vercelResponse.json();
-    console.log('Domain added to Vercel:', vercelData);
+    try {
+      // Get company to validate it exists
+      const company = await getCompanyById(companyId);
+      if (!company) {
+        return res.status(404).json({ message: 'Company not found' });
+      }
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Custom domain configured successfully!',
-      vercelData 
-    });
-  } catch (error) {
-    console.error('Domain management error:', error);
-    res.status(500).json({ message: 'Failed to configure domain' });
+      // Update database with custom domain
+      await updateCompany(companyId, { custom_domain: customDomain });
+
+      // Sync to Edge Config for middleware routing
+      await syncEdgeConfig();
+
+      res.status(200).json({ 
+        success: true, 
+        message: 'Domain saved! Remember to manually add it to Vercel and configure DNS.'
+      });
+    } catch (error) {
+      console.error('Domain management error:', error);
+      res.status(500).json({ message: 'Failed to save domain' });
+    }
+  } 
+  else if (req.method === 'DELETE') {
+    if (!companyId) {
+      return res.status(400).json({ message: 'Company ID is required' });
+    }
+
+    try {
+      // Get company to validate
+      const company = await getCompanyById(companyId);
+      if (!company || !company.custom_domain) {
+        return res.status(404).json({ message: 'Company or domain not found' });
+      }
+
+      // Remove from database
+      await updateCompany(companyId, { custom_domain: undefined });
+
+      // Sync to Edge Config
+      await syncEdgeConfig();
+
+      res.status(200).json({ 
+        success: true, 
+        message: 'Domain removed from routing. Remember to manually remove from Vercel.' 
+      });
+    } catch (error) {
+      console.error('Domain removal error:', error);
+      res.status(500).json({ message: 'Failed to remove domain' });
+    }
+  } 
+  else {
+    res.status(405).json({ message: 'Method not allowed' });
   }
 }

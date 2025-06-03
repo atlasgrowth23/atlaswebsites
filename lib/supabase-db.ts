@@ -16,6 +16,21 @@ export async function getCompanyBySlug(slug: string): Promise<Company | null> {
   return data
 }
 
+export async function getCompanyById(id: string): Promise<Company | null> {
+  const { data, error } = await supabase
+    .from('companies')
+    .select('*')
+    .eq('id', id)
+    .single()
+  
+  if (error) {
+    console.error('Error fetching company by ID:', error)
+    return null
+  }
+  
+  return data
+}
+
 export async function getAllCompanies(limit: number = 100): Promise<Company[]> {
   const { data, error } = await supabase
     .from('companies')

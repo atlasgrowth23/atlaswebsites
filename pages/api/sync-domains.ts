@@ -7,6 +7,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('Starting domain sync...');
+    
     // Get all companies with custom domains from Supabase
     const { data: companies, error } = await supabase
       .from('companies')
@@ -15,8 +17,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (error) {
       console.error('Database error:', error);
-      return res.status(500).json({ message: 'Database error' });
+      return res.status(500).json({ message: 'Database error', error: error.message });
     }
+
+    console.log('Found companies:', companies?.length || 0);
 
     // Build domain mapping for Edge Config
     const domainMap: Record<string, string> = {};
@@ -40,41 +44,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('EDGE_CONFIG:', process.env.EDGE_CONFIG ? 'Set' : 'Not set');
     console.log('VERCEL_TOKEN:', process.env.VERCEL_TOKEN ? 'Set' : 'Not set');
 
-    // Sync to Vercel Edge Config
-    if (process.env.EDGE_CONFIG && process.env.VERCEL_TOKEN) {
-      // Extract Edge Config ID from connection string
-      const edgeConfigId = process.env.EDGE_CONFIG.split('/').pop()?.split('?')[0];
-      const edgeConfigUrl = `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`;
-      console.log('Edge Config ID:', edgeConfigId);
-      console.log('Syncing to:', edgeConfigUrl);
-      
-      const response = await fetch(edgeConfigUrl, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${process.env.VERCEL_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: [
-            {
-              operation: 'update',
-              key: 'custom_domains',
-              value: domainMap
-            }
-          ]
-        })
-      });
+    // Update Edge Config via Vercel API
+    console.log('VERCEL_TOKEN exists:', !!process.env.VERCEL_TOKEN);
+    
+    const response = await fetch('https://api.vercel.com/v1/edge-config/ecfg_bgv5df8qg5vai2ptqyldpbbysjo5/items', {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer wtXMcEx3zz7tWx6vibCb9BD9`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: [
+          {
+            operation: 'upsert',
+            key: 'custom_domains',
+            value: domainMap
+          }
+        ]
+      })
+    });
 
-      console.log('Edge Config response status:', response.status);
-      const responseText = await response.text();
-      console.log('Edge Config response:', responseText);
+    const responseData = await response.text();
+    console.log('Edge Config API response:', response.status, responseData);
 
-      if (!response.ok) {
-        throw new Error(`Edge Config sync failed: ${response.status} ${responseText}`);
-      }
-    } else {
-      throw new Error('Missing EDGE_CONFIG or VERCEL_TOKEN environment variables');
+    if (!response.ok) {
+      throw new Error(`Edge Config update failed: ${response.status} - ${responseData}`);
     }
+
+    console.log('Successfully synced domains to Edge Config');
 
     res.status(200).json({ 
       message: 'Domains synced successfully',
@@ -83,6 +80,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('Sync error:', error);
-    res.status(500).json({ message: 'Sync failed' });
+    res.status(500).json({ 
+      message: 'Sync failed', 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 }
