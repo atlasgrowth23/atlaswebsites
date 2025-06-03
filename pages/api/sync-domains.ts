@@ -42,9 +42,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Sync to Vercel Edge Config
     if (process.env.EDGE_CONFIG && process.env.VERCEL_TOKEN) {
-      // Use the Edge Config ID directly
-      const edgeConfigId = 'ecfg_1pza4nruemzox6yj3yq2nvnnobzo';
+      // Extract Edge Config ID from connection string
+      const edgeConfigId = process.env.EDGE_CONFIG.split('/').pop()?.split('?')[0];
       const edgeConfigUrl = `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`;
+      console.log('Edge Config ID:', edgeConfigId);
       console.log('Syncing to:', edgeConfigUrl);
       
       const response = await fetch(edgeConfigUrl, {
@@ -56,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         body: JSON.stringify({
           items: [
             {
-              operation: 'upsert',
+              operation: 'update',
               key: 'custom_domains',
               value: domainMap
             }
