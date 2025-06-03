@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check both with and without www prefix
     const { data: companies, error } = await supabase
       .from('companies')
-      .select('id, name, slug, custom_domain')
+      .select('id, name, slug, custom_domain, template_key')
       .or(`custom_domain.eq.${domain},custom_domain.eq.www.${domain}`);
 
     console.log('Query result:', { companies, error });

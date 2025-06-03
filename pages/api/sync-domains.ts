@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Get all companies with custom domains from Supabase
     const { data: companies, error } = await supabase
       .from('companies')
-      .select('slug, custom_domain')
+      .select('slug, custom_domain, template_key')
       .not('custom_domain', 'is', null);
 
     if (error) {
@@ -26,16 +26,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const domainMap: Record<string, string> = {};
     
     companies?.forEach(company => {
-      if (company.custom_domain && company.slug) {
+      if (company.custom_domain && company.slug && company.template_key) {
         // Store both www and non-www versions
         const domain = company.custom_domain;
-        domainMap[domain] = company.slug;
+        const templateSlug = `${company.template_key}/${company.slug}`;
+        domainMap[domain] = templateSlug;
         
         // Handle www variants
         if (domain.startsWith('www.')) {
-          domainMap[domain.substring(4)] = company.slug;
+          domainMap[domain.substring(4)] = templateSlug;
         } else {
-          domainMap[`www.${domain}`] = company.slug;
+          domainMap[`www.${domain}`] = templateSlug;
         }
       }
     });

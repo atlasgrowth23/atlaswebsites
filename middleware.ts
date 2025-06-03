@@ -12,7 +12,7 @@ async function getCompanySlugFromDB(hostname: string): Promise<string | null> {
     
     if (response.ok) {
       const data = await response.json();
-      return data.slug || null;
+      return data.template_key && data.slug ? `${data.template_key}/${data.slug}` : null;
     }
   } catch (error) {
     console.error('DB fallback error:', error);
@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
   // If we found a company slug, rewrite to template
   if (companySlug) {
     const url = request.nextUrl.clone();
-    url.pathname = `/t/moderntrust/${companySlug}`;
+    url.pathname = `/t/${companySlug}`;
     return NextResponse.rewrite(url);
   }
 
