@@ -12,7 +12,7 @@ interface User {
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  currentPage: 'dashboard' | 'pipeline';
+  currentPage: 'pipeline' | 'analytics' | 'templates';
 }
 
 export default function AdminLayout({ children, currentPage }: AdminLayoutProps) {
@@ -72,61 +72,89 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-8">
-              <h1 className="text-xl font-bold text-gray-900">HVAC Lead Management</h1>
-              
-              {/* Navigation Tabs */}
-              <div className="flex space-x-4">
-                <Link 
-                  href="/admin/dashboard"
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    currentPage === 'dashboard'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  📊 Dashboard
-                </Link>
-                <Link 
-                  href="/admin/pipeline"
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    currentPage === 'pipeline'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  🔄 Pipeline
-                </Link>
-              </div>
-            </div>
+    <div className="flex h-screen bg-gray-50">
+      {/* Left Sidebar */}
+      <aside className="w-60 bg-white border-r border-gray-200 flex flex-col">
+        {/* Logo/Title */}
+        <div className="px-6 py-5 border-b border-gray-200">
+          <h1 className="text-xl font-semibold text-gray-900">Lead Management</h1>
+          <p className="text-sm text-gray-500 mt-1">{user.states.join(', ')}</p>
+        </div>
 
-            {/* User Info & Logout */}
-            <div className="flex items-center space-x-4">
-              <div className="text-sm">
-                <div className="text-gray-900 font-medium">{user.name}</div>
-                <div className="text-gray-500">
-                  {user.role === 'admin' ? 'Admin' : 'Viewer'} • {user.states.join(', ')}
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900 text-sm font-medium"
-              >
-                Logout
-              </button>
+        {/* Navigation Menu */}
+        <nav className="flex-1 px-3 py-4">
+          <div className="space-y-1">
+            <Link 
+              href="/admin/pipeline"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                currentPage === 'pipeline'
+                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <svg className={`mr-3 h-5 w-5 ${currentPage === 'pipeline' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2H9m0 0v-6a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2H9" />
+              </svg>
+              Pipeline
+            </Link>
+            
+            <Link 
+              href="/admin/analytics"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                currentPage === 'analytics'
+                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <svg className={`mr-3 h-5 w-5 ${currentPage === 'analytics' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Analytics
+            </Link>
+            
+            <Link 
+              href="/admin/templates"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors ${
+                currentPage === 'templates'
+                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <svg className={`mr-3 h-5 w-5 ${currentPage === 'templates' ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+              </svg>
+              Templates
+            </Link>
+          </div>
+        </nav>
+
+        {/* User Info & Logout */}
+        <div className="px-3 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+              <p className="text-xs text-gray-500 truncate">
+                {user.role === 'admin' ? 'Administrator' : 'Viewer'}
+              </p>
             </div>
+            <button
+              onClick={handleLogout}
+              className="ml-3 inline-flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              title="Sign out"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
           </div>
         </div>
-      </nav>
+      </aside>
 
-      {/* Main Content */}
-      <main className="py-8">
-        {children}
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-auto bg-gray-50">
+        <div className="p-8">
+          {children}
+        </div>
       </main>
     </div>
   );
