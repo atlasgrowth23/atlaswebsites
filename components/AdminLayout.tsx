@@ -18,6 +18,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children, currentPage }: AdminLayoutProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -73,8 +74,18 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Mobile menu overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        >
+          <div className="absolute inset-0 bg-black opacity-50"></div>
+        </div>
+      )}
+
       {/* Left Sidebar */}
-      <aside className="w-60 bg-white border-r border-gray-200 flex flex-col">
+      <aside className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-60 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         {/* Logo/Title */}
         <div className="px-6 py-5 border-b border-gray-200">
           <h1 className="text-xl font-semibold text-gray-900">Lead Management</h1>
@@ -166,8 +177,29 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-auto bg-gray-50">
-        <div className="p-8">
+      <main className="flex-1 overflow-auto bg-gray-50 lg:ml-0">
+        {/* Mobile header */}
+        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-semibold text-gray-900">Lead Management</h1>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="p-4 lg:p-8">
           {children}
         </div>
       </main>

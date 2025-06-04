@@ -400,14 +400,14 @@ export default function Pipeline({ companies }: PipelineProps) {
             
             {/* Stage Navigation Filter */}
             <div className="mb-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1 sm:gap-2">
                 {STAGES.map(stage => {
                   const stageLeadCount = getLeadsByStage(stage.key).length;
                   return (
                     <button
                       key={stage.key}
                       onClick={() => setSelectedStage(stage.key)}
-                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium transition-colors ${
                         selectedStage === stage.key
                           ? `${stage.color} ${stage.textColor}`
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -480,7 +480,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                         </div>
                         
                         {/* Stage Actions */}
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-1 sm:gap-2">
                           {selectedStage === 'new_lead' && (
                             <>
                               <button
@@ -833,7 +833,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                           
                           <div className="space-y-4">
                             {/* Quick Actions */}
-                            <div className="flex space-x-3 mb-4">
+                            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
                               <a
                                 href={`tel:${lead.company.phone}`}
                                 className="bg-green-600 text-white px-3 py-1 text-sm rounded hover:bg-green-700"
@@ -870,7 +870,7 @@ Jared Thompson`;
                               </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                   Owner Name
@@ -1096,7 +1096,7 @@ Jared Thompson`;
         </div>
 
         {/* Stage Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {stages.map(stage => (
             <div
               key={stage.key}
