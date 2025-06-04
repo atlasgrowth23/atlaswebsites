@@ -1,244 +1,179 @@
-// Enhanced template view tracking with proper session management
+// Modern template tracking with admin detection
 (() => {
+  'use strict';
+
   // Only run on template pages
   if (!window.location.pathname.startsWith('/t/')) {
     return;
   }
-  
-  // Check URL parameters
-  const urlParams = new URLSearchParams(window.location.search);
-  
-  // Skip tracking in preview mode
-  if (urlParams.get('preview') === 'true') {
-    console.log('Preview mode detected, skipping tracking');
-    return;
-  }
-  
-  // Skip tracking for admin views
-  if (urlParams.get('admin') === 'true') {
-    console.log('Admin view detected, skipping tracking');
-    return;
-  }
-  
-  console.log('External visit detected, tracking enabled');
 
   // Prevent multiple tracker instances
   if (window.__TRACKER_RUNNING__) {
     console.log('Tracker already running, skipping');
     return;
   }
-  window.__TRACKER_RUNNING__ = true;
 
-  // Extract the template and company info from the URL
-  const pathParts = window.location.pathname.split('/');
-  if (pathParts.length < 4) {
-    console.log('Invalid template URL pattern');
-    return;
-  }
-
-  const templateKey = pathParts[2];
-  const companySlug = pathParts[3];
-  const companyId = window.__COMPANY_ID__;
-  const trackingEnabled = window.__TRACKING_ENABLED__;
+  const urlParams = new URLSearchParams(window.location.search);
   
-  if (!companyId) {
-    console.log('Company ID not found, cannot track');
+  // Skip tracking in preview/admin mode
+  if (urlParams.get('preview') === 'true') {
+    console.log('Preview mode detected, skipping tracking');
     return;
   }
   
-  // Always track unless explicitly in preview mode (preview check is already above)
-  console.log('Tracking enabled for company:', companyId);
-
-  // Generate or retrieve session ID (persist across potential page reloads)
-  const pageKey = `${companyId}_${templateKey}_${companySlug}`;
-  let sessionId = sessionStorage.getItem(`tracker_session_${pageKey}`);
-  if (!sessionId) {
-    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    sessionStorage.setItem(`tracker_session_${pageKey}`, sessionId);
+  if (urlParams.get('admin') === 'true') {
+    console.log('Admin view detected, skipping tracking');
+    return;
   }
 
-  const startTime = Date.now();
-  let lastActivity = startTime;
-  let totalActiveTime = 0;
-  let isActive = true;
-  let hasInitialTracked = false;
-  let updateInterval = null;
-  let inactivityTimeout = null;
-  let visitorLocation = null;
-
-  // Track user activity to measure engagement time
-  const trackActivity = () => {
-    const now = Date.now();
-    if (isActive) {
-      totalActiveTime += (now - lastActivity);
-    }
-    lastActivity = now;
-    isActive = true;
-    
-    // Reset inactivity timeout
-    if (inactivityTimeout) {
-      clearTimeout(inactivityTimeout);
-    }
-    
-    // Stop tracking after 5 minutes of inactivity
-    inactivityTimeout = setTimeout(() => {
-      isActive = false;
-      console.log('User inactive for 5 minutes, stopping tracking updates');
-      if (updateInterval) {
-        clearInterval(updateInterval);
-        updateInterval = null;
+  // Check for admin authentication
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/check-admin', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.isAdmin || false;
       }
-    }, 5 * 60 * 1000); // 5 minutes
+    } catch (error) {
+      console.log('Admin check failed, assuming external user');
+    }
+    return false;
   };
 
-  // Get visitor's location (with permission)
-  const getVisitorLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          visitorLocation = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          };
-          console.log('Visitor location obtained:', visitorLocation);
-        },
-        (error) => {
-          console.log('Geolocation permission denied or failed:', error.message);
-          // Don't track location if permission denied
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000 // 5 minutes
+  // Initialize tracking
+  const initTracking = async () => {
+    const isAdmin = await checkAdminStatus();
+    
+    if (isAdmin) {
+      console.log('🔒 Admin user detected, tracking disabled');
+      return;
+    }
+
+    console.log('👥 External visitor detected, tracking enabled');
+    window.__TRACKER_RUNNING__ = true;
+
+    // Extract template/company info
+    const pathParts = window.location.pathname.split('/');
+    if (pathParts.length < 4) {
+      console.error('Invalid template URL pattern');
+      return;
+    }
+
+    const templateKey = pathParts[2];
+    const companySlug = pathParts[3];
+    const companyId = window.__COMPANY_ID__;
+    
+    if (!companyId) {
+      console.error('Company ID not found');
+      return;
+    }
+
+    // Generate session ID
+    const sessionKey = `tracker_${companyId}_${templateKey}`;
+    let sessionId = sessionStorage.getItem(sessionKey);
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      sessionStorage.setItem(sessionKey, sessionId);
+    }
+
+    const startTime = Date.now();
+    let lastActivity = startTime;
+    let totalActiveTime = 0;
+    let isActive = true;
+    let hasTracked = false;
+
+    // Track user activity
+    const trackActivity = () => {
+      const now = Date.now();
+      if (isActive) {
+        totalActiveTime += (now - lastActivity);
+      }
+      lastActivity = now;
+      isActive = true;
+    };
+
+    // Send tracking data
+    const sendTrackingData = async (isInitial = false) => {
+      const timeOnPage = Math.floor(totalActiveTime / 1000);
+      
+      try {
+        const response = await fetch('/api/track-template-view', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            companySlug,
+            templateKey,
+            companyId,
+            sessionId,
+            timeOnPage: Math.max(timeOnPage, 1),
+            userAgent: navigator.userAgent,
+            referrer: document.referrer,
+            isInitial
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log(`📊 Tracking sent: ${timeOnPage}s (${isInitial ? 'initial' : 'update'})`);
         }
-      );
-    }
-  };
-
-  // Track mouse movement, scrolling, clicking
-  document.addEventListener('mousemove', trackActivity);
-  document.addEventListener('scroll', trackActivity);
-  document.addEventListener('click', trackActivity);
-  document.addEventListener('keypress', trackActivity);
-
-  // Try to get location (will ask for permission)
-  getVisitorLocation();
-
-  // Update pipeline stage for external visits
-  const updatePipelineStage = () => {
-    fetch('/api/pipeline/auto-stage-update', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        companyId,
-        event: 'website_visit'
-      }),
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log('Pipeline update result:', data);
-    })
-    .catch(error => {
-      console.warn('Pipeline update failed:', error);
-    });
-  };
-
-  // Send tracking data
-  const sendTrackingData = (isInitial = false) => {
-    const timeOnPage = Math.floor((Date.now() - startTime) / 1000);
-    const activeTime = Math.floor(totalActiveTime / 1000);
-    
-    fetch('/api/track-template-view', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        companySlug,
-        templateKey,
-        companyId,
-        sessionId,
-        timeOnPage: activeTime > 0 ? activeTime : Math.min(timeOnPage, 30), // Cap at 30 seconds if no activity
-        userAgent: navigator.userAgent,
-        referrer: document.referrer,
-        isInitial,
-        location: visitorLocation
-      }),
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log('Template view tracked:', { sessionId, timeOnPage: activeTime > 0 ? activeTime : timeOnPage, isInitial });
-      
-      // Update pipeline on first visit (only external visits reach here now)
-      if (isInitial) {
-        updatePipelineStage();
+      } catch (error) {
+        console.error('❌ Tracking failed:', error);
       }
-    })
-    .catch(error => {
-      console.error('Error tracking template view:', error);
-    });
-  };
+    };
 
-  // Initial tracking after short delay to ensure page is loaded
-  setTimeout(() => {
-    if (!hasInitialTracked) {
-      hasInitialTracked = true;
-      sendTrackingData(true);
-      
-      // Start periodic updates only after initial tracking
-      updateInterval = setInterval(() => {
-        if (isActive) {
-          // Always send updates if page is active, even with minimal activity
-          const currentActiveTime = Math.floor(totalActiveTime / 1000);
-          const totalTime = Math.floor((Date.now() - startTime) / 1000);
-          
-          // Use active time if > 0, otherwise use total time (capped at reasonable amount)
-          const timeToSend = currentActiveTime > 0 ? currentActiveTime : Math.min(totalTime, 30);
-          
-          if (timeToSend > 0) {
-            sendTrackingData(false);
+    // Event listeners for activity tracking
+    ['mousemove', 'scroll', 'click', 'keypress'].forEach(event => {
+      document.addEventListener(event, trackActivity, { passive: true });
+    });
+
+    // Initial tracking after page load
+    setTimeout(async () => {
+      if (!hasTracked) {
+        hasTracked = true;
+        await sendTrackingData(true);
+        
+        // Periodic updates every 30 seconds
+        setInterval(async () => {
+          if (isActive && totalActiveTime > 0) {
+            await sendTrackingData(false);
           }
-        }
-      }, 5000); // Update every 5 seconds instead of 30
-    }
-  }, 500); // Reduced from 3 seconds to 500ms
+        }, 30000);
+      }
+    }, 1000);
 
-  // Prevent duplicate exit tracking
-  let hasTrackedExit = false;
-  
-  // Final tracking when user leaves
-  const trackExit = () => {
-    if (!hasTrackedExit && hasInitialTracked) {
-      hasTrackedExit = true;
-      
-      // Clear intervals
-      if (updateInterval) {
-        clearInterval(updateInterval);
+    // Final tracking on page unload
+    const handleUnload = () => {
+      if (hasTracked && totalActiveTime > 0) {
+        navigator.sendBeacon('/api/track-template-view', JSON.stringify({
+          companySlug,
+          templateKey,
+          companyId,
+          sessionId,
+          timeOnPage: Math.floor(totalActiveTime / 1000),
+          userAgent: navigator.userAgent,
+          referrer: document.referrer,
+          isInitial: false
+        }));
       }
-      if (inactivityTimeout) {
-        clearTimeout(inactivityTimeout);
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        handleUnload();
       }
-      
-      // Clear session storage
-      sessionStorage.removeItem(`tracker_session_${pageKey}`);
-      
-      // Send final tracking
-      sendTrackingData(false);
-      
-      console.log('Session ended:', sessionId);
-    }
+    });
+
+    // Track initial activity
+    trackActivity();
   };
-  
-  window.addEventListener('beforeunload', trackExit);
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      trackExit();
-    }
-  });
-  
-  // Initial activity tracking
-  trackActivity();
+
+  // Start tracking
+  initTracking().catch(console.error);
 })();

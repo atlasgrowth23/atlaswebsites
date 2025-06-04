@@ -3,7 +3,8 @@
     "allow": [
       "Bash(find:*)",
       "Bash(npx tsx:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

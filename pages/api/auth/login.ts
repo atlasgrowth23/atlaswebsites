@@ -49,6 +49,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       { expiresIn: '7d' }
     );
 
+    // Set admin session cookie for tracking detection
+    res.setHeader('Set-Cookie', [
+      `admin-session=authenticated; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}`, // 7 days
+      `admin-token=${token}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${7 * 24 * 60 * 60}` // 7 days
+    ]);
+
     res.status(200).json({
       success: true,
       token,

@@ -8,6 +8,7 @@ A scalable platform for hosting professional websites for multiple businesses ac
 - **Professional templates**: Each business gets a modern, responsive website template
 - **Custom domain support**: Businesses can use custom domains or branded subdomains
 - **Customer engagement**: Built-in chat widget and contact management
+- **Advanced analytics**: Professional visitor tracking with admin detection
 - **Business data integration**: Automatic integration with business listings and reviews
 - **SEO optimized**: Each site is optimized for search engines and social media sharing
 
