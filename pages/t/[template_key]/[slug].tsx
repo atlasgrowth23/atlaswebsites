@@ -1,5 +1,5 @@
 import React from 'react';
-import { GetStaticPaths, GetStaticProps } from 'next';
+import { GetServerSideProps } from 'next';
 import { supabaseAdmin } from '@/lib/supabase';
 import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
@@ -44,16 +44,7 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
   }
 }
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  // Skip pre-generating paths during build to avoid database connection issues
-  // All pages will be generated on-demand with fallback: 'blocking'
-  return {
-    paths: [],
-    fallback: 'blocking',
-  };
-};
-
-export const getStaticProps: GetStaticProps = async ({ params }) => {
+export const getServerSideProps: GetServerSideProps = async ({ params }) => {
   if (!params) {
     return { notFound: true };
   }
@@ -126,7 +117,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         company: JSON.parse(JSON.stringify(company)),
         template_key,
       },
-      revalidate: 30, // Revalidate every 30 seconds for good balance of speed/performance
+      // No revalidate needed - getServerSideProps fetches fresh data on every request
     };
   } catch (error) {
     console.error('❌ Template page error:', error);
