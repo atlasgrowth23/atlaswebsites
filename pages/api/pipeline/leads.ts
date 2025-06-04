@@ -7,11 +7,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Get all companies from Alabama and Arkansas
+    // Get companies from Alabama and Arkansas WITHOUT existing websites
     const { data: companies, error: companiesError } = await supabaseAdmin
       .from('companies')
       .select('*')
       .in('state', ['Alabama', 'Arkansas'])
+      .or('site.is.null,site.eq.')  // Only companies with no website (null or empty)
       .order('name');
 
     if (companiesError) {

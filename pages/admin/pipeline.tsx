@@ -848,7 +848,15 @@ export default function Pipeline({ companies }: PipelineProps) {
                               </a>
                               <button 
                                 onClick={() => {
-                                  const ownerName = (document.getElementById(`owner-name-${lead.id}`) as HTMLInputElement)?.value || 'there';
+                                  const ownerNameInput = document.getElementById(`owner-name-${lead.id}`) as HTMLInputElement;
+                                  const ownerName = ownerNameInput?.value?.trim();
+                                  
+                                  if (!ownerName) {
+                                    alert('Owner name required');
+                                    ownerNameInput?.focus();
+                                    return;
+                                  }
+                                  
                                   const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
                                   const message = `Hey ${ownerName},
 
@@ -859,10 +867,14 @@ This is my personal cell phone. Please call or text me anytime if you have any q
 Thank you,
 Jared Thompson`;
                                   
-                                  // Copy to clipboard
-                                  navigator.clipboard.writeText(message).then(() => {
-                                    alert('Message copied to clipboard! You can now paste it into your texting app.');
-                                  });
+                                  // Open Messages app directly with phone number and message
+                                  const phoneNumber = lead.company.phone?.replace(/[^\d]/g, '') || '';
+                                  if (phoneNumber) {
+                                    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+                                    window.open(smsUrl, '_self');
+                                  } else {
+                                    alert('No phone number available for this company');
+                                  }
                                 }}
                                 className="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700"
                               >
@@ -1022,7 +1034,7 @@ Jared Thompson`;
         {/* Header */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Lead Pipeline</h2>
-          <p className="text-gray-600">HVAC contractor lead management</p>
+          <p className="text-gray-600">HVAC contractors without existing websites</p>
           
           {/* Search Bar for Overview */}
           <div className="mt-4 flex gap-4">
