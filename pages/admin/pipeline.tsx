@@ -18,6 +18,15 @@ interface Company {
   tracking_enabled?: boolean;
   custom_domain?: string;
   domain_verified?: boolean;
+  rating?: number;
+  reviews?: number;
+  reviews_link?: string;
+  first_review_date?: string;
+  r_30?: number;
+  r_60?: number;
+  r_90?: number;
+  r_365?: number;
+  predicted_label?: string;
 }
 
 interface PipelineLead {
@@ -54,7 +63,7 @@ export default function Pipeline({ companies }: PipelineProps) {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [stageLeads, setStageLeads] = useState<PipelineLead[]>([]);
   const [expandedLead, setExpandedLead] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'template' | 'tracking' | 'notes' | 'business-details' | null>(null);
+  const [activeSection, setActiveSection] = useState<'template' | 'tracking' | 'notes' | 'business-details' | 'business-info' | 'call-notes' | 'template-editor' | null>(null);
   const [customizations, setCustomizations] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
@@ -454,12 +463,12 @@ export default function Pipeline({ companies }: PipelineProps) {
                         <h3 
                           className="font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"
                           onClick={() => {
-                            if (expandedLead === lead.id && activeSection === 'business-details') {
+                            if (expandedLead === lead.id) {
                               setExpandedLead(null);
                               setActiveSection(null);
                             } else {
                               setExpandedLead(lead.id);
-                              setActiveSection('business-details');
+                              setActiveSection('business-info');
                             }
                           }}
                         >
@@ -507,15 +516,21 @@ export default function Pipeline({ companies }: PipelineProps) {
                             </button>
                           )}
                           
-                          {lead.company.tracking_enabled && (
-                            <a
-                              href={`/t/moderntrust/${lead.company.slug}`}
-                              target="_blank"
-                              className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                            >
-                              View Site
-                            </a>
-                          )}
+                          <a
+                            href={`/t/moderntrust/${lead.company.slug}?admin=true`}
+                            target="_blank"
+                            className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                          >
+                            View Site
+                          </a>
+                          
+                          <a
+                            href={`/t/moderntrust/${lead.company.slug}?preview=true`}
+                            target="_blank"
+                            className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                          >
+                            Preview Site
+                          </a>
                           
                           <select
                             onChange={(e) => {
@@ -535,101 +550,270 @@ export default function Pipeline({ companies }: PipelineProps) {
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-100">
-                      <button
-                        onClick={() => {
-                          if (expandedLead === lead.id && activeSection === 'template') {
-                            setExpandedLead(null);
-                            setActiveSection(null);
-                          } else {
-                            setExpandedLead(lead.id);
-                            setActiveSection('template');
-                          }
-                        }}
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                          expandedLead === lead.id && activeSection === 'template'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        🎨 Template
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          if (expandedLead === lead.id && activeSection === 'tracking') {
-                            setExpandedLead(null);
-                            setActiveSection(null);
-                          } else {
-                            setExpandedLead(lead.id);
-                            setActiveSection('tracking');
-                            if (lead.company.tracking_enabled && !trackingData[lead.company_id]) {
-                              fetchTrackingData(lead.company_id);
-                            }
-                          }
-                        }}
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                          expandedLead === lead.id && activeSection === 'tracking'
-                            ? 'bg-green-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        📊 Tracking
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          if (expandedLead === lead.id && activeSection === 'notes') {
-                            setExpandedLead(null);
-                            setActiveSection(null);
-                          } else {
-                            setExpandedLead(lead.id);
-                            setActiveSection('notes');
-                          }
-                        }}
-                        className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                          expandedLead === lead.id && activeSection === 'notes'
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        📝 Notes
-                      </button>
-                      
-                      <DomainManagement 
-                        company={lead.company} 
-                        onUpdate={(updatedCompany) => {
-                          // Update the lead in state
-                          setLeads(prevLeads => 
-                            prevLeads.map(l => 
-                              l.company_id === updatedCompany.id 
-                                ? { ...l, company: updatedCompany }
-                                : l
-                            )
-                          );
-                          // Update stage leads if viewing a stage
-                          if (selectedStage) {
-                            setStageLeads(prevStageLeads =>
-                              prevStageLeads.map(l =>
-                                l.company_id === updatedCompany.id
-                                  ? { ...l, company: updatedCompany }
-                                  : l
-                              )
-                            );
-                          }
-                        }}
-                      />
-                    </div>
                   </div>
 
                   {/* Expandable Sections */}
                   {expandedLead === lead.id && (
                     <div className="border-t border-gray-200 bg-gray-50">
-                      {/* Template Editor Section */}
+                      {/* Section Tabs */}
+                      <div className="flex border-b border-gray-200 bg-white">
+                        <button
+                          onClick={() => setActiveSection('business-info')}
+                          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                            activeSection === 'business-info'
+                              ? 'border-blue-500 text-blue-600 bg-blue-50'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          📋 Business Details
+                        </button>
+                        <button
+                          onClick={() => setActiveSection('call-notes')}
+                          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                            activeSection === 'call-notes'
+                              ? 'border-green-500 text-green-600 bg-green-50'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          📞 Call Notes
+                        </button>
+                        <button
+                          onClick={() => setActiveSection('template-editor')}
+                          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                            activeSection === 'template-editor'
+                              ? 'border-purple-500 text-purple-600 bg-purple-50'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          🎨 Template Editor
+                        </button>
+                      </div>
+                      
+                      {/* Business Info Section */}
+                      {activeSection === 'business-info' && (
+                        <div className="p-4">
+                          <h4 className="font-medium text-gray-900 mb-4">📊 Business Overview</h4>
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {/* Website Status */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">🌐 Website</h5>
+                              <div className="flex items-center gap-2">
+                                {lead.company.site ? (
+                                  <>
+                                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                                    <span className="text-sm text-green-700">Has Website</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                                    <span className="text-sm text-red-700">No Website</span>
+                                  </>
+                                )}
+                              </div>
+                              {lead.company.site && (
+                                <a 
+                                  href={lead.company.site} 
+                                  target="_blank" 
+                                  className="text-xs text-blue-600 hover:underline block mt-1 truncate"
+                                >
+                                  {lead.company.site}
+                                </a>
+                              )}
+                            </div>
+
+                            {/* Logo Status */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">🎨 Logo</h5>
+                              <div className="flex items-center gap-2">
+                                {lead.company.predicted_label === 'logo' ? (
+                                  <>
+                                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                                    <span className="text-sm text-green-700">Has Logo</span>
+                                  </>
+                                ) : lead.company.predicted_label === 'not_logo' ? (
+                                  <>
+                                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                                    <span className="text-sm text-red-700">No Logo</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                                    <span className="text-sm text-yellow-700">Unknown ({lead.company.predicted_label || 'null'})</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Reviews Rating */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">⭐ Reviews</h5>
+                              <div className="text-sm text-gray-600">
+                                <div>Rating: <span className="font-medium">{lead.company.rating ? Number(lead.company.rating).toFixed(1) : 'N/A'}</span></div>
+                                <div>Count: <span className="font-medium">{lead.company.reviews || 'N/A'}</span></div>
+                              </div>
+                            </div>
+
+                            {/* Reviews Link */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">🔗 Reviews Link</h5>
+                              <div className="text-sm text-gray-600">
+                                {lead.company.reviews_link ? (
+                                  <a 
+                                    href={lead.company.reviews_link} 
+                                    target="_blank" 
+                                    className="text-blue-600 hover:underline break-all"
+                                  >
+                                    View Reviews
+                                  </a>
+                                ) : (
+                                  <span>Not Available</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* City */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">📍 Location</h5>
+                              <div className="text-sm text-gray-900 font-medium">
+                                {lead.company.city}, {lead.company.state}
+                              </div>
+                            </div>
+
+                            {/* Review Timeline Data */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">📈 Review Timeline</h5>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <div>30-day: <span className="font-medium">{lead.company.r_30 || 0}</span></div>
+                                <div>60-day: <span className="font-medium">{lead.company.r_60 || 0}</span></div>
+                                <div>90-day: <span className="font-medium">{lead.company.r_90 || 0}</span></div>
+                                <div>365-day: <span className="font-medium">{lead.company.r_365 || 0}</span></div>
+                              </div>
+                            </div>
+
+                            {/* First Review Date */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">📅 First Review</h5>
+                              <div className="text-sm text-gray-600">
+                                <span>{lead.company.first_review_date ? new Date(lead.company.first_review_date).toLocaleDateString() : 'N/A'}</span>
+                              </div>
+                            </div>
+
+                            {/* Contact Info */}
+                            <div className="bg-white p-4 rounded-lg border">
+                              <h5 className="font-medium text-gray-800 mb-2">📞 Contact</h5>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                {lead.company.phone && (
+                                  <div>Phone: <span className="font-medium">{lead.company.phone}</span></div>
+                                )}
+                                {lead.company.email_1 && (
+                                  <div>Email: <span className="font-medium">{lead.company.email_1}</span></div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Template Section (Legacy) */}
                       {activeSection === 'template' && (
                         <div className="p-4">
                           <h4 className="font-medium text-gray-900 mb-4">Template Customization</h4>
+                          
+                          <div className="space-y-4">
+                            {/* Hero Image 1 */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Hero Background Image 1
+                              </label>
+                              <input
+                                type="url"
+                                placeholder={getCurrentImageUrl(lead, 'hero_img') || "https://images.unsplash.com/photo-..."}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                                value={customizations[lead.company_id]?.hero_img || ''}
+                                onChange={(e) => handleCustomizationChange(lead.company_id, 'hero_img', e.target.value)}
+                              />
+                            </div>
+
+                            {/* Hero Image 2 */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Hero Background Image 2 (Slideshow)
+                              </label>
+                              <input
+                                type="url"
+                                placeholder={getCurrentImageUrl(lead, 'hero_img_2') || "https://images.unsplash.com/photo-..."}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                                value={customizations[lead.company_id]?.hero_img_2 || ''}
+                                onChange={(e) => handleCustomizationChange(lead.company_id, 'hero_img_2', e.target.value)}
+                              />
+                            </div>
+
+                            {/* About Image */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                About Section Image
+                              </label>
+                              <input
+                                type="url"
+                                placeholder={getCurrentImageUrl(lead, 'about_img') || "https://images.unsplash.com/photo-..."}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                                value={customizations[lead.company_id]?.about_img || ''}
+                                onChange={(e) => handleCustomizationChange(lead.company_id, 'about_img', e.target.value)}
+                              />
+                            </div>
+
+                            {/* Logo URL */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Logo URL
+                              </label>
+                              <input
+                                type="url"
+                                placeholder={getCurrentImageUrl(lead, 'logo_url') || "https://logo-url.com/logo.svg"}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                                value={customizations[lead.company_id]?.logo_url || ''}
+                                onChange={(e) => handleCustomizationChange(lead.company_id, 'logo_url', e.target.value)}
+                              />
+                            </div>
+
+                            {/* Save Status */}
+                            {saveStatus[lead.company_id] && (
+                              <div className={`p-3 rounded-md text-sm ${
+                                saveStatus[lead.company_id].includes('✅') ? 'bg-green-50 text-green-800' :
+                                saveStatus[lead.company_id].includes('❌') ? 'bg-red-50 text-red-800' :
+                                saveStatus[lead.company_id].includes('⚠️') ? 'bg-yellow-50 text-yellow-800' :
+                                'bg-blue-50 text-blue-800'
+                              }`}>
+                                {saveStatus[lead.company_id]}
+                              </div>
+                            )}
+
+                            {/* Save Button */}
+                            <button
+                              onClick={() => saveCustomizations(lead)}
+                              disabled={saving[lead.company_id]}
+                              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                            >
+                              {saving[lead.company_id] ? 'Saving...' : '💾 Save Template Changes'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Template Editor Section */}
+                      {activeSection === 'template-editor' && (
+                        <div className="p-4">
+                          <div className="flex justify-between items-center mb-4">
+                            <h4 className="font-medium text-gray-900">🎨 Template Customization</h4>
+                            <a
+                              href={`/t/moderntrust/${lead.company.slug}?preview=true`}
+                              target="_blank"
+                              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
+                            >
+                              Preview Site
+                            </a>
+                          </div>
                           
                           <div className="space-y-4">
                             {/* Hero Image 1 */}
@@ -717,44 +901,21 @@ export default function Pipeline({ companies }: PipelineProps) {
                         <div className="p-4">
                           <h4 className="font-medium text-gray-900 mb-4">Website Tracking</h4>
                           
-                          {/* Tracking Controls */}
-                          <div className="mb-4 space-y-2">
-                            <button
-                              onClick={() => toggleTracking(lead, lead.company.tracking_enabled || false, false)}
-                              className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-                                lead.company.tracking_enabled
-                                  ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                                  : 'bg-green-600 text-white hover:bg-green-700'
-                              }`}
-                            >
-                              {lead.company.tracking_enabled ? '⏸️ Pause Tracking' : '▶️ Start Tracking'}
-                            </button>
-                            
-                            {lead.company.tracking_enabled && (
-                              <button
-                                onClick={() => {
-                                  fetch('/api/toggle-tracking', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ 
-                                      businessId: lead.company_id, 
-                                      enabled: false,
-                                      paused: false
-                                    })
-                                  }).then(() => {
-                                    fetchPipelineData();
-                                    if (selectedStage) fetchStageLeads(selectedStage);
-                                  });
-                                }}
-                                className="w-full py-2 px-4 rounded-md font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
-                              >
-                                ❌ Stop Tracking Completely
-                              </button>
-                            )}
+                          {/* Tracking Info */}
+                          <div className="mb-4">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <div className="flex items-center">
+                                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                <span className="text-green-800 font-medium">Tracking Always Active</span>
+                              </div>
+                              <p className="text-green-700 text-sm mt-1">
+                                Website analytics are automatically collected for all visits
+                              </p>
+                            </div>
                           </div>
 
                           {/* Tracking Stats */}
-                          {lead.company.tracking_enabled && trackingData[lead.company_id] && (
+                          {trackingData[lead.company_id] && (
                             <div className="space-y-4">
                               <div className="bg-blue-50 p-4 rounded-md">
                                 <h5 className="font-medium text-gray-900 mb-3">Quick Stats</h5>
@@ -782,9 +943,9 @@ export default function Pipeline({ companies }: PipelineProps) {
                             </div>
                           )}
 
-                          {!lead.company.tracking_enabled && (
+                          {!trackingData[lead.company_id] && (
                             <div className="text-center py-8 text-gray-500">
-                              <p>Enable tracking to start collecting website analytics</p>
+                              <p>No tracking data available yet</p>
                             </div>
                           )}
                         </div>
@@ -826,10 +987,10 @@ export default function Pipeline({ companies }: PipelineProps) {
                         </div>
                       )}
 
-                      {/* Business Details Section */}
-                      {activeSection === 'business-details' && (
+                      {/* Call Notes Section */}
+                      {activeSection === 'call-notes' && (
                         <div className="p-4 bg-blue-50">
-                          <h4 className="font-medium text-gray-900 mb-4">📋 Business Details</h4>
+                          <h4 className="font-medium text-gray-900 mb-4">📞 Call Notes & Actions</h4>
                           
                           <div className="space-y-4">
                             {/* Quick Actions */}
@@ -1151,15 +1312,24 @@ export const getServerSideProps: GetServerSideProps = async () => {
     const filteredCompanies = companies
       .filter(company => company.state === 'Alabama' || company.state === 'Arkansas')
       .map((company: any) => ({
-        id: company.id,
-        name: company.name,
-        slug: company.slug,
-        city: company.city || null,
-        state: company.state || null,
-        phone: company.phone || null,
-        email_1: company.email_1 || null,
-        site: company.site || null,
-        tracking_enabled: company.tracking_enabled || false,
+          id: company.id,
+          name: company.name,
+          slug: company.slug,
+          city: company.city || null,
+          state: company.state || null,
+          phone: company.phone || null,
+          email_1: company.email_1 || null,
+          site: company.site || null,
+          tracking_enabled: company.tracking_enabled || false,
+          rating: company.rating || null,
+          reviews: company.reviews || null,
+          reviews_link: company.reviews_link || null,
+          first_review_date: company.first_review_date || null,
+          r_30: company.r_30 || null,
+          r_60: company.r_60 || null,
+          r_90: company.r_90 || null,
+          r_365: company.r_365 || null,
+          predicted_label: company.predicted_label || null,
       }));
 
     return {

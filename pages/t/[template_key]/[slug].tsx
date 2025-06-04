@@ -20,7 +20,10 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
           <Head>
             <script
               dangerouslySetInnerHTML={{
-                __html: `window.__COMPANY_ID__ = "${company.id}";`
+                __html: `
+                  window.__COMPANY_ID__ = "${company.id}";
+                  window.__TRACKING_ENABLED__ = true;
+                `
               }}
             />
           </Head>
@@ -123,7 +126,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         company: JSON.parse(JSON.stringify(company)),
         template_key,
       },
-      revalidate: 60 * 10, // Revalidate every 10 minutes
+      revalidate: 1, // Revalidate every 1 second for immediate updates
     };
   } catch (error) {
     console.error('❌ Template page error:', error);

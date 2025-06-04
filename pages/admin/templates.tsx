@@ -182,11 +182,18 @@ export default function Templates({ companies }: TemplatesProps) {
                   
                   <div className="flex space-x-3">
                     <a
-                      href={`/t/moderntrust/${company.slug}`}
+                      href={`/t/moderntrust/${company.slug}?admin=true`}
                       target="_blank"
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
                       View Site
+                    </a>
+                    <a
+                      href={`/t/moderntrust/${company.slug}?preview=true`}
+                      target="_blank"
+                      className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                    >
+                      Preview Site
                     </a>
                     <DomainManagement 
                       company={company}

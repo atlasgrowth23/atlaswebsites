@@ -4,6 +4,23 @@
   if (!window.location.pathname.startsWith('/t/')) {
     return;
   }
+  
+  // Check URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // Skip tracking in preview mode
+  if (urlParams.get('preview') === 'true') {
+    console.log('Preview mode detected, skipping tracking');
+    return;
+  }
+  
+  // Skip tracking for admin views
+  if (urlParams.get('admin') === 'true') {
+    console.log('Admin view detected, skipping tracking');
+    return;
+  }
+  
+  console.log('External visit detected, tracking enabled');
 
   // Prevent multiple tracker instances
   if (window.__TRACKER_RUNNING__) {
@@ -22,11 +39,15 @@
   const templateKey = pathParts[2];
   const companySlug = pathParts[3];
   const companyId = window.__COMPANY_ID__;
+  const trackingEnabled = window.__TRACKING_ENABLED__;
   
   if (!companyId) {
     console.log('Company ID not found, cannot track');
     return;
   }
+  
+  // Always track unless explicitly in preview mode (preview check is already above)
+  console.log('Tracking enabled for company:', companyId);
 
   // Generate or retrieve session ID (persist across potential page reloads)
   const pageKey = `${companyId}_${templateKey}_${companySlug}`;
@@ -104,6 +125,27 @@
   // Try to get location (will ask for permission)
   getVisitorLocation();
 
+  // Update pipeline stage for external visits
+  const updatePipelineStage = () => {
+    fetch('/api/pipeline/auto-stage-update', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        companyId,
+        event: 'website_visit'
+      }),
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Pipeline update result:', data);
+    })
+    .catch(error => {
+      console.warn('Pipeline update failed:', error);
+    });
+  };
+
   // Send tracking data
   const sendTrackingData = (isInitial = false) => {
     const timeOnPage = Math.floor((Date.now() - startTime) / 1000);
@@ -129,6 +171,11 @@
     .then(response => response.json())
     .then(data => {
       console.log('Template view tracked:', { sessionId, timeOnPage: activeTime > 0 ? activeTime : timeOnPage, isInitial });
+      
+      // Update pipeline on first visit (only external visits reach here now)
+      if (isInitial) {
+        updatePipelineStage();
+      }
     })
     .catch(error => {
       console.error('Error tracking template view:', error);

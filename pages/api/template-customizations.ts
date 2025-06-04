@@ -25,7 +25,22 @@ function validateImageUrl(url: any): string {
   if (!url || typeof url !== 'string' || url.trim() === '') {
     return '';
   }
-  const urlString = url.trim();
+  let urlString = url.trim();
+  
+  // Extract raw URL from Next.js processed URLs
+  if (urlString.includes('/_next/image?url=')) {
+    try {
+      const nextUrl = new URL(urlString);
+      const rawUrl = nextUrl.searchParams.get('url');
+      if (rawUrl) {
+        urlString = decodeURIComponent(rawUrl);
+        console.log(`📎 Extracted raw URL: ${urlString} from Next.js processed URL`);
+      }
+    } catch (e) {
+      console.warn('Failed to extract URL from Next.js processed URL:', e);
+    }
+  }
+  
   try {
     new URL(urlString);
     return urlString;

@@ -26,16 +26,28 @@ export type Company = {
   name: string
   slug: string
   phone?: string
-  email?: string
-  website?: string
+  email_1?: string
+  site?: string
   address?: string
   city?: string
   state?: string
   postal_code?: string
   rating?: number
-  review_count?: number
+  reviews?: number
+  reviews_link?: string
+  first_review_date?: string
+  r_30?: number
+  r_60?: number
+  r_90?: number
+  r_365?: number
+  predicted_label?: string
   logo?: string
+  logo_storage_path?: string
   custom_domain?: string
+  domain_verified?: boolean
+  tracking_enabled?: boolean
+  tracking_paused?: boolean
+  template_key?: string
   hours?: string
   saturday_hours?: string
   sunday_hours?: string

@@ -25,17 +25,18 @@ interface TrackingData {
 
 interface AnalyticsProps {
   companies: Company[];
+  initialTrackingData: Record<string, TrackingData>;
 }
 
-export default function Analytics({ companies }: AnalyticsProps) {
+export default function Analytics({ companies, initialTrackingData }: AnalyticsProps) {
   const [selectedState, setSelectedState] = useState<'Alabama' | 'Arkansas'>('Alabama');
-  const [trackingData, setTrackingData] = useState<Record<string, TrackingData>>({});
+  const [trackingData, setTrackingData] = useState<Record<string, TrackingData>>(initialTrackingData);
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   const filteredCompanies = companies.filter(company => 
-    company.state === selectedState && company.tracking_enabled
+    company.state === selectedState
   );
 
   const fetchTrackingData = async (companyId: string) => {
@@ -45,8 +46,14 @@ export default function Analytics({ companies }: AnalyticsProps) {
     
     try {
       const [viewsRes, analyticsRes] = await Promise.all([
-        fetch(`/api/template-views?companyId=${companyId}`),
-        fetch(`/api/analytics-summary?companyId=${companyId}`)
+        fetch(`/api/template-views?companyId=${companyId}`).catch(err => {
+          console.warn('Views API failed:', err);
+          return { ok: false };
+        }),
+        fetch(`/api/analytics-summary?companyId=${companyId}`).catch(err => {
+          console.warn('Analytics API failed:', err);
+          return { ok: false };
+        })
       ]);
       
       let data: TrackingData = {
@@ -59,39 +66,55 @@ export default function Analytics({ companies }: AnalyticsProps) {
       };
 
       if (viewsRes.ok) {
-        const viewsData = await viewsRes.json();
-        data.total_views = viewsData.total_views || 0;
-        data.total_sessions = viewsData.unique_sessions || 0;
-        data.last_viewed_at = viewsData.last_viewed_at;
-        data.recent_sessions = viewsData.views || [];
+        try {
+          const viewsData = await viewsRes.json();
+          data.total_views = viewsData.total_views || 0;
+          data.total_sessions = viewsData.unique_sessions || 0;
+          data.last_viewed_at = viewsData.last_viewed_at;
+          data.recent_sessions = viewsData.views || [];
+        } catch (err) {
+          console.warn('Failed to parse views response:', err);
+        }
       }
 
       if (analyticsRes.ok) {
-        const analyticsData = await analyticsRes.json();
-        data.avg_time_seconds = analyticsData.avg_time_seconds || 0;
-        data.device_breakdown = analyticsData.device_breakdown || data.device_breakdown;
+        try {
+          const analyticsData = await analyticsRes.json();
+          data.avg_time_seconds = analyticsData.avg_time_seconds || 0;
+          data.device_breakdown = analyticsData.device_breakdown || data.device_breakdown;
+        } catch (err) {
+          console.warn('Failed to parse analytics response:', err);
+        }
       }
       
       setTrackingData(prev => ({ ...prev, [companyId]: data }));
     } catch (error) {
-      console.error('Error fetching tracking data:', error);
+      console.error('Error fetching tracking data for company', companyId, ':', error);
+      // Set empty data so we don't keep retrying
+      setTrackingData(prev => ({
+        ...prev,
+        [companyId]: {
+          total_views: 0,
+          total_sessions: 0,
+          avg_time_seconds: 0,
+          last_viewed_at: null,
+          device_breakdown: { desktop: 0, mobile: 0, tablet: 0 },
+          recent_sessions: []
+        }
+      }));
     } finally {
       setLoading(prev => ({ ...prev, [companyId]: false }));
     }
   };
 
   useEffect(() => {
-    // Load data for all visible companies
-    filteredCompanies.forEach(company => {
-      if (!trackingData[company.id]) {
-        fetchTrackingData(company.id);
-      }
-    });
-    
-    // Auto-refresh analytics every 2 minutes
+    // Only refresh companies that already have data (no more zero-loading!)
     const refreshInterval = setInterval(() => {
       filteredCompanies.forEach(company => {
-        fetchTrackingData(company.id);
+        const data = trackingData[company.id];
+        if (data && (data.total_views > 0 || data.total_sessions > 0)) {
+          fetchTrackingData(company.id);
+        }
       });
     }, 120000); // 2 minutes
     
@@ -117,11 +140,17 @@ export default function Analytics({ companies }: AnalyticsProps) {
       }
     });
 
+    // Count companies that actually have tracking data (views or sessions)
+    const activeSites = filteredCompanies.filter(company => {
+      const data = trackingData[company.id];
+      return data && (data.total_views > 0 || data.total_sessions > 0);
+    }).length;
+
     return {
       totalViews,
       totalSessions,
       avgTime: companiesWithData > 0 ? Math.round(totalTimeSeconds / companiesWithData) : 0,
-      activeCompanies: filteredCompanies.length
+      activeCompanies: activeSites
     };
   };
 
@@ -215,11 +244,16 @@ export default function Analytics({ companies }: AnalyticsProps) {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredCompanies.map(company => {
-                  const data = trackingData[company.id];
-                  const isLoading = loading[company.id];
-                  
-                  return (
+                {filteredCompanies
+                  .filter(company => {
+                    const data = trackingData[company.id];
+                    return data && (data.total_views > 0 || data.total_sessions > 0);
+                  })
+                  .map(company => {
+                    const data = trackingData[company.id];
+                    const isLoading = loading[company.id];
+                    
+                    return (
                     <tr key={company.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -263,13 +297,22 @@ export default function Analytics({ companies }: AnalyticsProps) {
                         }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <a
-                          href={`/t/moderntrust/${company.slug}`}
-                          target="_blank"
-                          className="text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          View Site
-                        </a>
+                        <div className="flex gap-2">
+                          <a
+                            href={`/t/moderntrust/${company.slug}?admin=true`}
+                            target="_blank"
+                            className="text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            View Site
+                          </a>
+                          <a
+                            href={`/t/moderntrust/${company.slug}?preview=true`}
+                            target="_blank"
+                            className="text-gray-600 hover:text-gray-800 font-medium"
+                          >
+                            Preview Site
+                          </a>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -278,9 +321,13 @@ export default function Analytics({ companies }: AnalyticsProps) {
             </table>
           </div>
           
-          {filteredCompanies.length === 0 && (
+          {filteredCompanies.filter(company => {
+            const data = trackingData[company.id];
+            return data && (data.total_views > 0 || data.total_sessions > 0);
+          }).length === 0 && (
             <div className="p-12 text-center text-gray-500">
-              <p>No companies with tracking enabled in {selectedState}</p>
+              <p>No companies with tracking data in {selectedState}</p>
+              <p className="text-sm mt-2">Companies will appear here when someone visits their site using "View Site"</p>
             </div>
           )}
         </div>
@@ -396,9 +443,57 @@ export const getServerSideProps: GetServerSideProps = async () => {
         tracking_paused: company.tracking_paused || false,
       }));
 
+    // Pre-load analytics data for ALL companies server-side
+    const { supabaseAdmin } = await import('../../lib/supabase');
+    const initialTrackingData: Record<string, TrackingData> = {};
+    
+    // Get all template views in one query
+    const { data: allViews } = await supabaseAdmin
+      .from('template_views')
+      .select('company_id, total_time_seconds, user_agent, session_id, visit_start_time')
+      .in('company_id', filteredCompanies.map(c => c.id));
+    
+    // Process views by company
+    filteredCompanies.forEach(company => {
+      const companyViews = allViews?.filter(v => v.company_id === company.id) || [];
+      
+      // Calculate stats
+      const totalViews = companyViews.length;
+      const uniqueSessions = new Set(companyViews.map(v => v.session_id)).size;
+      const totalTime = companyViews.reduce((sum, view) => sum + (view.total_time_seconds || 0), 0);
+      const avgTimeSeconds = totalViews > 0 ? Math.round(totalTime / totalViews) : 0;
+      const lastViewedAt = companyViews.length > 0 ? 
+        Math.max(...companyViews.map(v => new Date(v.visit_start_time).getTime())) : null;
+      
+      // Device breakdown
+      const deviceBreakdown = { desktop: 0, mobile: 0, tablet: 0 };
+      companyViews.forEach(view => {
+        const userAgent = view.user_agent || '';
+        if (/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)) {
+          if (/iPad|Tablet/i.test(userAgent)) {
+            deviceBreakdown.tablet++;
+          } else {
+            deviceBreakdown.mobile++;
+          }
+        } else {
+          deviceBreakdown.desktop++;
+        }
+      });
+      
+      initialTrackingData[company.id] = {
+        total_views: totalViews,
+        total_sessions: uniqueSessions,
+        avg_time_seconds: avgTimeSeconds,
+        last_viewed_at: lastViewedAt ? new Date(lastViewedAt).toISOString() : null,
+        device_breakdown: deviceBreakdown,
+        recent_sessions: companyViews.slice(0, 10)
+      };
+    });
+
     return {
       props: {
         companies: filteredCompanies,
+        initialTrackingData,
       },
     };
   } catch (error) {
@@ -406,6 +501,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
     return {
       props: {
         companies: [],
+        initialTrackingData: {},
       },
     };
   }

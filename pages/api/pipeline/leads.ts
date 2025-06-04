@@ -59,7 +59,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           phone: company.phone,
           email_1: company.email_1,
           site: company.site,
-          tracking_enabled: company.tracking_enabled
+          tracking_enabled: company.tracking_enabled,
+          rating: company.rating,
+          reviews: company.reviews,
+          reviews_link: company.reviews_link,
+          first_review_date: company.first_review_date,
+          r_30: company.r_30,
+          r_60: company.r_60,
+          r_90: company.r_90,
+          r_365: company.r_365,
+          predicted_label: company.predicted_label
         }
       };
     }) || [];
