@@ -23,7 +23,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let errorCount = 0;
   const results = [];
 
-  for (const [i, indexSql] of indexes.entries()) {
+  for (let i = 0; i < indexes.length; i++) {
+    const indexSql = indexes[i];
     try {
       console.log(`📋 [${i + 1}/${indexes.length}] Creating index...`);
       

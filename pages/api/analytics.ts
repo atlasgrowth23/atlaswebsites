@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Process data by company
-    const companyStats = {};
+    const companyStats: Record<string, any> = {};
     let totalViews = 0;
     let totalSessions = 0;
     let totalTime = 0;
@@ -91,8 +91,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('company_id, stage')
       .in('company_id', companyIds);
 
-    const pipelineStats = {};
-    (pipeline || []).forEach(p => {
+    const pipelineStats: Record<string, any> = {};
+    (pipeline || []).forEach((p: any) => {
       pipelineStats[p.company_id] = p.stage;
     });
 
