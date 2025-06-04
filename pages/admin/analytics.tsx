@@ -48,11 +48,11 @@ export default function Analytics({ companies, initialTrackingData }: AnalyticsP
       const [viewsRes, analyticsRes] = await Promise.all([
         fetch(`/api/template-views?companyId=${companyId}`).catch(err => {
           console.warn('Views API failed:', err);
-          return { ok: false };
+          return new Response('{}', { status: 500, statusText: 'Failed' });
         }),
         fetch(`/api/analytics-summary?companyId=${companyId}`).catch(err => {
           console.warn('Analytics API failed:', err);
-          return { ok: false };
+          return new Response('{}', { status: 500, statusText: 'Failed' });
         })
       ]);
       
