@@ -3,6 +3,7 @@ import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
 import DomainManagement from '@/components/DomainManagement';
+import SimpleBusinessModal from '@/components/admin/pipeline/SimpleBusinessModal';
 import { getAllCompanies } from '@/lib/supabase-db';
 
 interface Company {
@@ -58,6 +59,8 @@ export default function Pipeline({ companies }: PipelineProps) {
   const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
   const [trackingData, setTrackingData] = useState<Record<string, any>>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPipelineData();
@@ -305,6 +308,35 @@ export default function Pipeline({ companies }: PipelineProps) {
     return '';
   };
 
+  const openBusinessModal = (lead: PipelineLead) => {
+    console.log('Opening modal for lead:', lead.company.name);
+    setSelectedLead(lead);
+    setIsModalOpen(true);
+  };
+
+  const closeBusinessModal = () => {
+    setSelectedLead(null);
+    setIsModalOpen(false);
+  };
+
+  const handleLeadUpdate = (updatedLead: PipelineLead) => {
+    // Update lead in the local state
+    setLeads(prevLeads => 
+      prevLeads.map(lead => 
+        lead.id === updatedLead.id ? updatedLead : lead
+      )
+    );
+    
+    // Update stage leads if we're viewing a specific stage
+    if (selectedStage) {
+      setStageLeads(prevStageLeads =>
+        prevStageLeads.map(lead =>
+          lead.id === updatedLead.id ? updatedLead : lead
+        )
+      );
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout currentPage="pipeline">
@@ -418,7 +450,20 @@ export default function Pipeline({ companies }: PipelineProps) {
                   <div className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{lead.company.name}</h3>
+                        <h3 
+                          className="font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"
+                          onClick={() => {
+                            if (expandedLead === lead.id && activeSection === 'business-details') {
+                              setExpandedLead(null);
+                              setActiveSection(null);
+                            } else {
+                              setExpandedLead(lead.id);
+                              setActiveSection('business-details');
+                            }
+                          }}
+                        >
+                          {lead.company.name}
+                        </h3>
                         <p className="text-gray-600 text-sm">{lead.company.city}, {lead.company.state}</p>
                         {lead.company.phone && (
                           <p className="text-gray-500 text-sm">{lead.company.phone}</p>
@@ -762,6 +807,155 @@ export default function Pipeline({ companies }: PipelineProps) {
                           </div>
                         </div>
                       )}
+
+                      {/* Business Details Section */}
+                      {activeSection === 'business-details' && (
+                        <div className="p-4 bg-blue-50">
+                          <h4 className="font-medium text-gray-900 mb-4">📋 Business Details</h4>
+                          
+                          <div className="space-y-4">
+                            {/* Quick Actions */}
+                            <div className="flex space-x-3 mb-4">
+                              <a
+                                href={`tel:${lead.company.phone}`}
+                                className="bg-green-600 text-white px-3 py-1 text-sm rounded hover:bg-green-700"
+                              >
+                                📞 Call
+                              </a>
+                              <a
+                                href={`mailto:${lead.company.email_1}`}
+                                className="bg-blue-600 text-white px-3 py-1 text-sm rounded hover:bg-blue-700"
+                              >
+                                ✉️ Email
+                              </a>
+                              <button className="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700">
+                                💬 Text
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Owner Name
+                                </label>
+                                <input
+                                  type="text"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                  placeholder="Enter owner name"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Interest Level
+                                </label>
+                                <select className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                  <option>Select...</option>
+                                  <option>⭐ 1 - Very Low</option>
+                                  <option>⭐⭐ 2 - Low</option>
+                                  <option>⭐⭐⭐ 3 - Medium</option>
+                                  <option>⭐⭐⭐⭐ 4 - High</option>
+                                  <option>⭐⭐⭐⭐⭐ 5 - Very High</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Software Used
+                              </label>
+                              <div className="space-y-2">
+                                <select 
+                                  id={`software-${lead.id}`}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                  onChange={(e) => {
+                                    const otherInput = document.getElementById(`software-other-${lead.id}`) as HTMLInputElement;
+                                    if (e.target.value === 'Other') {
+                                      otherInput.style.display = 'block';
+                                      otherInput.focus();
+                                    } else {
+                                      otherInput.style.display = 'none';
+                                    }
+                                  }}
+                                >
+                                  <option>Select...</option>
+                                  <option>Service Titan</option>
+                                  <option>Jobber</option>
+                                  <option>FieldEdge</option>
+                                  <option>Housecall Pro</option>
+                                  <option>CallRail</option>
+                                  <option>ServiceM8</option>
+                                  <option>None</option>
+                                  <option>Other</option>
+                                </select>
+                                <input
+                                  id={`software-other-${lead.id}`}
+                                  type="text"
+                                  placeholder="Please specify..."
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                  style={{ display: 'none' }}
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <h5 className="font-medium text-gray-800 mb-2">📞 Call Notes</h5>
+                              
+                              {/* Add New Note */}
+                              <div className="mb-3">
+                                <textarea
+                                  id={`new-note-${lead.id}`}
+                                  rows={2}
+                                  placeholder="Add a new note..."
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                                />
+                                <button
+                                  onClick={() => {
+                                    const textarea = document.getElementById(`new-note-${lead.id}`) as HTMLTextAreaElement;
+                                    if (textarea.value.trim()) {
+                                      // Add note to the list
+                                      const notesList = document.getElementById(`notes-list-${lead.id}`);
+                                      const newNote = document.createElement('div');
+                                      newNote.className = 'p-2 bg-gray-100 rounded text-sm mb-2';
+                                      newNote.innerHTML = `
+                                        <div class="flex justify-between items-start">
+                                          <div class="flex-1">${textarea.value}</div>
+                                          <button onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 ml-2">×</button>
+                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1">${new Date().toLocaleString()}</div>
+                                      `;
+                                      notesList?.appendChild(newNote);
+                                      textarea.value = '';
+                                    }
+                                  }}
+                                  className="mt-1 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                >
+                                  Add Note
+                                </button>
+                              </div>
+
+                              {/* Notes List */}
+                              <div id={`notes-list-${lead.id}`} className="space-y-2 max-h-32 overflow-y-auto">
+                                {lead.notes && (
+                                  <div className="p-2 bg-gray-100 rounded text-sm">
+                                    <div className="flex justify-between items-start">
+                                      <div className="flex-1">{lead.notes}</div>
+                                      <button 
+                                        onClick={(e) => (e.target as HTMLElement).closest('.p-2')?.remove()}
+                                        className="text-red-500 hover:text-red-700 ml-2"
+                                      >×</button>
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-1">Existing note</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm">
+                              💾 Save Changes
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -894,6 +1088,7 @@ export default function Pipeline({ companies }: PipelineProps) {
           ))}
         </div>
       </div>
+      
     </AdminLayout>
   );
 }
