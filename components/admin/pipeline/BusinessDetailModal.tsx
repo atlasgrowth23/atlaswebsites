@@ -277,25 +277,27 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
               className="p-2 bg-green-600 text-white rounded hover:bg-green-700"
               title="Call"
             >
-              <Phone size={16} />
+              📞
             </button>
             <button
               onClick={() => window.open(`mailto:${lead.company.email_1}`)}
               className="p-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               title="Email"
             >
-              <Mail size={16} />
+              ✉️
             </button>
             <button
               onClick={() => setActiveTab('communication')}
               className="p-2 bg-purple-600 text-white rounded hover:bg-purple-700"
               title="SMS"
             >
-              <MessageSquare size={16} />
+              💬
             </button>
             
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <X size={24} />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         </div>
@@ -304,10 +306,10 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
         <div className="border-b">
           <nav className="flex space-x-8 px-6">
             {[
-              { key: 'info', label: 'Business Info', icon: Building },
-              { key: 'notes', label: 'Notes & Activity', icon: MessageSquare },
-              { key: 'checklist', label: 'Qualification', icon: CheckSquare },
-              { key: 'communication', label: 'Communication', icon: Mail }
+              { key: 'info', label: 'Business Info', icon: '🏢' },
+              { key: 'notes', label: 'Notes & Activity', icon: '📝' },
+              { key: 'checklist', label: 'Qualification', icon: '✅' },
+              { key: 'communication', label: 'Communication', icon: '💬' }
             ].map(tab => (
               <button
                 key={tab.key}
@@ -318,7 +320,7 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <tab.icon size={16} className="inline mr-2" />
+                <span className="mr-2">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -333,8 +335,7 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <User size={16} className="inline mr-2" />
-                    Owner Name
+                    👤 Owner Name
                   </label>
                   <input
                     type="text"
@@ -378,8 +379,7 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Star size={16} className="inline mr-2" />
-                    Interest Level
+                    ⭐ Interest Level
                   </label>
                   <select
                     value={leadDetails.interest_level || ''}
@@ -399,8 +399,7 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <DollarSign size={16} className="inline mr-2" />
-                    Estimated Value
+                    💰 Estimated Value
                   </label>
                   <input
                     type="number"
@@ -413,8 +412,7 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Clock size={16} className="inline mr-2" />
-                    Best Contact Time
+                    🕐 Best Contact Time
                   </label>
                   <input
                     type="text"
