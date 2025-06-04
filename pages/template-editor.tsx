@@ -38,7 +38,8 @@ export default function TemplateEditor() {
   // Available customization options (using actual frame keys from templates)
   const customizationOptions = {
     images: [
-      { key: 'hero_img', label: 'Hero Background Image', description: 'Main background image in the hero section' },
+      { key: 'hero_img', label: 'Hero Background 1', description: 'First hero slide background image' },
+      { key: 'hero_img_2', label: 'Hero Background 2', description: 'Second hero slide background image' },
       { key: 'about_img', label: 'About Section Image', description: 'Image displayed in the about us section' }
     ]
   };
@@ -104,14 +105,21 @@ export default function TemplateEditor() {
           companyId: company.id,
           customizations: {
             hero_img: customizations.hero_img,
+            hero_img_2: customizations.hero_img_2,
             about_img: customizations.about_img
           }
         })
       });
 
       if (response.ok) {
-        setMessage('✅ Template customizations saved successfully!');
-        setTimeout(() => setMessage(''), 3000);
+        const data = await response.json();
+        setMessage('✅ Template customizations saved! Website will update automatically in ~30 seconds.');
+        setTimeout(() => setMessage(''), 5000);
+        
+        // Show preview link
+        if (company?.slug) {
+          setMessage(prev => prev + ` 🔗 View changes: /t/moderntrust/${company.slug}`);
+        }
       } else {
         setMessage('❌ Failed to save customizations. Please try again.');
       }

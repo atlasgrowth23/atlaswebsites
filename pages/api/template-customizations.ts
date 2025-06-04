@@ -173,6 +173,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Invalidate cache
       cacheHelpers.invalidateCompany(company.slug, validatedCompanyId);
 
+      // Trigger Next.js revalidation for the company's template page
+      if (updatedFrames.length > 0) {
+        try {
+          const templateKey = 'moderntrust'; // Could be dynamic based on company.template_key
+          const revalidateUrl = `/t/${templateKey}/${company.slug}`;
+          
+          // Trigger revalidation (this will regenerate the static page)
+          await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/revalidate?path=${encodeURIComponent(revalidateUrl)}&secret=${process.env.REVALIDATE_SECRET || 'dev-secret'}`);
+          
+          console.log(`🔄 Triggered revalidation for ${revalidateUrl}`);
+        } catch (revalidateError) {
+          console.warn('⚠️ Revalidation failed:', revalidateError);
+          // Don't fail the whole request if revalidation fails
+        }
+      }
+
       // Return response with details
       if (errors.length > 0) {
         return res.status(207).json({ 

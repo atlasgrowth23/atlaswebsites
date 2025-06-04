@@ -126,7 +126,7 @@ export const getStaticProps: GetStaticProps = async ({ params }) => {
         company: JSON.parse(JSON.stringify(company)),
         template_key,
       },
-      revalidate: 1, // Revalidate every 1 second for immediate updates
+      revalidate: 30, // Revalidate every 30 seconds for good balance of speed/performance
     };
   } catch (error) {
     console.error('❌ Template page error:', error);

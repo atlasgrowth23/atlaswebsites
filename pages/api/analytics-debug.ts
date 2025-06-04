@@ -35,12 +35,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('company_id, session_id, total_time_seconds')
       .limit(5);
 
+    // Check frames table
+    const { data: frames, error: framesError } = await supabaseAdmin
+      .from('frames')
+      .select('*')
+      .eq('template_key', 'moderntrust');
+
+    // Check company_frames 
+    const { data: companyFrames, error: companyFramesError } = await supabaseAdmin
+      .from('company_frames')
+      .select('*')
+      .limit(3);
+
     return res.status(200).json({
       status: 'success',
       companiesCount: companies?.length || 0,
       viewsCount: views?.length || 0,
       companies: companies?.slice(0, 3) || [],
       views: views?.slice(0, 3) || [],
+      frames: frames || [],
+      companyFrames: companyFrames || [],
+      framesError: framesError?.message || null,
+      companyFramesError: companyFramesError?.message || null,
       viewsError: viewsError?.message || null
     });
 
