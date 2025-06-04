@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
@@ -112,9 +112,20 @@ export default function Pipeline({ companies }: PipelineProps) {
     }
   };
 
-  const filteredLeads = leads.filter(lead => 
-    lead.company.state === selectedState
-  );
+  const filteredLeads = leads.filter(lead => {
+    const matchesState = lead.company.state === selectedState;
+    
+    if (!searchTerm) return matchesState;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      lead.company.name.toLowerCase().includes(searchLower) ||
+      lead.company.city.toLowerCase().includes(searchLower) ||
+      lead.company.phone?.toLowerCase().includes(searchLower) ||
+      lead.notes.toLowerCase().includes(searchLower);
+    
+    return matchesState && matchesSearch;
+  });
 
   const getLeadsByStage = (stage: string) => 
     filteredLeads.filter(lead => lead.stage === stage);
@@ -353,6 +364,28 @@ export default function Pipeline({ companies }: PipelineProps) {
               </span>
             </div>
             <p className="text-gray-600 mb-4">{stageInfo?.description} • {selectedState}</p>
+            
+            {/* Stage Navigation Filter */}
+            <div className="mb-4">
+              <div className="flex flex-wrap gap-2">
+                {STAGES.map(stage => {
+                  const stageLeadCount = getLeadsByStage(stage.key).length;
+                  return (
+                    <button
+                      key={stage.key}
+                      onClick={() => setSelectedStage(stage.key)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        selectedStage === stage.key
+                          ? `${stage.color} ${stage.textColor}`
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {stage.title} ({stageLeadCount})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             
             {/* Search Bar */}
             <div className="flex gap-4">
@@ -705,15 +738,22 @@ export default function Pipeline({ companies }: PipelineProps) {
                                 Notes
                               </label>
                               <textarea
+                                id={`notes-${lead.id}`}
                                 rows={4}
                                 placeholder="Add call notes, follow-up reminders, or other details..."
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={lead.notes || ''}
-                                onChange={(e) => {
-                                  // Update notes via API
-                                  moveLeadToStage(lead.id, lead.stage, e.target.value);
-                                }}
+                                defaultValue={lead.notes || ''}
                               />
+                              <button
+                                onClick={async () => {
+                                  const textarea = document.getElementById(`notes-${lead.id}`) as HTMLTextAreaElement;
+                                  const newNotes = textarea.value;
+                                  await moveLeadToStage(lead.id, lead.stage, newNotes);
+                                }}
+                                className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                              >
+                                Save Notes
+                              </button>
                             </div>
                             
                             <div className="text-xs text-gray-500">
@@ -751,6 +791,27 @@ export default function Pipeline({ companies }: PipelineProps) {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900">Lead Pipeline</h2>
           <p className="text-gray-600">HVAC contractor lead management</p>
+          
+          {/* Search Bar for Overview */}
+          <div className="mt-4 flex gap-4">
+            <div className="flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="Search all leads..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* State Toggle */}

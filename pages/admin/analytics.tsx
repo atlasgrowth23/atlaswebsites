@@ -31,6 +31,8 @@ export default function Analytics({ companies }: AnalyticsProps) {
   const [selectedState, setSelectedState] = useState<'Alabama' | 'Arkansas'>('Alabama');
   const [trackingData, setTrackingData] = useState<Record<string, TrackingData>>({});
   const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const filteredCompanies = companies.filter(company => 
     company.state === selectedState && company.tracking_enabled
@@ -85,6 +87,15 @@ export default function Analytics({ companies }: AnalyticsProps) {
         fetchTrackingData(company.id);
       }
     });
+    
+    // Auto-refresh analytics every 2 minutes
+    const refreshInterval = setInterval(() => {
+      filteredCompanies.forEach(company => {
+        fetchTrackingData(company.id);
+      });
+    }, 120000); // 2 minutes
+    
+    return () => clearInterval(refreshInterval);
   }, [selectedState]);
 
   const getTotalStats = () => {
@@ -92,13 +103,17 @@ export default function Analytics({ companies }: AnalyticsProps) {
     let totalSessions = 0;
     let totalTimeSeconds = 0;
     let companiesWithData = 0;
-
-    Object.values(trackingData).forEach(data => {
-      totalViews += data.total_views;
-      totalSessions += data.total_sessions;
-      if (data.avg_time_seconds > 0) {
-        totalTimeSeconds += data.avg_time_seconds;
-        companiesWithData++;
+    
+    // Only sum data for currently filtered companies to avoid state confusion
+    filteredCompanies.forEach(company => {
+      const data = trackingData[company.id];
+      if (data) {
+        totalViews += data.total_views || 0;
+        totalSessions += data.total_sessions || 0;
+        if (data.avg_time_seconds > 0) {
+          totalTimeSeconds += data.avg_time_seconds;
+          companiesWithData++;
+        }
       }
     });
 
@@ -208,7 +223,15 @@ export default function Analytics({ companies }: AnalyticsProps) {
                     <tr key={company.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900">{company.name}</div>
+                          <button
+                            onClick={() => {
+                              setSelectedCompany(company);
+                              setShowDetailModal(true);
+                            }}
+                            className="text-sm font-medium text-blue-600 hover:text-blue-800 cursor-pointer"
+                          >
+                            {company.name}
+                          </button>
                           <div className="text-sm text-gray-500">{company.city}, {company.state}</div>
                         </div>
                       </td>
@@ -261,6 +284,97 @@ export default function Analytics({ companies }: AnalyticsProps) {
             </div>
           )}
         </div>
+        
+        {/* Detail Modal */}
+        {showDetailModal && selectedCompany && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Session History: {selectedCompany.name}
+                </h3>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Company Stats */}
+                <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-blue-600">
+                      {trackingData[selectedCompany.id]?.total_views || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Total Views</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-green-600">
+                      {trackingData[selectedCompany.id]?.total_sessions || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">Sessions</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-purple-600">
+                      {Math.round(trackingData[selectedCompany.id]?.avg_time_seconds || 0)}s
+                    </div>
+                    <div className="text-sm text-gray-600">Avg Time</div>
+                  </div>
+                </div>
+                
+                {/* Recent Sessions */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Recent Sessions</h4>
+                  <div className="space-y-2">
+                    {trackingData[selectedCompany.id]?.recent_sessions?.slice(0, 10).map((session, index) => (
+                      <div key={index} className="flex justify-between items-center p-3 border border-gray-200 rounded">
+                        <div>
+                          <div className="text-sm font-medium">
+                            Session {session.session_id?.slice(-8) || 'Unknown'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(session.visit_start_time).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-medium">
+                            {Math.round(session.total_time_seconds || 0)}s
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {session.user_agent?.includes('Mobile') ? '📱 Mobile' : '💻 Desktop'}
+                          </div>
+                        </div>
+                      </div>
+                    )) || (
+                      <div className="text-center py-8 text-gray-500">
+                        No session data available
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-4 border-t">
+                  <a
+                    href={`/t/moderntrust/${selectedCompany.slug}`}
+                    target="_blank"
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    View Live Site
+                  </a>
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

@@ -8,6 +8,12 @@ const USERS = {
     role: "admin", 
     states: ["Alabama", "Arkansas"],
     name: "Nicholas Matheos"
+  },
+  "jaredthompson@atlasgrowth.ai": { 
+    password: "Jared100$", 
+    role: "admin", 
+    states: ["Alabama", "Arkansas"],
+    name: "Jared Thompson"
   }
 };
 
