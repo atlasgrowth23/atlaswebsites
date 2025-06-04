@@ -53,7 +53,7 @@ export default function Pipeline({ companies }: PipelineProps) {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [stageLeads, setStageLeads] = useState<PipelineLead[]>([]);
   const [expandedLead, setExpandedLead] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'template' | 'tracking' | 'notes' | null>(null);
+  const [activeSection, setActiveSection] = useState<'template' | 'tracking' | 'notes' | 'business-details' | null>(null);
   const [customizations, setCustomizations] = useState<Record<string, any>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
