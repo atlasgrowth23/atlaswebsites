@@ -38,6 +38,7 @@ interface PipelineProps {
 
 const STAGES = [
   { key: 'new_lead', title: 'New Lead', color: 'bg-blue-500', textColor: 'text-white', description: 'Ready to contact' },
+  { key: 'voicemail_left', title: 'Voicemail Left', color: 'bg-indigo-500', textColor: 'text-white', description: 'Left voicemail' },
   { key: 'contacted', title: 'Contacted', color: 'bg-green-500', textColor: 'text-white', description: 'Initial contact made' },
   { key: 'website_viewed', title: 'Website Viewed', color: 'bg-purple-500', textColor: 'text-white', description: 'Engaged with site' },
   { key: 'appointment_scheduled', title: 'Appointment Scheduled', color: 'bg-orange-500', textColor: 'text-white', description: 'Meeting set' },
@@ -481,6 +482,23 @@ export default function Pipeline({ companies }: PipelineProps) {
                         {/* Stage Actions */}
                         <div className="flex space-x-2">
                           {selectedStage === 'new_lead' && (
+                            <>
+                              <button
+                                onClick={() => moveLeadToStage(lead.id, 'voicemail_left')}
+                                className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+                              >
+                                Voicemail Left
+                              </button>
+                              <button
+                                onClick={() => moveLeadToStage(lead.id, 'contacted')}
+                                className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                              >
+                                Mark Contacted
+                              </button>
+                            </>
+                          )}
+                          
+                          {selectedStage === 'voicemail_left' && (
                             <button
                               onClick={() => moveLeadToStage(lead.id, 'contacted')}
                               className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
@@ -828,7 +846,26 @@ export default function Pipeline({ companies }: PipelineProps) {
                               >
                                 ✉️ Email
                               </a>
-                              <button className="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700">
+                              <button 
+                                onClick={() => {
+                                  const ownerName = (document.getElementById(`owner-name-${lead.id}`) as HTMLInputElement)?.value || 'there';
+                                  const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
+                                  const message = `Hey ${ownerName},
+
+Thank you for giving me a few minutes of your valuable time. Here is the website we talked about: ${websiteUrl}
+
+This is my personal cell phone. Please call or text me anytime if you have any questions.
+
+Thank you,
+Jared Thompson`;
+                                  
+                                  // Copy to clipboard
+                                  navigator.clipboard.writeText(message).then(() => {
+                                    alert('Message copied to clipboard! You can now paste it into your texting app.');
+                                  });
+                                }}
+                                className="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700"
+                              >
                                 💬 Text
                               </button>
                             </div>
@@ -839,6 +876,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                                   Owner Name
                                 </label>
                                 <input
+                                  id={`owner-name-${lead.id}`}
                                   type="text"
                                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                                   placeholder="Enter owner name"
