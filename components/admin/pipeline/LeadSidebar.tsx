@@ -51,14 +51,6 @@ interface LeadSidebarProps {
   stages: Array<{ key: string; title: string; color: string }>;
 }
 
-const QUICK_NOTE_TEMPLATES = [
-  "Left voicemail - will follow up tomorrow",
-  "No answer - trying again later today", 
-  "Spoke with owner - interested in demo",
-  "Not interested at this time",
-  "Requested more information via email",
-  "Scheduled follow-up call for next week"
-];
 
 const STAGE_ACTIONS = {
   'new_lead': [
@@ -186,20 +178,6 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
 
   const handleNoteChange = (value: string) => {
     setNewNote(value);
-    
-    // Clear existing timeout
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-
-    // Set new auto-save timeout
-    const timeout = setTimeout(() => {
-      if (value.trim()) {
-        saveNote(value);
-      }
-    }, 2000); // Auto-save after 2 seconds of inactivity
-
-    setAutoSaveTimeout(timeout);
   };
 
   const saveNote = async (noteContent: string = newNote) => {
@@ -547,6 +525,12 @@ Jared Thompson`;
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* Notes Tab */}
+        {activeTab === 'notes' && (
+          <div className="p-4 space-y-4">
             {/* Owner Name Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Owner Name</label>
@@ -554,41 +538,9 @@ Jared Thompson`;
                 type="text"
                 value={ownerName}
                 onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="Enter owner name for SMS"
+                placeholder="Enter owner name for SMS/email"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
-
-            {/* Quick Links */}
-            <div className="space-y-2">
-              <a
-                href={`/t/moderntrust/${lead.company.slug}?preview=true`}
-                target="_blank"
-                className="block w-full bg-blue-100 hover:bg-blue-200 text-blue-700 text-center py-2 rounded text-sm font-medium"
-              >
-                👁️ Preview Site
-              </a>
-            </div>
-          </div>
-        )}
-
-        {/* Notes Tab */}
-        {activeTab === 'notes' && (
-          <div className="p-4 space-y-4">
-            {/* Quick Note Templates */}
-            <div>
-              <h4 className="font-medium text-gray-900 mb-2">Quick Notes</h4>
-              <div className="grid grid-cols-1 gap-1">
-                {QUICK_NOTE_TEMPLATES.map(template => (
-                  <button
-                    key={template}
-                    onClick={() => handleQuickNote(template)}
-                    className="text-left text-xs bg-gray-100 hover:bg-gray-200 p-2 rounded"
-                  >
-                    {template}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* New Note Input */}
@@ -597,7 +549,7 @@ Jared Thompson`;
               <textarea
                 value={newNote}
                 onChange={(e) => handleNoteChange(e.target.value)}
-                placeholder="Type your note... (auto-saves)"
+                placeholder="Type your note..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 rows={3}
               />

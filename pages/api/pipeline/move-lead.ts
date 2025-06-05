@@ -21,23 +21,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (originalLeadId.startsWith('temp_')) {
       companyId = originalLeadId.replace('temp_', '');
       
-      // Create pipeline entry if it doesn't exist
-      const { data: newEntry, error: insertError } = await supabaseAdmin
+      // Check if pipeline entry already exists
+      const { data: existingEntry } = await supabaseAdmin
         .from('lead_pipeline')
-        .insert({
-          company_id: companyId,
-          stage: 'new_lead',
-          notes: ''
-        })
-        .select()
+        .select('id')
+        .eq('company_id', companyId)
         .single();
-        
-      if (insertError) {
-        console.error('Insert error:', insertError);
-        return res.status(500).json({ error: 'Failed to create pipeline entry' });
-      }
       
-      actualLeadId = newEntry.id;
+      if (existingEntry) {
+        actualLeadId = existingEntry.id;
+      } else {
+        // Create pipeline entry if it doesn't exist
+        const { data: newEntry, error: insertError } = await supabaseAdmin
+          .from('lead_pipeline')
+          .insert({
+            company_id: companyId,
+            stage: 'new_lead',
+            notes: ''
+          })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          return res.status(500).json({ error: 'Failed to create pipeline entry' });
+        }
+        
+        actualLeadId = newEntry.id;
+      }
     } else {
       // Get existing lead data
       const { data: currentLead } = await supabaseAdmin

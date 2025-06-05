@@ -5,6 +5,7 @@ import { Company } from '@/types';
 import ModernTrustLayout from '@/components/templates/ModernTrust/Layout';
 import { processLogo } from '@/lib/processLogo';
 import Head from 'next/head';
+import Script from 'next/script';
 
 type TemplateProps = {
   company: Company;
@@ -17,16 +18,16 @@ export default function TemplatePage({ company, template_key }: TemplateProps) {
     case 'moderntrust':
       return (
         <>
-          <Head>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  window.__COMPANY_ID__ = "${company.id}";
-                  window.__TRACKING_ENABLED__ = true;
-                `
-              }}
-            />
-          </Head>
+          <Script
+            id="tracking-setup"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.__COMPANY_ID__ = "${company.id}";
+                window.__TRACKING_ENABLED__ = true;
+              `
+            }}
+          />
           <ModernTrustLayout company={company} />
         </>
       );

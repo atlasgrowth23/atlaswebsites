@@ -15,6 +15,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Invalid lead ID' });
       }
 
+      // Handle temporary lead IDs (companies without pipeline entries)
+      if (leadId.startsWith('temp_')) {
+        // Return empty array for temp leads (no notes yet)
+        return res.status(200).json([]);
+      }
+
       // Get notes for the lead
       const { data: notes, error } = await supabase
         .from('lead_notes')
@@ -35,11 +41,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Lead ID and content are required' });
       }
 
+      let actualLeadId = lead_id;
+
+      // Handle temporary lead IDs - create pipeline entry first
+      if (lead_id.startsWith('temp_')) {
+        const companyId = lead_id.replace('temp_', '');
+        
+        // Check if pipeline entry already exists
+        const { data: existingEntry } = await supabase
+          .from('lead_pipeline')
+          .select('id')
+          .eq('company_id', companyId)
+          .single();
+        
+        if (existingEntry) {
+          actualLeadId = existingEntry.id;
+        } else {
+          // Create pipeline entry
+          const { data: pipelineEntry, error: pipelineError } = await supabase
+            .from('lead_pipeline')
+            .insert({
+              company_id: companyId,
+              stage: 'new_lead',
+              notes: '',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select('*')
+            .single();
+
+          if (pipelineError) {
+            console.error('Error creating pipeline entry:', pipelineError);
+            return res.status(500).json({ error: 'Failed to create pipeline entry' });
+          }
+
+          actualLeadId = pipelineEntry.id;
+        }
+      }
+
       // Insert new note
       const { data: note, error } = await supabase
         .from('lead_notes')
         .insert({
-          lead_id,
+          lead_id: actualLeadId,
           content: content.trim(),
           is_private,
           created_by: 'admin' // TODO: Get from auth context

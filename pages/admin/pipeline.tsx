@@ -268,7 +268,7 @@ export default function Pipeline({ companies }: PipelineProps) {
             <div className="grid grid-cols-1 divide-y">
               {currentStageLeads.map(lead => (
                 <div key={lead.id} className="hover:bg-gray-50">
-                  {/* Simplified Lead Card */}
+                  {/* Clean Lead Card */}
                   <div className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 cursor-pointer" onClick={() => openLeadSidebar(lead)}>
@@ -276,31 +276,9 @@ export default function Pipeline({ companies }: PipelineProps) {
                           {lead.company.name}
                         </h3>
                         <p className="text-gray-600 text-sm">{lead.company.city}, {lead.company.state}</p>
-                        {lead.company.phone && (
-                          <p className="text-gray-500 text-sm">{lead.company.phone}</p>
-                        )}
                         {lead.notes && (
                           <p className="text-gray-600 text-sm mt-2 italic">"{lead.notes}"</p>
                         )}
-                        
-                        {/* Quick Status Indicators */}
-                        <div className="flex gap-2 mt-2">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                            lead.company.site ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {lead.company.site ? '🌐 Has Website' : '❌ No Website'}
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                            lead.company.predicted_label === 'logo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {lead.company.predicted_label === 'logo' ? '🎨 Has Logo' : '❌ No Logo'}
-                          </span>
-                          {lead.company.rating && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                              ⭐ {Number(lead.company.rating).toFixed(1)}
-                            </span>
-                          )}
-                        </div>
                       </div>
                       
                       <div className="flex flex-col items-end space-y-2">
@@ -308,34 +286,8 @@ export default function Pipeline({ companies }: PipelineProps) {
                           {new Date(lead.updated_at).toLocaleDateString()}
                         </div>
                         
-                        {/* Professional Actions */}
+                        {/* Stage Move Actions */}
                         <div className="flex flex-wrap gap-1 sm:gap-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openLeadSidebar(lead);
-                            }}
-                            className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
-                          >
-                            📋 Manage Lead
-                          </button>
-                          
-                          <a
-                            href={`/t/moderntrust/${lead.company.slug}?admin=true`}
-                            target="_blank"
-                            className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
-                          >
-                            🔧 Edit Site
-                          </a>
-                          
-                          <a
-                            href={`/t/moderntrust/${lead.company.slug}`}
-                            target="_blank"
-                            className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                          >
-                            🌐 Live Site
-                          </a>
-                          
                           <select
                             onChange={(e) => {
                               if (e.target.value) {
