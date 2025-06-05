@@ -133,14 +133,18 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       const response = await fetch(`/api/template-customizations?slug=${lead.company.slug}&template=moderntrust`);
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Fetched customizations data:', data);
         const customizationMap: Record<string, string> = {};
         data.forEach((custom: any) => {
           customizationMap[custom.customization_type] = custom.custom_value;
         });
+        console.log('📊 Customization map:', customizationMap);
         setCustomizations(customizationMap);
+      } else {
+        console.error('❌ Failed to fetch customizations:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching customizations:', error);
+      console.error('❌ Error fetching customizations:', error);
     }
   };
 
@@ -236,11 +240,31 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   };
 
   const handleEmail = () => {
-    if (lead?.company.email_1) {
-      window.open(`mailto:${lead.company.email_1}`);
-      const emailNote = `✉️ Sent email to ${lead.company.name} at ${new Date().toLocaleTimeString()}`;
-      saveNote(emailNote);
-    }
+    if (!lead?.company.email_1) return;
+    
+    const ownerNameToUse = ownerName || 'there';
+    const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
+    
+    const subject = `Website for ${lead.company.name}`;
+    const body = `Hello ${ownerNameToUse},
+
+Thank you for taking the time to speak with me today. As discussed, I've prepared a custom website for ${lead.company.name}.
+
+You can view it here: ${websiteUrl}
+
+This website is fully functional and ready to help you attract more customers in ${lead.company.city}, ${lead.company.state}. 
+
+Please take a look and let me know what you think. I'm happy to make any adjustments you'd like.
+
+Best regards,
+Jared Thompson
+${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
+
+    const emailUrl = `mailto:${lead.company.email_1}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(emailUrl);
+    
+    const emailNote = `✉️ Sent email to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}`;
+    saveNote(emailNote);
   };
 
   const handleSMS = () => {
@@ -261,8 +285,8 @@ Jared Thompson`;
     const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
     window.open(smsUrl, '_self');
     
-    // Auto-add SMS activity note
-    const smsNote = `💬 Sent SMS to ${ownerNameToUse} at ${new Date().toLocaleTimeString()}`;
+    // Auto-add SMS activity note with tracking
+    const smsNote = `💬 Sent SMS to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}`;
     saveNote(smsNote);
   };
 
@@ -271,33 +295,29 @@ Jared Thompson`;
     
     setIsSaving(true);
     try {
-      // Process each image URL - download and save to storage
-      const processedCustomizations: Record<string, string> = {};
-      
-      for (const [frameKey, imageUrl] of Object.entries(customizations)) {
-        if (imageUrl && imageUrl.trim() !== '') {
-          const uploadResponse = await fetch('/api/upload-image-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageUrl: imageUrl.trim(),
-              companyId: lead.company_id,
-              frameType: frameKey
-            })
-          });
+      // Save all customizations directly - let the API handle image processing
+      const saveResponse = await fetch('/api/template-customizations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: lead.company_id,
+          templateKey: 'moderntrust',
+          customizations: customizations
+        })
+      });
 
-          const uploadData = await uploadResponse.json();
-          if (uploadResponse.ok) {
-            processedCustomizations[frameKey] = uploadData.storageUrl;
-          } else {
-            processedCustomizations[frameKey] = imageUrl.trim();
-          }
-        }
+      const saveData = await saveResponse.json();
+      
+      if (saveResponse.ok) {
+        console.log('✅ Customizations saved successfully:', saveData);
+        // Refresh customizations from server
+        await fetchCustomizations();
+      } else {
+        console.error('❌ Failed to save customizations:', saveData.error);
       }
 
-      setCustomizations(processedCustomizations);
     } catch (error) {
-      console.error('Error saving customizations:', error);
+      console.error('❌ Error saving customizations:', error);
     } finally {
       setIsSaving(false);
     }
@@ -625,14 +645,26 @@ Jared Thompson`;
             
             {showCustomizationForm && (
               <div className="space-y-3">
-                {/* Hero Image */}
+                {/* Hero Image 1 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image 1</label>
                   <input
                     type="url"
-                    placeholder="Enter image URL"
+                    placeholder="Enter first hero image URL"
                     value={customizations.hero_img || ''}
                     onChange={(e) => setCustomizations(prev => ({ ...prev, hero_img: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Hero Image 2 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image 2</label>
+                  <input
+                    type="url"
+                    placeholder="Enter second hero image URL"
+                    value={customizations.hero_img_2 || ''}
+                    onChange={(e) => setCustomizations(prev => ({ ...prev, hero_img_2: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -642,7 +674,7 @@ Jared Thompson`;
                   <label className="block text-sm font-medium text-gray-700 mb-1">About Image</label>
                   <input
                     type="url"
-                    placeholder="Enter image URL"
+                    placeholder="Enter about section image URL"
                     value={customizations.about_img || ''}
                     onChange={(e) => setCustomizations(prev => ({ ...prev, about_img: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -756,15 +788,6 @@ Jared Thompson`;
               </div>
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-              <div className="text-sm font-medium text-gray-700 mb-1">Live Site URL:</div>
-              <div className="text-xs text-gray-600 break-all mb-2">
-                yourwebsitedomain.com/t/moderntrust/{lead.company.slug}
-              </div>
-              <div className="text-xs text-blue-600">
-                🔗 Share this URL with customers - automatically tracked!
-              </div>
-            </div>
 
             {analyticsData && (analyticsData.total_views > 0 || analyticsData.total_sessions > 0) ? (
               <div className="text-xs text-green-600 text-center">

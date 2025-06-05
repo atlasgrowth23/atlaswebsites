@@ -6,7 +6,8 @@
       "Bash(rm:*)",
       "Bash(curl:*)",
       "Bash(ls:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

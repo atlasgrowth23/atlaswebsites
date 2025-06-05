@@ -140,7 +140,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       for (const [frameKey, imageUrl] of Object.entries(customizations)) {
         try {
           // Validate frame key (basic validation)
-          if (!/^[a-z_]+$/.test(frameKey)) {
+          if (!/^[a-z0-9_]+$/.test(frameKey)) {
             errors.push(`Invalid frame key: ${frameKey}`);
             continue;
           }
@@ -148,14 +148,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (imageUrl && imageUrl.toString().trim() !== '') {
             const validatedUrl = validateImageUrl(imageUrl);
             
-            // Insert or update company frame using Supabase
-            await setCompanyFrame(validatedCompanyId, frameKey, validatedUrl);
-            
-            updatedFrames.push(frameKey);
-            console.log(`✅ Saved company frame: ${frameKey} = ${validatedUrl}`);
-            
-            // Force immediate cache invalidation for this specific frame
-            console.log(`🔄 Invalidating cache for company ${validatedCompanyId}`);
+            // If it's an external URL, download and upload to storage
+            if (validatedUrl.startsWith('http')) {
+              try {
+                // Download and upload to storage (this also updates company_frames table)
+                const uploadResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:5000'}/api/upload-image-url`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    imageUrl: validatedUrl,
+                    companyId: validatedCompanyId,
+                    frameType: frameKey
+                  })
+                });
+
+                if (uploadResponse.ok) {
+                  const uploadData = await uploadResponse.json();
+                  console.log(`✅ Uploaded and saved: ${frameKey} = ${uploadData.storageUrl}`);
+                  updatedFrames.push(frameKey);
+                } else {
+                  const errorData = await uploadResponse.json();
+                  errors.push(`Failed to upload ${frameKey}: ${errorData.error}`);
+                }
+              } catch (uploadError) {
+                console.error(`Upload failed for ${frameKey}:`, uploadError);
+                errors.push(`Upload failed for ${frameKey}: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`);
+              }
+            } else {
+              // It's already a storage URL, save directly
+              await setCompanyFrame(validatedCompanyId, frameKey, validatedUrl);
+              updatedFrames.push(frameKey);
+              console.log(`✅ Saved company frame: ${frameKey} = ${validatedUrl}`);
+            }
           } else if (imageUrl === '') {
             // Remove frame if explicitly set to empty using Supabase
             const { supabase } = await import('@/lib/supabase');
