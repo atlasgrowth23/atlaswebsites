@@ -87,15 +87,32 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [ownerName, setOwnerName] = useState('');
   const [customizations, setCustomizations] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<{
+    total_views: number;
+    total_sessions: number;
+    avg_time_seconds: number;
+    mobile_percentage: number;
+  } | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [showCustomizationForm, setShowCustomizationForm] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(384); // 96 * 4 = 384px (w-96)
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     if (lead && isOpen) {
       fetchNotes();
       fetchCustomizations();
+      fetchAnalytics();
       // Try to extract owner name from existing notes
       extractOwnerName();
     }
   }, [lead, isOpen]);
+
+  useEffect(() => {
+    if (activeTab === 'tracking' && lead && isOpen) {
+      fetchAnalytics();
+    }
+  }, [activeTab, lead, isOpen]);
 
   const fetchNotes = async () => {
     if (!lead) return;
@@ -124,6 +141,33 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       }
     } catch (error) {
       console.error('Error fetching customizations:', error);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    if (!lead) return;
+    setLoadingAnalytics(true);
+    try {
+      const response = await fetch(`/api/analytics-summary?companyId=${lead.company_id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAnalyticsData({
+          total_views: data.total_views || 0,
+          total_sessions: data.total_sessions || 0,
+          avg_time_seconds: data.avg_time_seconds || 0,
+          mobile_percentage: data.mobile_percentage || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setAnalyticsData({
+        total_views: 0,
+        total_sessions: 0,
+        avg_time_seconds: 0,
+        mobile_percentage: 0
+      });
+    } finally {
+      setLoadingAnalytics(false);
     }
   };
 
@@ -259,12 +303,61 @@ Jared Thompson`;
     }
   };
 
+  // Resize functionality
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      
+      const newWidth = window.innerWidth - e.clientX;
+      const minWidth = 320; // Minimum width
+      const maxWidth = window.innerWidth * 0.8; // Max 80% of screen
+      
+      setSidebarWidth(Math.max(minWidth, Math.min(newWidth, maxWidth)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ew-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
+
   if (!isOpen || !lead) return null;
 
   const stageActions = STAGE_ACTIONS[lead.stage as keyof typeof STAGE_ACTIONS] || [];
 
   return (
-    <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl border-l border-gray-200 z-40 transform transition-transform duration-300 ease-in-out">
+    <div 
+      className="fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 z-40 transform transition-transform duration-300 ease-in-out"
+      style={{ width: `${sidebarWidth}px` }}
+    >
+      {/* Resize Handle */}
+      <div
+        className={`absolute left-0 top-0 bottom-0 w-1 bg-gray-300 hover:bg-blue-500 cursor-ew-resize transition-colors ${
+          isResizing ? 'bg-blue-500' : ''
+        }`}
+        onMouseDown={handleMouseDown}
+        title="Drag to resize"
+      />
+      
+      <div className="h-full ml-1">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
         <div className="flex justify-between items-start mb-3">
@@ -272,14 +365,34 @@ Jared Thompson`;
             <h3 className="font-semibold text-lg truncate">{lead.company.name}</h3>
             <p className="text-blue-100 text-sm">{lead.company.city}, {lead.company.state}</p>
           </div>
-          <button 
-            onClick={onClose}
-            className="text-blue-100 hover:text-white ml-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Width presets */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => setSidebarWidth(384)}
+                className={`w-6 h-4 rounded-sm border border-blue-300 ${sidebarWidth === 384 ? 'bg-blue-300' : 'bg-blue-100'}`}
+                title="Small (384px)"
+              />
+              <button
+                onClick={() => setSidebarWidth(600)}
+                className={`w-6 h-4 rounded-sm border border-blue-300 ${sidebarWidth === 600 ? 'bg-blue-300' : 'bg-blue-100'}`}
+                title="Medium (600px)"
+              />
+              <button
+                onClick={() => setSidebarWidth(800)}
+                className={`w-6 h-4 rounded-sm border border-blue-300 ${sidebarWidth === 800 ? 'bg-blue-300' : 'bg-blue-100'}`}
+                title="Large (800px)"
+              />
+            </div>
+            <button 
+              onClick={onClose}
+              className="text-blue-100 hover:text-white ml-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Primary Actions */}
@@ -431,16 +544,9 @@ Jared Thompson`;
               <a
                 href={`/t/moderntrust/${lead.company.slug}?preview=true`}
                 target="_blank"
-                className="block w-full bg-gray-100 hover:bg-gray-200 text-center py-2 rounded text-sm font-medium"
-              >
-                🔗 Preview Website
-              </a>
-              <a
-                href={`/t/moderntrust/${lead.company.slug}?admin=true`}
-                target="_blank"
                 className="block w-full bg-blue-100 hover:bg-blue-200 text-blue-700 text-center py-2 rounded text-sm font-medium"
               >
-                👤 Admin View
+                👁️ Preview Site
               </a>
             </div>
           </div>
@@ -507,52 +613,89 @@ Jared Thompson`;
         {/* Template Tab */}
         {activeTab === 'template' && (
           <div className="p-4 space-y-4">
-            <h4 className="font-medium text-gray-900 mb-2">Template Customization</h4>
-            
-            <div className="space-y-3">
-              {/* Hero Image */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image</label>
-                <input
-                  type="url"
-                  placeholder="Enter image URL"
-                  value={customizations.hero_img || ''}
-                  onChange={(e) => setCustomizations(prev => ({ ...prev, hero_img: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* About Image */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">About Image</label>
-                <input
-                  type="url"
-                  placeholder="Enter image URL"
-                  value={customizations.about_img || ''}
-                  onChange={(e) => setCustomizations(prev => ({ ...prev, about_img: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Logo URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
-                <input
-                  type="url"
-                  placeholder="Enter logo URL"
-                  value={customizations.logo_url || ''}
-                  onChange={(e) => setCustomizations(prev => ({ ...prev, logo_url: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
+            <div className="flex justify-between items-center">
+              <h4 className="font-medium text-gray-900">Template Customization</h4>
               <button
-                onClick={saveCustomizations}
-                disabled={isSaving}
-                className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-2 rounded text-sm font-medium"
+                onClick={() => setShowCustomizationForm(!showCustomizationForm)}
+                className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded"
               >
-                {isSaving ? 'Saving...' : '💾 Save Template'}
+                {showCustomizationForm ? '▼ Hide Form' : '▲ Show Form'}
               </button>
+            </div>
+            
+            {showCustomizationForm && (
+              <div className="space-y-3">
+                {/* Hero Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image</label>
+                  <input
+                    type="url"
+                    placeholder="Enter image URL"
+                    value={customizations.hero_img || ''}
+                    onChange={(e) => setCustomizations(prev => ({ ...prev, hero_img: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* About Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">About Image</label>
+                  <input
+                    type="url"
+                    placeholder="Enter image URL"
+                    value={customizations.about_img || ''}
+                    onChange={(e) => setCustomizations(prev => ({ ...prev, about_img: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* Logo URL */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Logo URL</label>
+                  <input
+                    type="url"
+                    placeholder="Enter logo URL"
+                    value={customizations.logo_url || ''}
+                    onChange={(e) => setCustomizations(prev => ({ ...prev, logo_url: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={saveCustomizations}
+                    disabled={isSaving}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-2 rounded text-sm font-medium"
+                  >
+                    {isSaving ? 'Saving...' : '💾 Save Template'}
+                  </button>
+                  
+                  {lead.company.reviews_link && (
+                    <a
+                      href={lead.company.reviews_link}
+                      target="_blank"
+                      className="block w-full bg-orange-100 hover:bg-orange-200 text-orange-700 text-center py-2 rounded text-sm font-medium"
+                    >
+                      📷 View Business Photos
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Live Preview */}
+            <div className={showCustomizationForm ? "border-t pt-4 mt-4" : ""}>
+              <h5 className="font-medium text-gray-900 mb-2">Live Preview</h5>
+              <div className="border rounded-lg overflow-hidden">
+                <iframe
+                  src={`/t/moderntrust/${lead.company.slug}?preview=true`}
+                  className={`w-full border-0 ${showCustomizationForm ? 'h-64' : 'h-96'}`}
+                  title="Website Preview"
+                />
+              </div>
+              <div className="text-xs text-gray-500 text-center mt-1">
+                Preview updates automatically when you save template changes
+              </div>
             </div>
           </div>
         )}
@@ -560,22 +703,81 @@ Jared Thompson`;
         {/* Analytics Tab */}
         {activeTab === 'tracking' && (
           <div className="p-4 space-y-4">
-            <h4 className="font-medium text-gray-900 mb-2">Website Analytics</h4>
+            <div className="flex justify-between items-center">
+              <h4 className="font-medium text-gray-900">📊 Website Analytics</h4>
+              <button
+                onClick={fetchAnalytics}
+                disabled={loadingAnalytics}
+                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {loadingAnalytics ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+            
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-green-800 font-medium text-sm">Tracking Active</span>
+                <span className="text-green-800 font-medium text-sm">Live Tracking</span>
               </div>
               <p className="text-green-700 text-xs mt-1">
-                Analytics are automatically collected for all visits
+                Real user visits only (admin views excluded)
               </p>
             </div>
-            
-            <div className="text-center py-8 text-gray-500">
-              <p className="text-sm">Detailed analytics coming soon</p>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-blue-50 p-3 rounded-lg text-center">
+                  <div className="text-lg font-bold text-blue-600">
+                    {loadingAnalytics ? '...' : (analyticsData?.total_views || 0)}
+                  </div>
+                  <div className="text-xs text-gray-600">Page Views</div>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg text-center">
+                  <div className="text-lg font-bold text-green-600">
+                    {loadingAnalytics ? '...' : (analyticsData?.total_sessions || 0)}
+                  </div>
+                  <div className="text-xs text-gray-600">Sessions</div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-purple-50 p-3 rounded-lg text-center">
+                  <div className="text-lg font-bold text-purple-600">
+                    {loadingAnalytics ? '...' : `${Math.round(analyticsData?.avg_time_seconds || 0)}s`}
+                  </div>
+                  <div className="text-xs text-gray-600">Avg Time</div>
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg text-center">
+                  <div className="text-lg font-bold text-orange-600">
+                    {loadingAnalytics ? '...' : `${Math.round(analyticsData?.mobile_percentage || 0)}%`}
+                  </div>
+                  <div className="text-xs text-gray-600">Mobile %</div>
+                </div>
+              </div>
             </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+              <div className="text-sm font-medium text-gray-700 mb-1">Live Site URL:</div>
+              <div className="text-xs text-gray-600 break-all mb-2">
+                yourwebsitedomain.com/t/moderntrust/{lead.company.slug}
+              </div>
+              <div className="text-xs text-blue-600">
+                🔗 Share this URL with customers - automatically tracked!
+              </div>
+            </div>
+
+            {analyticsData && (analyticsData.total_views > 0 || analyticsData.total_sessions > 0) ? (
+              <div className="text-xs text-green-600 text-center">
+                ✅ Site has {analyticsData.total_views} visitor{analyticsData.total_views !== 1 ? 's' : ''} so far
+              </div>
+            ) : (
+              <div className="text-xs text-gray-500 text-center">
+                📊 Waiting for first visitor...
+              </div>
+            )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

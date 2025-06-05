@@ -308,7 +308,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                           {new Date(lead.updated_at).toLocaleDateString()}
                         </div>
                         
-                        {/* Quick Actions */}
+                        {/* Professional Actions */}
                         <div className="flex flex-wrap gap-1 sm:gap-2">
                           <button
                             onClick={(e) => {
@@ -317,15 +317,23 @@ export default function Pipeline({ companies }: PipelineProps) {
                             }}
                             className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
                           >
-                            📋 Open Details
+                            📋 Manage Lead
                           </button>
                           
                           <a
-                            href={`/t/moderntrust/${lead.company.slug}?preview=true`}
+                            href={`/t/moderntrust/${lead.company.slug}?admin=true`}
                             target="_blank"
-                            className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
+                            className="text-xs bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
                           >
-                            👀 Preview
+                            🔧 Edit Site
+                          </a>
+                          
+                          <a
+                            href={`/t/moderntrust/${lead.company.slug}`}
+                            target="_blank"
+                            className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                          >
+                            🌐 Live Site
                           </a>
                           
                           <select

@@ -1,4 +1,4 @@
-// Modern template tracking with admin detection
+// Professional analytics tracking - Simple and reliable
 (() => {
   'use strict';
 
@@ -9,171 +9,142 @@
 
   // Prevent multiple tracker instances
   if (window.__TRACKER_RUNNING__) {
-    console.log('Tracker already running, skipping');
     return;
   }
 
   const urlParams = new URLSearchParams(window.location.search);
   
-  // Skip tracking in preview/admin mode
-  if (urlParams.get('preview') === 'true') {
-    console.log('Preview mode detected, skipping tracking');
+  // Simple admin detection - skip if admin or preview params
+  if (urlParams.get('admin') === 'true' || urlParams.get('preview') === 'true') {
+    console.log('🔒 Admin/Preview mode - analytics disabled');
     return;
   }
+
+  // Extract company info
+  const pathParts = window.location.pathname.split('/');
+  if (pathParts.length < 4) {
+    console.error('Invalid template URL');
+    return;
+  }
+
+  const templateKey = pathParts[2];
+  const companySlug = pathParts[3];
+  const companyId = window.__COMPANY_ID__;
   
-  if (urlParams.get('admin') === 'true') {
-    console.log('Admin view detected, skipping tracking');
+  if (!companyId) {
+    console.error('Company ID not found');
     return;
   }
 
-  // Check for admin authentication
-  const checkAdminStatus = async () => {
+  // Generate session ID
+  const sessionKey = `session_${companyId}`;
+  let sessionId = sessionStorage.getItem(sessionKey);
+  if (!sessionId) {
+    sessionId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem(sessionKey, sessionId);
+  }
+
+  console.log('📊 Analytics tracking started for:', companySlug);
+  window.__TRACKER_RUNNING__ = true;
+
+  const startTime = Date.now();
+  let totalTime = 0;
+  let lastActivity = startTime;
+  let isActive = true;
+
+  // Track user activity
+  const updateActivity = () => {
+    const now = Date.now();
+    if (isActive) {
+      totalTime += (now - lastActivity);
+    }
+    lastActivity = now;
+    isActive = true;
+  };
+
+  // Detect when user becomes inactive
+  let inactivityTimer;
+  const resetInactivityTimer = () => {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+      isActive = false;
+    }, 30000); // 30 seconds of inactivity
+  };
+
+  // Send analytics data
+  const sendData = async (isFinal = false) => {
+    const timeSpent = Math.floor(totalTime / 1000);
+    
+    if (timeSpent < 1 && !isFinal) return; // Don't send if less than 1 second
+    
+    const data = {
+      companyId,
+      companySlug,
+      templateKey,
+      sessionId,
+      timeOnPage: timeSpent,
+      userAgent: navigator.userAgent,
+      referrer: document.referrer,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      },
+      timestamp: new Date().toISOString()
+    };
+
     try {
-      const response = await fetch('/api/auth/check-admin', {
-        method: 'GET',
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return data.isAdmin || false;
-      }
-    } catch (error) {
-      console.log('Admin check failed, assuming external user');
-    }
-    return false;
-  };
-
-  // Initialize tracking
-  const initTracking = async () => {
-    const isAdmin = await checkAdminStatus();
-    
-    if (isAdmin) {
-      console.log('🔒 Admin user detected, tracking disabled');
-      return;
-    }
-
-    console.log('👥 External visitor detected, tracking enabled');
-    window.__TRACKER_RUNNING__ = true;
-
-    // Extract template/company info
-    const pathParts = window.location.pathname.split('/');
-    if (pathParts.length < 4) {
-      console.error('Invalid template URL pattern');
-      return;
-    }
-
-    const templateKey = pathParts[2];
-    const companySlug = pathParts[3];
-    const companyId = window.__COMPANY_ID__;
-    
-    if (!companyId) {
-      console.error('Company ID not found');
-      return;
-    }
-
-    // Generate session ID
-    const sessionKey = `tracker_${companyId}_${templateKey}`;
-    let sessionId = sessionStorage.getItem(sessionKey);
-    if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      sessionStorage.setItem(sessionKey, sessionId);
-    }
-
-    const startTime = Date.now();
-    let lastActivity = startTime;
-    let totalActiveTime = 0;
-    let isActive = true;
-    let hasTracked = false;
-
-    // Track user activity
-    const trackActivity = () => {
-      const now = Date.now();
-      if (isActive) {
-        totalActiveTime += (now - lastActivity);
-      }
-      lastActivity = now;
-      isActive = true;
-    };
-
-    // Send tracking data
-    const sendTrackingData = async (isInitial = false) => {
-      const timeOnPage = Math.floor(totalActiveTime / 1000);
-      
-      try {
-        const response = await fetch('/api/track-template-view', {
+      if (isFinal && navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/track', JSON.stringify(data));
+      } else {
+        await fetch('/api/analytics/track', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            companySlug,
-            templateKey,
-            companyId,
-            sessionId,
-            timeOnPage: Math.max(timeOnPage, 1),
-            userAgent: navigator.userAgent,
-            referrer: document.referrer,
-            isInitial
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
         });
-
-        if (response.ok) {
-          const result = await response.json();
-          console.log(`📊 Tracking sent: ${timeOnPage}s (${isInitial ? 'initial' : 'update'})`);
-        }
-      } catch (error) {
-        console.error('❌ Tracking failed:', error);
       }
-    };
-
-    // Event listeners for activity tracking
-    ['mousemove', 'scroll', 'click', 'keypress'].forEach(event => {
-      document.addEventListener(event, trackActivity, { passive: true });
-    });
-
-    // Initial tracking after page load
-    setTimeout(async () => {
-      if (!hasTracked) {
-        hasTracked = true;
-        await sendTrackingData(true);
-        
-        // Periodic updates every 30 seconds
-        setInterval(async () => {
-          if (isActive && totalActiveTime > 0) {
-            await sendTrackingData(false);
-          }
-        }, 30000);
-      }
-    }, 1000);
-
-    // Final tracking on page unload
-    const handleUnload = () => {
-      if (hasTracked && totalActiveTime > 0) {
-        navigator.sendBeacon('/api/track-template-view', JSON.stringify({
-          companySlug,
-          templateKey,
-          companyId,
-          sessionId,
-          timeOnPage: Math.floor(totalActiveTime / 1000),
-          userAgent: navigator.userAgent,
-          referrer: document.referrer,
-          isInitial: false
-        }));
-      }
-    };
-
-    window.addEventListener('beforeunload', handleUnload);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        handleUnload();
-      }
-    });
-
-    // Track initial activity
-    trackActivity();
+      
+      console.log(`📊 Analytics sent: ${timeSpent}s ${isFinal ? '(final)' : ''}`);
+    } catch (error) {
+      console.error('Analytics failed:', error);
+    }
   };
 
-  // Start tracking
-  initTracking().catch(console.error);
+  // Activity event listeners
+  ['mousemove', 'scroll', 'click', 'keydown', 'touchstart'].forEach(event => {
+    document.addEventListener(event, () => {
+      updateActivity();
+      resetInactivityTimer();
+    }, { passive: true });
+  });
+
+  // Initial activity tracking
+  updateActivity();
+  resetInactivityTimer();
+
+  // Send initial data after 2 seconds
+  setTimeout(() => sendData(), 2000);
+
+  // Send updates every 30 seconds
+  const updateInterval = setInterval(() => {
+    if (totalTime > 0) {
+      sendData();
+    }
+  }, 30000);
+
+  // Final data on page exit
+  const handleExit = () => {
+    clearInterval(updateInterval);
+    clearTimeout(inactivityTimer);
+    if (totalTime > 0) {
+      sendData(true);
+    }
+  };
+
+  window.addEventListener('beforeunload', handleExit);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      handleExit();
+    }
+  });
+
 })();

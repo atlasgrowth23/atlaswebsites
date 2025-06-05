@@ -48,10 +48,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
+    const totalViews = views.length;
+    const totalSessions = new Set(views.map(v => v.session_id)).size;
+    const mobileViews = deviceBreakdown.mobile + deviceBreakdown.tablet;
+    const mobilePercentage = totalViews > 0 ? Math.round((mobileViews / totalViews) * 100) : 0;
+
     return res.status(200).json({
+      total_views: totalViews,
+      total_sessions: totalSessions,
       avg_time_seconds: avgTimeSeconds,
-      device_breakdown: deviceBreakdown,
-      total_sessions: new Set(views.map(v => v.session_id)).size
+      mobile_percentage: mobilePercentage,
+      device_breakdown: deviceBreakdown
     });
 
   } catch (error) {
