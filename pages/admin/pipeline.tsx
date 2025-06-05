@@ -288,6 +288,19 @@ export default function Pipeline({ companies }: PipelineProps) {
                         
                         {/* Stage Move Actions */}
                         <div className="flex flex-wrap gap-1 sm:gap-2">
+                          {/* Preview Website Button */}
+                          {lead.company.slug && (
+                            <a
+                              href={`/t/moderntrust/${lead.company.slug}?preview=true`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              🌐 Preview
+                            </a>
+                          )}
+                          
                           <select
                             onChange={(e) => {
                               if (e.target.value) {

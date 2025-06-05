@@ -1,4 +1,4 @@
-// Professional analytics tracking - Simple and reliable
+// Professional Analytics Tracker - Universal Template Support
 (() => {
   'use strict';
 
@@ -8,143 +8,220 @@
   }
 
   // Prevent multiple tracker instances
-  if (window.__TRACKER_RUNNING__) {
+  if (window.__ATLAS_TRACKER__) {
     return;
   }
 
   const urlParams = new URLSearchParams(window.location.search);
   
-  // Simple admin detection - skip if admin or preview params
-  if (urlParams.get('admin') === 'true' || urlParams.get('preview') === 'true') {
-    console.log('🔒 Admin/Preview mode - analytics disabled');
+  // Skip tracking for admin/preview modes
+  if (urlParams.get('admin') === 'true' || 
+      urlParams.get('preview') === 'true' || 
+      urlParams.get('notrack') === 'true' ||
+      document.referrer.includes('admin/pipeline')) {
+    console.log('🔒 Tracking disabled - Admin/Preview mode');
     return;
   }
 
-  // Extract company info
-  const pathParts = window.location.pathname.split('/');
-  if (pathParts.length < 4) {
-    console.error('Invalid template URL');
+  // Extract template and company info from URL path
+  const pathParts = window.location.pathname.split('/').filter(p => p);
+  if (pathParts.length < 3 || pathParts[0] !== 't') {
+    console.error('❌ Invalid template URL structure');
     return;
   }
 
-  const templateKey = pathParts[2];
-  const companySlug = pathParts[3];
+  const templateKey = pathParts[1];
+  const companySlug = pathParts[2];
   const companyId = window.__COMPANY_ID__;
   
   if (!companyId) {
-    console.error('Company ID not found');
+    console.error('❌ Company ID not found - tracking disabled');
     return;
   }
 
-  // Generate session ID
-  const sessionKey = `session_${companyId}`;
+  // Initialize tracking
+  console.log(`📊 Atlas Analytics tracking started for ${templateKey}/${companySlug}`);
+  window.__ATLAS_TRACKER__ = true;
+
+  // Session management
+  const sessionKey = `atlas_session_${companyId}`;
   let sessionId = sessionStorage.getItem(sessionKey);
+  const isNewSession = !sessionId;
+  
   if (!sessionId) {
     sessionId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     sessionStorage.setItem(sessionKey, sessionId);
   }
 
-  console.log('📊 Analytics tracking started for:', companySlug);
-  window.__TRACKER_RUNNING__ = true;
-
-  const startTime = Date.now();
-  let totalTime = 0;
-  let lastActivity = startTime;
-  let isActive = true;
-
-  // Track user activity
-  const updateActivity = () => {
-    const now = Date.now();
-    if (isActive) {
-      totalTime += (now - lastActivity);
+  // Tracking state
+  const trackingState = {
+    startTime: Date.now(),
+    totalTime: 0,
+    lastActivity: Date.now(),
+    isActive: true,
+    interactions: 0,
+    location: null,
+    viewport: {
+      width: window.innerWidth,
+      height: window.innerHeight
     }
-    lastActivity = now;
-    isActive = true;
   };
 
-  // Detect when user becomes inactive
+  // Geolocation (optional, non-blocking)
+  if (navigator.geolocation && isNewSession) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        trackingState.location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+        console.log('📍 Location acquired for analytics');
+      },
+      () => {}, // Silent fail - location is optional
+      { timeout: 5000, enableHighAccuracy: false }
+    );
+  }
+
+  // Activity tracking functions
+  const updateActivity = () => {
+    const now = Date.now();
+    if (trackingState.isActive) {
+      trackingState.totalTime += (now - trackingState.lastActivity);
+    }
+    trackingState.lastActivity = now;
+    trackingState.isActive = true;
+    trackingState.interactions++;
+  };
+
+  // Inactivity detection
   let inactivityTimer;
   const resetInactivityTimer = () => {
     clearTimeout(inactivityTimer);
     inactivityTimer = setTimeout(() => {
-      isActive = false;
-    }, 30000); // 30 seconds of inactivity
+      trackingState.isActive = false;
+    }, 30000); // 30 seconds
   };
 
-  // Send analytics data
-  const sendData = async (isFinal = false) => {
-    const timeSpent = Math.floor(totalTime / 1000);
-    
-    if (timeSpent < 1 && !isFinal) return; // Don't send if less than 1 second
-    
-    const data = {
-      companyId,
-      companySlug,
-      templateKey,
-      sessionId,
-      timeOnPage: timeSpent,
-      userAgent: navigator.userAgent,
-      referrer: document.referrer,
-      viewport: {
-        width: window.innerWidth,
-        height: window.innerHeight
-      },
-      timestamp: new Date().toISOString()
-    };
+  // Professional analytics payload
+  const createPayload = (isFinal = false) => ({
+    companyId,
+    companySlug,
+    templateKey,
+    sessionId,
+    timeOnPage: Math.floor(trackingState.totalTime / 1000),
+    userAgent: navigator.userAgent,
+    referrer: document.referrer,
+    viewport: trackingState.viewport,
+    timestamp: new Date().toISOString(),
+    location: trackingState.location,
+    isInitial: isNewSession && !isFinal,
+    interactions: trackingState.interactions
+  });
 
+  // Send analytics data
+  const sendAnalytics = async (isFinal = false) => {
+    const payload = createPayload(isFinal);
+    
+    // Only send if meaningful time spent (>= 1 second) or if initial/final
+    if (payload.timeOnPage < 1 && !payload.isInitial && !isFinal) {
+      return;
+    }
+    
     try {
       if (isFinal && navigator.sendBeacon) {
-        navigator.sendBeacon('/api/analytics/track', JSON.stringify(data));
+        // Use sendBeacon for reliable final tracking
+        navigator.sendBeacon('/api/analytics/track', JSON.stringify(payload));
       } else {
-        await fetch('/api/analytics/track', {
+        // Use fetch for regular updates
+        const response = await fetch('/api/analytics/track', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: JSON.stringify(payload),
+          keepalive: isFinal
         });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
       }
       
-      console.log(`📊 Analytics sent: ${timeSpent}s ${isFinal ? '(final)' : ''}`);
+      const suffix = isFinal ? ' (final)' : payload.isInitial ? ' (initial)' : '';
+      console.log(`📊 Analytics sent: ${payload.timeOnPage}s, ${payload.interactions} interactions${suffix}`);
+      
     } catch (error) {
-      console.error('Analytics failed:', error);
+      console.error('❌ Analytics failed:', error);
     }
   };
 
-  // Activity event listeners
-  ['mousemove', 'scroll', 'click', 'keydown', 'touchstart'].forEach(event => {
+  // Event listeners for user activity
+  const activityEvents = ['mousemove', 'scroll', 'click', 'keydown', 'touchstart', 'wheel'];
+  activityEvents.forEach(event => {
     document.addEventListener(event, () => {
       updateActivity();
       resetInactivityTimer();
     }, { passive: true });
   });
 
-  // Initial activity tracking
+  // Viewport change tracking
+  window.addEventListener('resize', () => {
+    trackingState.viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+  });
+
+  // Initialize activity tracking
   updateActivity();
   resetInactivityTimer();
 
-  // Send initial data after 2 seconds
-  setTimeout(() => sendData(), 2000);
+  // Send initial analytics after 2 seconds (allows page to fully load)
+  setTimeout(() => sendAnalytics(), 2000);
 
-  // Send updates every 30 seconds
+  // Send periodic updates every 30 seconds
   const updateInterval = setInterval(() => {
-    if (totalTime > 0) {
-      sendData();
+    if (trackingState.totalTime > 0) {
+      sendAnalytics();
     }
   }, 30000);
 
-  // Final data on page exit
-  const handleExit = () => {
+  // Final analytics on page exit
+  const handlePageExit = () => {
     clearInterval(updateInterval);
     clearTimeout(inactivityTimer);
-    if (totalTime > 0) {
-      sendData(true);
+    
+    // Final time update
+    updateActivity();
+    
+    if (trackingState.totalTime > 0) {
+      sendAnalytics(true);
     }
   };
 
-  window.addEventListener('beforeunload', handleExit);
+  // Multiple exit event handlers for reliability
+  window.addEventListener('beforeunload', handlePageExit);
+  window.addEventListener('pagehide', handlePageExit);
+  
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      handleExit();
+      handlePageExit();
+    } else {
+      // Page became visible again, restart tracking
+      trackingState.lastActivity = Date.now();
+      trackingState.isActive = true;
+      resetInactivityTimer();
     }
   });
+
+  // Debug mode for development
+  if (window.location.hostname === 'localhost' || urlParams.get('debug') === 'true') {
+    window.__ATLAS_DEBUG__ = {
+      trackingState,
+      sendAnalytics: () => sendAnalytics(),
+      sessionId,
+      templateKey,
+      companySlug
+    };
+    console.log('🔧 Atlas Analytics Debug Mode - Access via window.__ATLAS_DEBUG__');
+  }
 
 })();

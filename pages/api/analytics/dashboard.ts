@@ -22,14 +22,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       throw companiesError;
     }
 
-    if (!companies || companies.length === 0) {
+    // Also get all companies that have tracking data regardless of state
+    const { data: allTrackingCompanies, error: trackingError } = await supabaseAdmin
+      .from('template_views')
+      .select('company_id')
+      .not('company_id', 'is', null);
+
+    if (trackingError) {
+      console.error('Tracking companies query error:', trackingError);
+    }
+
+    // Get unique company IDs from tracking data
+    const trackingCompanyIds = [...new Set(allTrackingCompanies?.map(t => t.company_id) || [])];
+    
+    // Get company details for tracking companies not in the state filter
+    const { data: additionalCompanies, error: additionalError } = await supabaseAdmin
+      .from('companies')
+      .select('id, name, slug, city, state')
+      .in('id', trackingCompanyIds)
+      .not('state', 'eq', state);
+
+    if (additionalError) {
+      console.error('Additional companies query error:', additionalError);
+    }
+
+    // Combine all companies
+    const allCompanies = [...(companies || []), ...(additionalCompanies || [])];
+    
+    if (allCompanies.length === 0) {
       return res.status(200).json({
         summary: { totalViews: 0, totalSessions: 0, avgTime: 0, activeCompanies: 0 },
         companies: []
       });
     }
 
-    const companyIds = companies.map(c => c.id);
+    const companyIds = allCompanies.map(c => c.id);
 
     // Get analytics data for the last 30 days
     const thirtyDaysAgo = new Date();
@@ -48,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Process analytics data
-    const companyStats = companies.map(company => {
+    const companyStats = allCompanies.map(company => {
       const companyViews = analytics?.filter(v => v.company_id === company.id) || [];
       const sessions = new Set(companyViews.map(v => v.session_id));
       const totalViews = companyViews.length;
@@ -105,6 +132,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('Analytics dashboard error:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics dashboard' });
+    res.status(500).json({ 
+      error: 'Failed to fetch analytics dashboard',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
+    });
   }
 }
