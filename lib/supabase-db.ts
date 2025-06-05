@@ -99,6 +99,8 @@ export async function setCompanyFrame(companyId: string, slug: string, url: stri
       slug, 
       url,
       updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'company_id,slug'
     })
     .select()
     .single()

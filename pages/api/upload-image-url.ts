@@ -51,7 +51,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('images')
       .getPublicUrl(storagePath);
 
-    const storageUrl = publicData.publicUrl;
+    // Add cache-busting timestamp to ensure immediate updates
+    const storageUrl = `${publicData.publicUrl}?v=${Date.now()}`;
 
     // Update company_frames table with storage URL
     const { error: dbError } = await supabaseAdmin
@@ -61,6 +62,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         slug: frameType,
         url: storageUrl,
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'company_id,slug'
       });
 
     if (dbError) {
