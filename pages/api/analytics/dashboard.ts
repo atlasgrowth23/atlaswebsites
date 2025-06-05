@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Get unique company IDs from tracking data
-    const trackingCompanyIds = [...new Set(allTrackingCompanies?.map(t => t.company_id) || [])];
+    const trackingCompanyIds = Array.from(new Set(allTrackingCompanies?.map(t => t.company_id) || []));
     
     // Get company details for tracking companies not in the state filter
     const { data: additionalCompanies, error: additionalError } = await supabaseAdmin

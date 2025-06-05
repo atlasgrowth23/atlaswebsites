@@ -345,7 +345,7 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
       .not('company_id', 'is', null);
 
     // Get unique company IDs from tracking data
-    const trackingCompanyIds = [...new Set(allTrackingCompanies?.map(t => t.company_id) || [])];
+    const trackingCompanyIds = Array.from(new Set(allTrackingCompanies?.map(t => t.company_id) || []));
     
     // Get company details for tracking companies not in the state filter
     const { data: additionalCompanies, error: additionalError } = await supabaseAdmin
