@@ -136,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             ]);
             savedPhotos++;
           } catch (photoError) {
-            console.log(`   ⚠️ Failed to save photo: ${photoError.message}`);
+            console.log(`   ⚠️ Failed to save photo: ${photoError instanceof Error ? photoError.message : String(photoError)}`);
           }
         }
 
@@ -154,12 +154,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
       } catch (error) {
-        console.log(`   ❌ Error processing ${company.name}: ${error.message}`);
+        console.log(`   ❌ Error processing ${company.name}: ${error instanceof Error ? error.message : String(error)}`);
         results.errors++;
         results.companies.push({
           name: company.name,
           status: 'error',
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         });
       }
 
@@ -211,7 +211,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('❌ Fatal error:', error);
     return res.status(500).json({ 
       error: 'Photo extraction failed',
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error) 
     });
   } finally {
     client.release();

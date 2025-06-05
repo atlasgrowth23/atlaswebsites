@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { Company } from '@/types';
 import { getPhotoUrl } from '@/lib/photo';
@@ -8,66 +8,29 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ company }) => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Hero slides with different images and text
-  const heroSlides = [
-    {
-      image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
-      title: `Stay Cool This Summer in`,
-      subtitle: (company as any).display_city || company.city || 'Your Area',
-      description: "Expert cooling solutions that keep your family comfortable during the hottest days while saving on energy costs."
-    },
-    {
-      image: getPhotoUrl(company, 'hero_img_2', 'moderntrust'),
-      title: `Professional HVAC Service in`,
-      subtitle: (company as any).display_city || company.city || 'Your Area',
-      description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
-    }
-  ].filter(slide => slide.image); // Only include slides that have images
-
-  // Auto-rotate slides every 6 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 6000);
-    return () => clearInterval(interval);
-  }, [heroSlides.length]);
-
-  const currentHero = heroSlides[currentSlide];
+  // Single hero configuration
+  const heroConfig = {
+    image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
+    title: `Professional HVAC Service in`,
+    subtitle: (company as any).display_city || company.city || 'Your Area',
+    description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
+  };
 
   return (
     <div className="relative min-h-[85vh] lg:min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
-      {/* Background with optimized loading */}
+      {/* Single Hero Background */}
       <div className="absolute inset-0">
-        {/* Current slide */}
-        {heroSlides[currentSlide]?.image && (
+        {heroConfig.image && (
           <Image 
-            key={`current-${currentSlide}`}
-            src={heroSlides[currentSlide].image!} 
-            alt={`Professional services by ${company?.name || 'our company'}`}
+            src={heroConfig.image} 
+            alt={`Professional HVAC services by ${company?.name || 'our company'}`}
             fill
-            className="object-cover object-center transition-opacity duration-1000 ease-in-out animate-[slideIn_2s_ease-out_forwards]"
+            className="object-cover object-center"
             priority
             quality={90}
             sizes="100vw"
           />
         )}
-        
-        {/* Preload next slide for smooth transition */}
-        {heroSlides.length > 1 && heroSlides[(currentSlide + 1) % heroSlides.length]?.image && (
-          <Image 
-            key={`preload-${(currentSlide + 1) % heroSlides.length}`}
-            src={heroSlides[(currentSlide + 1) % heroSlides.length].image!} 
-            alt={`Professional services by ${company?.name || 'our company'}`}
-            fill
-            className="object-cover object-center opacity-0"
-            loading="lazy"
-            quality={90}
-            sizes="100vw"
-          />
-        )}
-        
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
       </div>
 
@@ -79,12 +42,12 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
           <div className="text-center lg:text-left space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight">
-                <span className="block">{currentHero.title}</span> 
-                <span className="text-red-400 drop-shadow-lg">{currentHero.subtitle}</span>
+                <span className="block">{heroConfig.title}</span> 
+                <span className="text-red-400 drop-shadow-lg">{heroConfig.subtitle}</span>
               </h1>
 
               <p className="text-xl lg:text-2xl text-white/95 leading-relaxed max-w-2xl mx-auto lg:mx-0 font-medium">
-                {currentHero.description}
+                {heroConfig.description}
               </p>
             </div>
 
