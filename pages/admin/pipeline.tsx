@@ -1,9 +1,8 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
-import DomainManagement from '@/components/DomainManagement';
-import SimpleBusinessModal from '@/components/admin/pipeline/SimpleBusinessModal';
+import LeadSidebar from '@/components/admin/pipeline/LeadSidebar';
 import { getAllCompanies } from '@/lib/supabase-db';
 
 interface Company {
@@ -61,16 +60,9 @@ export default function Pipeline({ companies }: PipelineProps) {
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<'Alabama' | 'Arkansas'>('Alabama');
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
-  const [stageLeads, setStageLeads] = useState<PipelineLead[]>([]);
-  const [expandedLead, setExpandedLead] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<'template' | 'tracking' | 'notes' | 'business-details' | 'business-info' | 'call-notes' | 'template-editor' | null>(null);
-  const [customizations, setCustomizations] = useState<Record<string, any>>({});
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
-  const [trackingData, setTrackingData] = useState<Record<string, any>>({});
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchPipelineData();
@@ -95,12 +87,6 @@ export default function Pipeline({ companies }: PipelineProps) {
     }
   };
 
-  const fetchStageLeads = async (stage: string) => {
-    const filtered = leads.filter(lead => 
-      lead.stage === stage && lead.company.state === selectedState
-    );
-    setStageLeads(filtered);
-  };
 
   const moveLeadToStage = async (leadId: string, newStage: string, notes?: string) => {
     try {
@@ -116,9 +102,6 @@ export default function Pipeline({ companies }: PipelineProps) {
 
       if (response.ok) {
         await fetchPipelineData();
-        if (selectedStage) {
-          await fetchStageLeads(selectedStage);
-        }
       }
     } catch (error) {
       console.error('Error moving lead:', error);
@@ -157,176 +140,14 @@ export default function Pipeline({ companies }: PipelineProps) {
     return { stages: stats, totalLeads, activeLeads };
   };
 
-  const handleCustomizationChange = (companyId: string, field: string, value: string) => {
-    setCustomizations(prev => ({
-      ...prev,
-      [companyId]: {
-        ...prev[companyId],
-        [field]: value
-      }
-    }));
-  };
-
-  const saveCustomizations = async (lead: PipelineLead) => {
-    setSaving(prev => ({ ...prev, [lead.company_id]: true }));
-    setSaveStatus(prev => ({ ...prev, [lead.company_id]: 'Saving...' }));
-    
-    try {
-      const companyCustomizations = customizations[lead.company_id] || {};
-      const fieldsToSave: any = {};
-      
-      if (companyCustomizations.hero_img?.trim()) {
-        fieldsToSave.hero_img = companyCustomizations.hero_img.trim();
-      }
-      if (companyCustomizations.hero_img_2?.trim()) {
-        fieldsToSave.hero_img_2 = companyCustomizations.hero_img_2.trim();
-      }
-      if (companyCustomizations.about_img?.trim()) {
-        fieldsToSave.about_img = companyCustomizations.about_img.trim();
-      }
-      if (companyCustomizations.logo_url?.trim()) {
-        fieldsToSave.logo_url = companyCustomizations.logo_url.trim();
-      }
-
-      if (Object.keys(fieldsToSave).length > 0) {
-        const response = await fetch('/api/template-customizations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            companyId: lead.company_id,
-            customizations: fieldsToSave
-          })
-        });
-
-        if (response.ok) {
-          setSaveStatus(prev => ({ ...prev, [lead.company_id]: '✅ Saved!' }));
-          setTimeout(() => {
-            setSaveStatus(prev => ({ ...prev, [lead.company_id]: '' }));
-            setCustomizations(prev => ({ ...prev, [lead.company_id]: {} }));
-          }, 2000);
-        } else {
-          setSaveStatus(prev => ({ ...prev, [lead.company_id]: '❌ Error saving' }));
-        }
-      } else {
-        setSaveStatus(prev => ({ ...prev, [lead.company_id]: '⚠️ No changes to save' }));
-        setTimeout(() => {
-          setSaveStatus(prev => ({ ...prev, [lead.company_id]: '' }));
-        }, 2000);
-      }
-    } catch (error) {
-      setSaveStatus(prev => ({ ...prev, [lead.company_id]: '❌ Save failed' }));
-    } finally {
-      setSaving(prev => ({ ...prev, [lead.company_id]: false }));
-      setTimeout(() => {
-        setSaveStatus(prev => ({ ...prev, [lead.company_id]: '' }));
-      }, 3000);
-    }
-  };
-
-  const toggleTracking = async (lead: PipelineLead, currentStatus: boolean, isPaused: boolean = false) => {
-    try {
-      let newStatus;
-      let pausedStatus;
-      
-      if (currentStatus && !isPaused) {
-        newStatus = true;
-        pausedStatus = true;
-      } else if (currentStatus && isPaused) {
-        newStatus = true;
-        pausedStatus = false;
-      } else {
-        newStatus = true;
-        pausedStatus = false;
-      }
-
-      const response = await fetch('/api/toggle-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          businessId: lead.company_id, 
-          enabled: newStatus,
-          paused: pausedStatus
-        })
-      });
-      
-      if (response.ok) {
-        if (newStatus && !pausedStatus) {
-          await fetchTrackingData(lead.company_id);
-        }
-        await fetchPipelineData();
-        if (selectedStage) {
-          await fetchStageLeads(selectedStage);
-        }
-      }
-    } catch (error) {
-      console.error('Error updating tracking status:', error);
-    }
-  };
-
-  const fetchTrackingData = async (companyId: string) => {
-    try {
-      const [viewsRes, analyticsRes] = await Promise.all([
-        fetch(`/api/template-views?companyId=${companyId}`),
-        fetch(`/api/analytics-summary?companyId=${companyId}`)
-      ]);
-      
-      let trackingData = {
-        total_views: 0,
-        total_sessions: 0,
-        avg_time_seconds: 0,
-        last_viewed_at: null,
-        device_breakdown: { desktop: 0, mobile: 0, tablet: 0 },
-        recent_sessions: []
-      };
-
-      if (viewsRes.ok) {
-        const viewsData = await viewsRes.json();
-        trackingData.total_views = viewsData.total_views || 0;
-        trackingData.total_sessions = viewsData.unique_sessions || 0;
-        trackingData.last_viewed_at = viewsData.last_viewed_at;
-        trackingData.recent_sessions = viewsData.views || [];
-      }
-
-      if (analyticsRes.ok) {
-        const analyticsData = await analyticsRes.json();
-        trackingData.avg_time_seconds = analyticsData.avg_time_seconds || 0;
-        trackingData.device_breakdown = analyticsData.device_breakdown || trackingData.device_breakdown;
-      }
-      
-      setTrackingData(prev => ({
-        ...prev,
-        [companyId]: trackingData
-      }));
-    } catch (error) {
-      console.error('Error fetching tracking data:', error);
-      setTrackingData(prev => ({
-        ...prev,
-        [companyId]: {
-          total_views: 0,
-          total_sessions: 0,
-          avg_time_seconds: 0,
-          last_viewed_at: null,
-          device_breakdown: { desktop: 0, mobile: 0, tablet: 0 },
-          recent_sessions: []
-        }
-      }));
-    }
-  };
-
-  const getCurrentImageUrl = (lead: PipelineLead, field: string): string => {
-    // This would need to be enhanced to get actual company_frames data
-    return '';
-  };
-
-  const openBusinessModal = (lead: PipelineLead) => {
-    console.log('Opening modal for lead:', lead.company.name);
+  const openLeadSidebar = (lead: PipelineLead) => {
     setSelectedLead(lead);
-    setIsModalOpen(true);
+    setIsSidebarOpen(true);
   };
 
-  const closeBusinessModal = () => {
+  const closeLeadSidebar = () => {
     setSelectedLead(null);
-    setIsModalOpen(false);
+    setIsSidebarOpen(false);
   };
 
   const handleLeadUpdate = (updatedLead: PipelineLead) => {
@@ -336,15 +157,6 @@ export default function Pipeline({ companies }: PipelineProps) {
         lead.id === updatedLead.id ? updatedLead : lead
       )
     );
-    
-    // Update stage leads if we're viewing a specific stage
-    if (selectedStage) {
-      setStageLeads(prevStageLeads =>
-        prevStageLeads.map(lead =>
-          lead.id === updatedLead.id ? updatedLead : lead
-        )
-      );
-    }
   };
 
   if (loading) {
@@ -456,22 +268,11 @@ export default function Pipeline({ companies }: PipelineProps) {
             <div className="grid grid-cols-1 divide-y">
               {currentStageLeads.map(lead => (
                 <div key={lead.id} className="hover:bg-gray-50">
-                  {/* Main Lead Card */}
+                  {/* Simplified Lead Card */}
                   <div className="p-4">
                     <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 
-                          className="font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"
-                          onClick={() => {
-                            if (expandedLead === lead.id) {
-                              setExpandedLead(null);
-                              setActiveSection(null);
-                            } else {
-                              setExpandedLead(lead.id);
-                              setActiveSection('business-info');
-                            }
-                          }}
-                        >
+                      <div className="flex-1 cursor-pointer" onClick={() => openLeadSidebar(lead)}>
+                        <h3 className="font-semibold text-gray-900 hover:text-blue-600">
                           {lead.company.name}
                         </h3>
                         <p className="text-gray-600 text-sm">{lead.company.city}, {lead.company.state}</p>
@@ -481,6 +282,25 @@ export default function Pipeline({ companies }: PipelineProps) {
                         {lead.notes && (
                           <p className="text-gray-600 text-sm mt-2 italic">"{lead.notes}"</p>
                         )}
+                        
+                        {/* Quick Status Indicators */}
+                        <div className="flex gap-2 mt-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                            lead.company.site ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {lead.company.site ? '🌐 Has Website' : '❌ No Website'}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                            lead.company.predicted_label === 'logo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {lead.company.predicted_label === 'logo' ? '🎨 Has Logo' : '❌ No Logo'}
+                          </span>
+                          {lead.company.rating && (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                              ⭐ {Number(lead.company.rating).toFixed(1)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="flex flex-col items-end space-y-2">
@@ -488,48 +308,24 @@ export default function Pipeline({ companies }: PipelineProps) {
                           {new Date(lead.updated_at).toLocaleDateString()}
                         </div>
                         
-                        {/* Stage Actions */}
+                        {/* Quick Actions */}
                         <div className="flex flex-wrap gap-1 sm:gap-2">
-                          {selectedStage === 'new_lead' && (
-                            <>
-                              <button
-                                onClick={() => moveLeadToStage(lead.id, 'voicemail_left')}
-                                className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
-                              >
-                                Voicemail Left
-                              </button>
-                              <button
-                                onClick={() => moveLeadToStage(lead.id, 'contacted')}
-                                className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                              >
-                                Mark Contacted
-                              </button>
-                            </>
-                          )}
-                          
-                          {selectedStage === 'voicemail_left' && (
-                            <button
-                              onClick={() => moveLeadToStage(lead.id, 'contacted')}
-                              className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                            >
-                              Mark Contacted
-                            </button>
-                          )}
-                          
-                          <a
-                            href={`/t/moderntrust/${lead.company.slug}?admin=true`}
-                            target="_blank"
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openLeadSidebar(lead);
+                            }}
                             className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
                           >
-                            View Site
-                          </a>
+                            📋 Open Details
+                          </button>
                           
                           <a
                             href={`/t/moderntrust/${lead.company.slug}?preview=true`}
                             target="_blank"
                             className="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700"
                           >
-                            Preview Site
+                            👀 Preview
                           </a>
                           
                           <select
@@ -540,6 +336,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                             }}
                             className="text-xs border border-gray-300 rounded px-2 py-1"
                             defaultValue=""
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <option value="">Move to...</option>
                             {STAGES.filter(s => s.key !== selectedStage).map(stage => (
@@ -549,626 +346,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                         </div>
                       </div>
                     </div>
-
                   </div>
-
-                  {/* Expandable Sections */}
-                  {expandedLead === lead.id && (
-                    <div className="border-t border-gray-200 bg-gray-50">
-                      {/* Section Tabs */}
-                      <div className="flex border-b border-gray-200 bg-white">
-                        <button
-                          onClick={() => setActiveSection('business-info')}
-                          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                            activeSection === 'business-info'
-                              ? 'border-blue-500 text-blue-600 bg-blue-50'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          📋 Business Details
-                        </button>
-                        <button
-                          onClick={() => setActiveSection('call-notes')}
-                          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                            activeSection === 'call-notes'
-                              ? 'border-green-500 text-green-600 bg-green-50'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          📞 Call Notes
-                        </button>
-                        <button
-                          onClick={() => setActiveSection('template-editor')}
-                          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                            activeSection === 'template-editor'
-                              ? 'border-purple-500 text-purple-600 bg-purple-50'
-                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                          }`}
-                        >
-                          🎨 Template Editor
-                        </button>
-                      </div>
-                      
-                      {/* Business Info Section */}
-                      {activeSection === 'business-info' && (
-                        <div className="p-4">
-                          <h4 className="font-medium text-gray-900 mb-4">📊 Business Overview</h4>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {/* Website Status */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">🌐 Website</h5>
-                              <div className="flex items-center gap-2">
-                                {lead.company.site ? (
-                                  <>
-                                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                                    <span className="text-sm text-green-700">Has Website</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                                    <span className="text-sm text-red-700">No Website</span>
-                                  </>
-                                )}
-                              </div>
-                              {lead.company.site && (
-                                <a 
-                                  href={lead.company.site} 
-                                  target="_blank" 
-                                  className="text-xs text-blue-600 hover:underline block mt-1 truncate"
-                                >
-                                  {lead.company.site}
-                                </a>
-                              )}
-                            </div>
-
-                            {/* Logo Status */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">🎨 Logo</h5>
-                              <div className="flex items-center gap-2">
-                                {lead.company.predicted_label === 'logo' ? (
-                                  <>
-                                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                                    <span className="text-sm text-green-700">Has Logo</span>
-                                  </>
-                                ) : lead.company.predicted_label === 'not_logo' ? (
-                                  <>
-                                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                                    <span className="text-sm text-red-700">No Logo</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
-                                    <span className="text-sm text-yellow-700">Unknown ({lead.company.predicted_label || 'null'})</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Reviews Rating */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">⭐ Reviews</h5>
-                              <div className="text-sm text-gray-600">
-                                <div>Rating: <span className="font-medium">{lead.company.rating ? Number(lead.company.rating).toFixed(1) : 'N/A'}</span></div>
-                                <div>Count: <span className="font-medium">{lead.company.reviews || 'N/A'}</span></div>
-                              </div>
-                            </div>
-
-                            {/* Reviews Link */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">🔗 Reviews Link</h5>
-                              <div className="text-sm text-gray-600">
-                                {lead.company.reviews_link ? (
-                                  <a 
-                                    href={lead.company.reviews_link} 
-                                    target="_blank" 
-                                    className="text-blue-600 hover:underline break-all"
-                                  >
-                                    View Reviews
-                                  </a>
-                                ) : (
-                                  <span>Not Available</span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* City */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">📍 Location</h5>
-                              <div className="text-sm text-gray-900 font-medium">
-                                {lead.company.city}, {lead.company.state}
-                              </div>
-                            </div>
-
-                            {/* Review Timeline Data */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">📈 Review Timeline</h5>
-                              <div className="text-xs text-gray-600 space-y-1">
-                                <div>30-day: <span className="font-medium">{lead.company.r_30 || 0}</span></div>
-                                <div>60-day: <span className="font-medium">{lead.company.r_60 || 0}</span></div>
-                                <div>90-day: <span className="font-medium">{lead.company.r_90 || 0}</span></div>
-                                <div>365-day: <span className="font-medium">{lead.company.r_365 || 0}</span></div>
-                              </div>
-                            </div>
-
-                            {/* First Review Date */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">📅 First Review</h5>
-                              <div className="text-sm text-gray-600">
-                                <span>{lead.company.first_review_date ? new Date(lead.company.first_review_date).toLocaleDateString() : 'N/A'}</span>
-                              </div>
-                            </div>
-
-                            {/* Contact Info */}
-                            <div className="bg-white p-4 rounded-lg border">
-                              <h5 className="font-medium text-gray-800 mb-2">📞 Contact</h5>
-                              <div className="text-xs text-gray-600 space-y-1">
-                                {lead.company.phone && (
-                                  <div>Phone: <span className="font-medium">{lead.company.phone}</span></div>
-                                )}
-                                {lead.company.email_1 && (
-                                  <div>Email: <span className="font-medium">{lead.company.email_1}</span></div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Template Section (Legacy) */}
-                      {activeSection === 'template' && (
-                        <div className="p-4">
-                          <h4 className="font-medium text-gray-900 mb-4">Template Customization</h4>
-                          
-                          <div className="space-y-4">
-                            {/* Hero Image 1 */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Hero Background Image 1
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'hero_img') || "https://images.unsplash.com/photo-..."}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.hero_img || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'hero_img', e.target.value)}
-                              />
-                            </div>
-
-                            {/* Hero Image 2 */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Hero Background Image 2 (Slideshow)
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'hero_img_2') || "https://images.unsplash.com/photo-..."}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.hero_img_2 || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'hero_img_2', e.target.value)}
-                              />
-                            </div>
-
-                            {/* About Image */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                About Section Image
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'about_img') || "https://images.unsplash.com/photo-..."}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.about_img || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'about_img', e.target.value)}
-                              />
-                            </div>
-
-                            {/* Logo URL */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Logo URL
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'logo_url') || "https://logo-url.com/logo.svg"}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.logo_url || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'logo_url', e.target.value)}
-                              />
-                            </div>
-
-                            {/* Save Status */}
-                            {saveStatus[lead.company_id] && (
-                              <div className={`p-3 rounded-md text-sm ${
-                                saveStatus[lead.company_id].includes('✅') ? 'bg-green-50 text-green-800' :
-                                saveStatus[lead.company_id].includes('❌') ? 'bg-red-50 text-red-800' :
-                                saveStatus[lead.company_id].includes('⚠️') ? 'bg-yellow-50 text-yellow-800' :
-                                'bg-blue-50 text-blue-800'
-                              }`}>
-                                {saveStatus[lead.company_id]}
-                              </div>
-                            )}
-
-                            {/* Save Button */}
-                            <button
-                              onClick={() => saveCustomizations(lead)}
-                              disabled={saving[lead.company_id]}
-                              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                            >
-                              {saving[lead.company_id] ? 'Saving...' : '💾 Save Template Changes'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Template Editor Section */}
-                      {activeSection === 'template-editor' && (
-                        <div className="p-4">
-                          <div className="flex justify-between items-center mb-4">
-                            <h4 className="font-medium text-gray-900">🎨 Template Customization</h4>
-                            <a
-                              href={`/t/moderntrust/${lead.company.slug}?preview=true`}
-                              target="_blank"
-                              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
-                            >
-                              Preview Site
-                            </a>
-                          </div>
-                          
-                          <div className="space-y-4">
-                            {/* Hero Image 1 */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Hero Background Image 1
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'hero_img') || "https://images.unsplash.com/photo-..."}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.hero_img || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'hero_img', e.target.value)}
-                              />
-                            </div>
-
-                            {/* Hero Image 2 */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Hero Background Image 2 (Slideshow)
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'hero_img_2') || "https://images.unsplash.com/photo-..."}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.hero_img_2 || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'hero_img_2', e.target.value)}
-                              />
-                            </div>
-
-                            {/* About Image */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                About Section Image
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'about_img') || "https://images.unsplash.com/photo-..."}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.about_img || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'about_img', e.target.value)}
-                              />
-                            </div>
-
-                            {/* Logo URL */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Logo URL
-                              </label>
-                              <input
-                                type="url"
-                                placeholder={getCurrentImageUrl(lead, 'logo_url') || "https://logo-url.com/logo.svg"}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                value={customizations[lead.company_id]?.logo_url || ''}
-                                onChange={(e) => handleCustomizationChange(lead.company_id, 'logo_url', e.target.value)}
-                              />
-                            </div>
-
-                            {/* Save Status */}
-                            {saveStatus[lead.company_id] && (
-                              <div className={`p-3 rounded-md text-sm ${
-                                saveStatus[lead.company_id].includes('✅') ? 'bg-green-50 text-green-800' :
-                                saveStatus[lead.company_id].includes('❌') ? 'bg-red-50 text-red-800' :
-                                saveStatus[lead.company_id].includes('⚠️') ? 'bg-yellow-50 text-yellow-800' :
-                                'bg-blue-50 text-blue-800'
-                              }`}>
-                                {saveStatus[lead.company_id]}
-                              </div>
-                            )}
-
-                            {/* Save Button */}
-                            <button
-                              onClick={() => saveCustomizations(lead)}
-                              disabled={saving[lead.company_id]}
-                              className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                            >
-                              {saving[lead.company_id] ? 'Saving...' : '💾 Save Template Changes'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Tracking Section */}
-                      {activeSection === 'tracking' && (
-                        <div className="p-4">
-                          <h4 className="font-medium text-gray-900 mb-4">Website Tracking</h4>
-                          
-                          {/* Tracking Info */}
-                          <div className="mb-4">
-                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                              <div className="flex items-center">
-                                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                                <span className="text-green-800 font-medium">Tracking Always Active</span>
-                              </div>
-                              <p className="text-green-700 text-sm mt-1">
-                                Website analytics are automatically collected for all visits
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Tracking Stats */}
-                          {trackingData[lead.company_id] && (
-                            <div className="space-y-4">
-                              <div className="bg-blue-50 p-4 rounded-md">
-                                <h5 className="font-medium text-gray-900 mb-3">Quick Stats</h5>
-                                <div className="grid grid-cols-3 gap-4 text-sm">
-                                  <div className="bg-white p-3 rounded text-center">
-                                    <div className="text-xl font-bold text-blue-600">
-                                      {trackingData[lead.company_id].total_views}
-                                    </div>
-                                    <div className="text-gray-600">Views</div>
-                                  </div>
-                                  <div className="bg-white p-3 rounded text-center">
-                                    <div className="text-xl font-bold text-green-600">
-                                      {trackingData[lead.company_id].total_sessions}
-                                    </div>
-                                    <div className="text-gray-600">Sessions</div>
-                                  </div>
-                                  <div className="bg-white p-3 rounded text-center">
-                                    <div className="text-xl font-bold text-purple-600">
-                                      {Math.round(trackingData[lead.company_id].avg_time_seconds)}s
-                                    </div>
-                                    <div className="text-gray-600">Avg Time</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {!trackingData[lead.company_id] && (
-                            <div className="text-center py-8 text-gray-500">
-                              <p>No tracking data available yet</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Notes Section */}
-                      {activeSection === 'notes' && (
-                        <div className="p-4">
-                          <h4 className="font-medium text-gray-900 mb-4">Call Notes & Follow-up</h4>
-                          
-                          <div className="space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Notes
-                              </label>
-                              <textarea
-                                id={`notes-${lead.id}`}
-                                rows={4}
-                                placeholder="Add call notes, follow-up reminders, or other details..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                                defaultValue={lead.notes || ''}
-                              />
-                              <button
-                                onClick={async () => {
-                                  const textarea = document.getElementById(`notes-${lead.id}`) as HTMLTextAreaElement;
-                                  const newNotes = textarea.value;
-                                  await moveLeadToStage(lead.id, lead.stage, newNotes);
-                                }}
-                                className="mt-2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
-                              >
-                                Save Notes
-                              </button>
-                            </div>
-                            
-                            <div className="text-xs text-gray-500">
-                              Last updated: {new Date(lead.updated_at).toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Call Notes Section */}
-                      {activeSection === 'call-notes' && (
-                        <div className="p-4 bg-blue-50">
-                          <h4 className="font-medium text-gray-900 mb-4">📞 Call Notes & Actions</h4>
-                          
-                          <div className="space-y-4">
-                            {/* Quick Actions */}
-                            <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
-                              <a
-                                href={`tel:${lead.company.phone}`}
-                                className="bg-green-600 text-white px-3 py-1 text-sm rounded hover:bg-green-700"
-                              >
-                                📞 Call
-                              </a>
-                              <a
-                                href={`mailto:${lead.company.email_1}`}
-                                className="bg-blue-600 text-white px-3 py-1 text-sm rounded hover:bg-blue-700"
-                              >
-                                ✉️ Email
-                              </a>
-                              <button 
-                                onClick={() => {
-                                  const ownerNameInput = document.getElementById(`owner-name-${lead.id}`) as HTMLInputElement;
-                                  const ownerName = ownerNameInput?.value?.trim();
-                                  
-                                  if (!ownerName) {
-                                    alert('Owner name required');
-                                    ownerNameInput?.focus();
-                                    return;
-                                  }
-                                  
-                                  const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
-                                  const message = `Hey ${ownerName},
-
-Thank you for giving me a few minutes of your valuable time. Here is the website we talked about: ${websiteUrl}
-
-This is my personal cell phone. Please call or text me anytime if you have any questions.
-
-Thank you,
-Jared Thompson`;
-                                  
-                                  // Open Messages app directly with phone number and message
-                                  const phoneNumber = lead.company.phone?.replace(/[^\d]/g, '') || '';
-                                  if (phoneNumber) {
-                                    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
-                                    window.open(smsUrl, '_self');
-                                  } else {
-                                    alert('No phone number available for this company');
-                                  }
-                                }}
-                                className="bg-purple-600 text-white px-3 py-1 text-sm rounded hover:bg-purple-700"
-                              >
-                                💬 Text
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Owner Name
-                                </label>
-                                <input
-                                  id={`owner-name-${lead.id}`}
-                                  type="text"
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                  placeholder="Enter owner name"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Interest Level
-                                </label>
-                                <select className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
-                                  <option>Select...</option>
-                                  <option>⭐ 1 - Very Low</option>
-                                  <option>⭐⭐ 2 - Low</option>
-                                  <option>⭐⭐⭐ 3 - Medium</option>
-                                  <option>⭐⭐⭐⭐ 4 - High</option>
-                                  <option>⭐⭐⭐⭐⭐ 5 - Very High</option>
-                                </select>
-                              </div>
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Software Used
-                              </label>
-                              <div className="space-y-2">
-                                <select 
-                                  id={`software-${lead.id}`}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                  onChange={(e) => {
-                                    const otherInput = document.getElementById(`software-other-${lead.id}`) as HTMLInputElement;
-                                    if (e.target.value === 'Other') {
-                                      otherInput.style.display = 'block';
-                                      otherInput.focus();
-                                    } else {
-                                      otherInput.style.display = 'none';
-                                    }
-                                  }}
-                                >
-                                  <option>Select...</option>
-                                  <option>Service Titan</option>
-                                  <option>Jobber</option>
-                                  <option>FieldEdge</option>
-                                  <option>Housecall Pro</option>
-                                  <option>CallRail</option>
-                                  <option>ServiceM8</option>
-                                  <option>None</option>
-                                  <option>Other</option>
-                                </select>
-                                <input
-                                  id={`software-other-${lead.id}`}
-                                  type="text"
-                                  placeholder="Please specify..."
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                  style={{ display: 'none' }}
-                                />
-                              </div>
-                            </div>
-
-                            <div>
-                              <h5 className="font-medium text-gray-800 mb-2">📞 Call Notes</h5>
-                              
-                              {/* Add New Note */}
-                              <div className="mb-3">
-                                <textarea
-                                  id={`new-note-${lead.id}`}
-                                  rows={2}
-                                  placeholder="Add a new note..."
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                                />
-                                <button
-                                  onClick={() => {
-                                    const textarea = document.getElementById(`new-note-${lead.id}`) as HTMLTextAreaElement;
-                                    if (textarea.value.trim()) {
-                                      // Add note to the list
-                                      const notesList = document.getElementById(`notes-list-${lead.id}`);
-                                      const newNote = document.createElement('div');
-                                      newNote.className = 'p-2 bg-gray-100 rounded text-sm mb-2';
-                                      newNote.innerHTML = `
-                                        <div class="flex justify-between items-start">
-                                          <div class="flex-1">${textarea.value}</div>
-                                          <button onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 ml-2">×</button>
-                                        </div>
-                                        <div class="text-xs text-gray-500 mt-1">${new Date().toLocaleString()}</div>
-                                      `;
-                                      notesList?.appendChild(newNote);
-                                      textarea.value = '';
-                                    }
-                                  }}
-                                  className="mt-1 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                                >
-                                  Add Note
-                                </button>
-                              </div>
-
-                              {/* Notes List */}
-                              <div id={`notes-list-${lead.id}`} className="space-y-2 max-h-32 overflow-y-auto">
-                                {lead.notes && (
-                                  <div className="p-2 bg-gray-100 rounded text-sm">
-                                    <div className="flex justify-between items-start">
-                                      <div className="flex-1">{lead.notes}</div>
-                                      <button 
-                                        onClick={(e) => (e.target as HTMLElement).closest('.p-2')?.remove()}
-                                        className="text-red-500 hover:text-red-700 ml-2"
-                                      >×</button>
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">Existing note</div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-sm">
-                              💾 Save Changes
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
@@ -1179,6 +357,16 @@ Jared Thompson`;
               </div>
             )}
           </div>
+
+          {/* Lead Sidebar */}
+          <LeadSidebar
+            lead={selectedLead}
+            isOpen={isSidebarOpen}
+            onClose={closeLeadSidebar}
+            onUpdateLead={handleLeadUpdate}
+            onMoveStage={moveLeadToStage}
+            stages={STAGES}
+          />
         </div>
       </AdminLayout>
     );

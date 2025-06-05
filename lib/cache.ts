@@ -105,13 +105,18 @@ export const cacheHelpers = {
     return cache.getOrSet(
       `company:${slug}`,
       async () => {
-        const { queryOne } = await import('./db');
-        return queryOne(`
-          SELECT c.*, 
-                 c.hours, c.saturday_hours, c.sunday_hours, c.emergency_service
-          FROM companies c 
-          WHERE slug = $1
-        `, [slug]);
+        const { supabaseAdmin } = await import('./supabase');
+        const { data, error } = await supabaseAdmin
+          .from('companies')
+          .select('*')
+          .eq('slug', slug)
+          .single();
+        
+        if (error) {
+          console.error('Cache getCompany error:', error);
+          return null;
+        }
+        return data;
       },
       60 // Cache for 1 hour
     );
@@ -122,8 +127,23 @@ export const cacheHelpers = {
     return cache.getOrSet(
       `frames:${companyId}`,
       async () => {
-        const { queryOne } = await import('./db');
-        return queryOne('SELECT * FROM company_frames WHERE company_id = $1', [companyId]);
+        const { supabaseAdmin } = await import('./supabase');
+        const { data, error } = await supabaseAdmin
+          .from('company_frames')
+          .select('*')
+          .eq('company_id', companyId);
+        
+        if (error) {
+          console.error('Cache getCompanyFrames error:', error);
+          return [];
+        }
+        
+        // Convert array to object for easier lookup
+        const framesObj: Record<string, string> = {};
+        data?.forEach(frame => {
+          framesObj[frame.slug] = frame.url;
+        });
+        return framesObj;
       },
       30 // Cache for 30 minutes
     );

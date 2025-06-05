@@ -34,7 +34,6 @@ export default function TemplateEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDomainSaving, setIsDomainSaving] = useState(false);
   const [message, setMessage] = useState('');
-
   // Available customization options (using actual frame keys from templates)
   const customizationOptions = {
     images: [
@@ -95,36 +94,52 @@ export default function TemplateEditor() {
     if (!company) return;
     
     setIsSaving(true);
-    setMessage('');
+    setMessage('Downloading and saving images to storage...');
 
     try {
-      const response = await fetch('/api/template-customizations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId: company.id,
-          customizations: {
-            hero_img: customizations.hero_img,
-            hero_img_2: customizations.hero_img_2,
-            about_img: customizations.about_img
-          }
-        })
-      });
+      // Process each image URL - download and save to storage
+      const processedCustomizations: Record<string, string> = {};
+      
+      for (const [frameKey, imageUrl] of Object.entries(customizations)) {
+        if (imageUrl && imageUrl.trim() !== '') {
+          setMessage(`Processing ${frameKey}...`);
+          
+          const uploadResponse = await fetch('/api/upload-image-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageUrl: imageUrl.trim(),
+              companyId: company.id,
+              frameType: frameKey
+            })
+          });
 
-      if (response.ok) {
-        const data = await response.json();
-        setMessage('✅ Template customizations saved! Website will update automatically in ~30 seconds.');
-        setTimeout(() => setMessage(''), 5000);
-        
-        // Show preview link
-        if (company?.slug) {
-          setMessage(prev => prev + ` 🔗 View changes: /t/moderntrust/${company.slug}`);
+          const uploadData = await uploadResponse.json();
+
+          if (uploadResponse.ok) {
+            processedCustomizations[frameKey] = uploadData.storageUrl;
+          } else {
+            console.error(`Failed to process ${frameKey}:`, uploadData.error);
+            // Keep original URL as fallback
+            processedCustomizations[frameKey] = imageUrl.trim();
+          }
         }
-      } else {
-        setMessage('❌ Failed to save customizations. Please try again.');
+      }
+
+      // Update customizations state with storage URLs
+      setCustomizations(processedCustomizations);
+      
+      setMessage('✅ Images saved to storage! Website will update automatically.');
+      setTimeout(() => setMessage(''), 5000);
+      
+      // Show preview link
+      if (company?.slug) {
+        setTimeout(() => {
+          setMessage(prev => prev + ` 🔗 View changes: /t/moderntrust/${company.slug}`);
+        }, 1000);
       }
     } catch (error) {
-      setMessage('❌ Error saving customizations. Please try again.');
+      setMessage('❌ Error saving images. Please try again.');
     } finally {
       setIsSaving(false);
     }

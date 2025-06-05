@@ -153,6 +153,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             
             updatedFrames.push(frameKey);
             console.log(`✅ Saved company frame: ${frameKey} = ${validatedUrl}`);
+            
+            // Force immediate cache invalidation for this specific frame
+            console.log(`🔄 Invalidating cache for company ${validatedCompanyId}`);
           } else if (imageUrl === '') {
             // Remove frame if explicitly set to empty using Supabase
             const { supabase } = await import('@/lib/supabase');

@@ -4,7 +4,9 @@
       "Bash(find:*)",
       "Bash(npx tsx:*)",
       "Bash(rm:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }
