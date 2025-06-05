@@ -23,6 +23,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .select('*')
       .limit(3);
 
+    // Check company_frames table
+    const { data: companyFrames, error: framesError } = await supabaseAdmin
+      .from('company_frames')
+      .select('*')
+      .limit(3);
+
     const result = {
       companies: {
         exists: !companiesError,
@@ -44,6 +50,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         count: dailyAnalytics?.length || 0,
         sample: dailyAnalytics?.[0] ? Object.keys(dailyAnalytics[0]) : [],
         data: dailyAnalytics
+      },
+      company_frames: {
+        exists: !framesError,
+        error: framesError?.message,
+        count: companyFrames?.length || 0,
+        sample: companyFrames?.[0] ? Object.keys(companyFrames[0]) : [],
+        data: companyFrames
       }
     };
 
