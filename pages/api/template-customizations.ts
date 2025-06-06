@@ -206,10 +206,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const templateKey = 'moderntrust'; // Could be dynamic based on company.template_key
           const revalidateUrl = `/t/${templateKey}/${company.slug}`;
           
-          // Trigger revalidation (this will regenerate the static page)
-          await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/revalidate?path=${encodeURIComponent(revalidateUrl)}&secret=${process.env.REVALIDATE_SECRET || 'dev-secret'}`);
+          // Determine base URL for revalidation
+          const baseUrl = process.env.VERCEL_URL 
+            ? `https://${process.env.VERCEL_URL}` 
+            : 'http://localhost:3000';
           
-          console.log(`🔄 Triggered revalidation for ${revalidateUrl}`);
+          const revalidateEndpoint = `${baseUrl}/api/revalidate?path=${encodeURIComponent(revalidateUrl)}&secret=${process.env.REVALIDATE_SECRET || 'dev-secret'}`;
+          
+          console.log(`🔄 Triggering revalidation: ${revalidateEndpoint}`);
+          
+          // Trigger revalidation (this will regenerate the page)
+          const revalidateResponse = await fetch(revalidateEndpoint);
+          const revalidateData = await revalidateResponse.text();
+          
+          console.log(`✅ Revalidation response: ${revalidateResponse.status} - ${revalidateData}`);
         } catch (revalidateError) {
           console.warn('⚠️ Revalidation failed:', revalidateError);
           // Don't fail the whole request if revalidation fails

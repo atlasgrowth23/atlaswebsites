@@ -58,11 +58,12 @@ const STAGES = [
 export default function Pipeline({ companies }: PipelineProps) {
   const [leads, setLeads] = useState<PipelineLead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedState, setSelectedState] = useState<'Alabama' | 'Arkansas'>('Alabama');
+  const [selectedPipelineType, setSelectedPipelineType] = useState('no_website_alabama');
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pipelineStats, setPipelineStats] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchPipelineData();
@@ -71,14 +72,15 @@ export default function Pipeline({ companies }: PipelineProps) {
     const refreshInterval = setInterval(fetchPipelineData, 30000);
     
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [selectedPipelineType]);
 
   const fetchPipelineData = async () => {
     try {
-      const response = await fetch('/api/pipeline/leads');
+      const response = await fetch(`/api/pipeline/leads?pipeline_type=${selectedPipelineType}`);
       if (response.ok) {
         const data = await response.json();
         setLeads(data.leads || []);
+        setPipelineStats(data.pipeline_stats || {});
       }
     } catch (error) {
       console.error('Error fetching pipeline data:', error);
@@ -109,18 +111,15 @@ export default function Pipeline({ companies }: PipelineProps) {
   };
 
   const filteredLeads = leads.filter(lead => {
-    const matchesState = lead.company.state === selectedState;
-    
-    if (!searchTerm) return matchesState;
+    if (!searchTerm) return true;
     
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
       lead.company.name.toLowerCase().includes(searchLower) ||
       lead.company.city.toLowerCase().includes(searchLower) ||
-      lead.company.phone?.toLowerCase().includes(searchLower) ||
-      lead.notes.toLowerCase().includes(searchLower);
+      lead.company.phone?.toLowerCase().includes(searchLower);
     
-    return matchesState && matchesSearch;
+    return matchesSearch;
   });
 
   const getLeadsByStage = (stage: string) => 
@@ -183,8 +182,7 @@ export default function Pipeline({ companies }: PipelineProps) {
       return (
         lead.company.name.toLowerCase().includes(searchLower) ||
         lead.company.city.toLowerCase().includes(searchLower) ||
-        lead.company.phone?.toLowerCase().includes(searchLower) ||
-        lead.notes.toLowerCase().includes(searchLower)
+        lead.company.phone?.toLowerCase().includes(searchLower)
       );
     });
     
@@ -217,7 +215,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                 )}
               </span>
             </div>
-            <p className="text-gray-600 mb-4">{stageInfo?.description} • {selectedState}</p>
+            <p className="text-gray-600 mb-4">{stageInfo?.description} • {selectedPipelineType.replace('_', ' ').replace('website', 'Website')}</p>
             
             {/* Stage Navigation Filter */}
             <div className="mb-4">
@@ -276,9 +274,6 @@ export default function Pipeline({ companies }: PipelineProps) {
                           {lead.company.name}
                         </h3>
                         <p className="text-gray-600 text-sm">{lead.company.city}, {lead.company.state}</p>
-                        {lead.notes && (
-                          <p className="text-gray-600 text-sm mt-2 italic">"{lead.notes}"</p>
-                        )}
                       </div>
                       
                       <div className="flex flex-col items-end space-y-2">
@@ -380,29 +375,28 @@ export default function Pipeline({ companies }: PipelineProps) {
           </div>
         </div>
 
-        {/* State Toggle */}
+        {/* Pipeline Selector */}
         <div className="mb-6">
-          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-            <button
-              onClick={() => setSelectedState('Alabama')}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                selectedState === 'Alabama'
-                  ? 'bg-white text-blue-600 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Alabama
-            </button>
-            <button
-              onClick={() => setSelectedState('Arkansas')}
-              className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                selectedState === 'Arkansas'
-                  ? 'bg-white text-blue-600 shadow'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Arkansas
-            </button>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 bg-gray-100 p-2 rounded-lg">
+            {[
+              { key: 'no_website_alabama', label: 'Alabama - No Website', count: pipelineStats['no_website_alabama'] || 0 },
+              { key: 'no_website_arkansas', label: 'Arkansas - No Website', count: pipelineStats['no_website_arkansas'] || 0 },
+              { key: 'has_website_alabama', label: 'Alabama - Has Website', count: pipelineStats['has_website_alabama'] || 0 },
+              { key: 'has_website_arkansas', label: 'Arkansas - Has Website', count: pipelineStats['has_website_arkansas'] || 0 }
+            ].map(pipeline => (
+              <button
+                key={pipeline.key}
+                onClick={() => setSelectedPipelineType(pipeline.key)}
+                className={`p-3 rounded-md font-medium transition-colors text-sm ${
+                  selectedPipelineType === pipeline.key
+                    ? 'bg-white text-blue-600 shadow-lg border-2 border-blue-500'
+                    : 'bg-white/50 text-gray-700 hover:bg-white hover:shadow-md'
+                }`}
+              >
+                <div className="font-semibold">{pipeline.label}</div>
+                <div className="text-xs opacity-75">{pipeline.count} leads</div>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -412,7 +406,7 @@ export default function Pipeline({ companies }: PipelineProps) {
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="text-2xl font-bold text-gray-900">{totalLeads}</div>
               <div className="text-gray-600">Total Leads</div>
-              <div className="text-sm text-gray-500">{selectedState}</div>
+              <div className="text-sm text-gray-500">{selectedPipelineType.replace('_', ' ').replace('website', 'Website')}</div>
             </div>
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="text-2xl font-bold text-blue-600">{activeLeads}</div>

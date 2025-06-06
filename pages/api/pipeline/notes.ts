@@ -57,12 +57,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (existingEntry) {
           actualLeadId = existingEntry.id;
         } else {
+          // Get company info to determine pipeline_type
+          const { data: company, error: companyError } = await supabase
+            .from('companies')
+            .select('state, site')
+            .eq('id', companyId)
+            .single();
+
+          if (companyError || !company) {
+            return res.status(404).json({ error: 'Company not found' });
+          }
+
+          // Determine pipeline type based on state and website status
+          let pipelineType = '';
+          const hasWebsite = company.site && company.site.trim() !== '';
+          if (company.state === 'Alabama') {
+            pipelineType = hasWebsite ? 'has_website_alabama' : 'no_website_alabama';
+          } else if (company.state === 'Arkansas') {
+            pipelineType = hasWebsite ? 'has_website_arkansas' : 'no_website_arkansas';
+          } else {
+            return res.status(400).json({ error: 'Company must be in Alabama or Arkansas' });
+          }
+
           // Create pipeline entry
           const { data: pipelineEntry, error: pipelineError } = await supabase
             .from('lead_pipeline')
             .insert({
               company_id: companyId,
               stage: 'new_lead',
+              pipeline_type: pipelineType,
               notes: '',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
