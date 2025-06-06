@@ -123,6 +123,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Auto-update pipeline stage if this is a new visit and they're in "contacted" stage
     if (!existingView && isInitial) {
       autoUpdatePipelineStage(companyId).catch(console.error);
+      // Add website view note to pipeline
+      addWebsiteViewNote(companyId, deviceType, ip).catch(console.error);
     }
 
     return res.status(200).json({
@@ -226,5 +228,55 @@ async function autoUpdatePipelineStage(companyId: string) {
     }
   } catch (error) {
     console.error('Error in auto pipeline stage update:', error);
+  }
+}
+
+// Function to add website view note to pipeline
+async function addWebsiteViewNote(companyId: string, deviceType: string, ipAddress: string) {
+  try {
+    // Check if company is in pipeline
+    const { data: pipelineLead, error: pipelineError } = await supabaseAdmin
+      .from('lead_pipeline')
+      .select('id')
+      .eq('company_id', companyId)
+      .single();
+
+    if (pipelineError || !pipelineLead) {
+      return; // Company not in pipeline, ignore
+    }
+
+    // Get location info from IP (simple approach)
+    let locationInfo = '';
+    try {
+      // You could integrate with an IP geolocation service here
+      // For now, just use basic device info
+      locationInfo = deviceType === 'mobile' ? ' from Mobile' : 
+                    deviceType === 'tablet' ? ' from Tablet' : 
+                    ' from Desktop';
+    } catch (error) {
+      console.error('Error getting location:', error);
+    }
+
+    // Create website view note
+    const noteContent = `Website viewed at ${new Date().toLocaleTimeString()}${locationInfo}`;
+
+    // Add note to pipeline
+    const { error: noteError } = await supabaseAdmin
+      .from('lead_notes')
+      .insert({
+        lead_id: pipelineLead.id,
+        content: noteContent,
+        is_private: false,
+        created_by: 'system'
+      });
+
+    if (noteError) {
+      console.error('Error adding website view note:', noteError);
+    } else {
+      console.log(`✅ Added website view note for company ${companyId}`);
+    }
+
+  } catch (error) {
+    console.error('Error in addWebsiteViewNote:', error);
   }
 }

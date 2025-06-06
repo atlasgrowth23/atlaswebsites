@@ -72,7 +72,7 @@ const STAGE_ACTIONS = {
 };
 
 export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMoveStage, stages }: LeadSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'tracking' | 'sms'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'sms'>('overview');
   const [smsMessage, setSmsMessage] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -117,11 +117,6 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   }, [lead, ownerName]);
 
-  useEffect(() => {
-    if (activeTab === 'tracking' && lead && isOpen) {
-      fetchAnalytics();
-    }
-  }, [activeTab, lead, isOpen]);
 
   const fetchNotes = async () => {
     if (!lead) return;
@@ -478,8 +473,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             { key: 'overview', label: 'Overview', icon: '📊' },
             { key: 'notes', label: 'Notes', icon: '📝' },
             { key: 'sms', label: 'SMS', icon: '💬' },
-            { key: 'template', label: 'Template', icon: '🎨' },
-            { key: 'tracking', label: 'Analytics', icon: '📈' }
+            { key: 'template', label: 'Template', icon: '🎨' }
           ].map(tab => (
             <button
               key={tab.key}
@@ -537,13 +531,15 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="text-xs text-gray-600">Rating</div>
                 <div className="text-sm font-medium">
-                  {lead.company.rating ? `⭐ ${Number(lead.company.rating).toFixed(1)}` : 'N/A'}
+                  {lead.company.rating ? `${Number(lead.company.rating).toFixed(1)} stars` : 'N/A'}
                 </div>
               </div>
               
               <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="text-xs text-gray-600">Reviews</div>
-                <div className="text-sm font-medium">{lead.company.reviews || 'N/A'}</div>
+                <div className="text-xs text-gray-600">Website Views</div>
+                <div className="text-sm font-medium">
+                  {loadingAnalytics ? '...' : (analyticsData?.total_sessions || 0)} unique visitors
+                </div>
               </div>
             </div>
 
@@ -870,7 +866,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     disabled={isSaving}
                     className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-2 rounded text-sm font-medium"
                   >
-                    {isSaving ? 'Saving...' : '💾 Save Template'}
+                    {isSaving ? 'Saving...' : 'Save Template'}
                   </button>
                   
                   {lead.company.reviews_link && (
@@ -879,7 +875,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                       target="_blank"
                       className="block w-full bg-orange-100 hover:bg-orange-200 text-orange-700 text-center py-2 rounded text-sm font-medium"
                     >
-                      📷 View Business Photos
+                      View Business Photos
                     </a>
                   )}
                 </div>
@@ -903,74 +899,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
           </div>
         )}
 
-        {/* Analytics Tab */}
-        {activeTab === 'tracking' && (
-          <div className="p-4 space-y-4">
-            <div className="flex justify-between items-center">
-              <h4 className="font-medium text-gray-900">📊 Website Analytics</h4>
-              <button
-                onClick={fetchAnalytics}
-                disabled={loadingAnalytics}
-                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                {loadingAnalytics ? 'Loading...' : 'Refresh'}
-              </button>
-            </div>
-            
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-green-800 font-medium text-sm">Live Tracking</span>
-              </div>
-              <p className="text-green-700 text-xs mt-1">
-                Real user visits only (admin views excluded)
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-blue-50 p-3 rounded-lg text-center">
-                  <div className="text-lg font-bold text-blue-600">
-                    {loadingAnalytics ? '...' : (analyticsData?.total_views || 0)}
-                  </div>
-                  <div className="text-xs text-gray-600">Page Views</div>
-                </div>
-                <div className="bg-green-50 p-3 rounded-lg text-center">
-                  <div className="text-lg font-bold text-green-600">
-                    {loadingAnalytics ? '...' : (analyticsData?.total_sessions || 0)}
-                  </div>
-                  <div className="text-xs text-gray-600">Sessions</div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-purple-50 p-3 rounded-lg text-center">
-                  <div className="text-lg font-bold text-purple-600">
-                    {loadingAnalytics ? '...' : `${Math.round(analyticsData?.avg_time_seconds || 0)}s`}
-                  </div>
-                  <div className="text-xs text-gray-600">Avg Time</div>
-                </div>
-                <div className="bg-orange-50 p-3 rounded-lg text-center">
-                  <div className="text-lg font-bold text-orange-600">
-                    {loadingAnalytics ? '...' : `${Math.round(analyticsData?.mobile_percentage || 0)}%`}
-                  </div>
-                  <div className="text-xs text-gray-600">Mobile %</div>
-                </div>
-              </div>
-            </div>
-
-
-            {analyticsData && (analyticsData.total_views > 0 || analyticsData.total_sessions > 0) ? (
-              <div className="text-xs text-green-600 text-center">
-                ✅ Site has {analyticsData.total_views} visitor{analyticsData.total_views !== 1 ? 's' : ''} so far
-              </div>
-            ) : (
-              <div className="text-xs text-gray-500 text-center">
-                📊 Waiting for first visitor...
-              </div>
-            )}
-          </div>
-        )}
       </div>
       </div>
     </div>
