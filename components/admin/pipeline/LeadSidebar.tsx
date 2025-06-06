@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface Company {
   id: string;
@@ -114,8 +114,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       fetchNotes();
       fetchCustomizations();
       fetchAnalytics();
-      // Try to extract owner name from existing notes
-      extractOwnerName();
+      fetchOwnerName();
       // Check if lead has progressed past new_lead stage (has initial contact)
       setHasInitialContact(lead.stage !== 'new_lead');
     }
@@ -211,17 +210,41 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   };
 
-  const extractOwnerName = () => {
-    if (!lead?.notes) return;
-    // Simple regex to find names in notes (you can enhance this)
-    const nameMatch = lead.notes.match(/owner[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/i);
-    if (nameMatch) {
-      setOwnerName(nameMatch[1]);
+  const fetchOwnerName = async () => {
+    if (!lead) return;
+    
+    try {
+      const response = await fetch(`/api/pipeline/owner-name?leadId=${lead.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setOwnerName(data.owner_name || '');
+        console.log(`✅ Loaded owner name: ${data.owner_name} for lead: ${lead.id}`);
+      }
+    } catch (error) {
+      console.error('Error fetching owner name:', error);
     }
   };
 
   const handleNoteChange = (value: string) => {
     setNewNote(value);
+  };
+
+  const saveOwnerName = async () => {
+    if (!lead) return;
+    
+    try {
+      await fetch('/api/pipeline/owner-name', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: lead.id,
+          owner_name: ownerName.trim()
+        })
+      });
+      console.log(`✅ Saved owner name: ${ownerName} for lead: ${lead.id}`);
+    } catch (error) {
+      console.error('Error saving owner name:', error);
+    }
   };
 
   const saveNote = async (noteContent: string = newNote) => {
@@ -258,7 +281,8 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
         body: JSON.stringify({
           lead_id: lead.id,
           content: fullNote,
-          is_private: false
+          is_private: false,
+          created_by: ownerName || 'Unknown'
         })
       });
 
@@ -685,13 +709,22 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             {/* Owner Name Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Owner Name</label>
-              <input
-                type="text"
-                value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                placeholder="Enter owner name for SMS/email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  onBlur={saveOwnerName}
+                  placeholder="Enter owner name for SMS/email"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <button
+                  onClick={saveOwnerName}
+                  className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
             </div>
 
             {/* New Note Input */}

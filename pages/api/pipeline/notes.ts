@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       res.status(200).json(notes || []);
     } else if (req.method === 'POST') {
-      const { lead_id, content, is_private = false } = req.body;
+      const { lead_id, content, is_private = false, created_by } = req.body;
 
       if (!lead_id || !content || content.trim() === '') {
         return res.status(400).json({ error: 'Lead ID and content are required' });
@@ -109,7 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           lead_id: actualLeadId,
           content: content.trim(),
           is_private,
-          created_by: 'admin' // TODO: Get from auth context
+          created_by: created_by || 'admin'
         })
         .select('*')
         .single();
