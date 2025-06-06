@@ -100,6 +100,17 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
 
   useEffect(() => {
     if (lead && isOpen) {
+      // Clear all state when lead changes to prevent cross-contamination
+      setNotes([]);
+      setNewNote('');
+      setOwnerName('');
+      setCustomizations({});
+      setAnalyticsData(null);
+      setMeetingSet(false);
+      setWebsitePermission('');
+      setSchedulingSoftware('');
+      
+      // Then fetch new data
       fetchNotes();
       fetchCustomizations();
       fetchAnalytics();
@@ -347,6 +358,8 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     
     setIsSaving(true);
     try {
+      console.log('🚀 Saving customizations:', { companyId: lead.company_id, customizations });
+      
       // Save all customizations directly - let the API handle image processing
       const saveResponse = await fetch('/api/template-customizations', {
         method: 'POST',
@@ -359,9 +372,13 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
       });
 
       const saveData = await saveResponse.json();
+      console.log('📡 Save response:', { status: saveResponse.status, data: saveData });
       
       if (saveResponse.ok) {
         console.log('✅ Customizations saved successfully:', saveData);
+        if (saveData.updatedFrames?.length > 0) {
+          console.log('📸 Updated frames:', saveData.updatedFrames);
+        }
         // Refresh customizations from server
         await fetchCustomizations();
       } else {
@@ -974,33 +991,26 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             
             {showCustomizationForm && (
               <div className="space-y-3">
-                {/* Hero Image 1 */}
+                {/* Hero Image */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image 1</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Hero Background Image</label>
                   <input
                     type="url"
-                    placeholder="Enter first hero image URL"
+                    placeholder="Enter hero background image URL"
                     value={customizations.hero_img || ''}
                     onChange={(e) => setCustomizations(prev => ({ ...prev, hero_img: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                </div>
-
-                {/* Hero Image 2 */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Hero Image 2</label>
-                  <input
-                    type="url"
-                    placeholder="Enter second hero image URL"
-                    value={customizations.hero_img_2 || ''}
-                    onChange={(e) => setCustomizations(prev => ({ ...prev, hero_img_2: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
+                  {customizations.hero_img && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600 break-all">
+                      <strong>Current URL:</strong> {customizations.hero_img}
+                    </div>
+                  )}
                 </div>
 
                 {/* About Image */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">About Image</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">About Section Image</label>
                   <input
                     type="url"
                     placeholder="Enter about section image URL"
@@ -1008,6 +1018,11 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     onChange={(e) => setCustomizations(prev => ({ ...prev, about_img: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
+                  {customizations.about_img && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600 break-all">
+                      <strong>Current URL:</strong> {customizations.about_img}
+                    </div>
+                  )}
                 </div>
 
                 {/* Logo URL */}
@@ -1029,6 +1044,13 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-2 rounded text-sm font-medium"
                   >
                     {isSaving ? 'Saving...' : 'Save Template'}
+                  </button>
+                  
+                  <button
+                    onClick={() => window.open(`/t/moderntrust/${lead.company.slug}`, '_blank')}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-medium"
+                  >
+                    🔍 Preview Website
                   </button>
                   
                   {lead.company.reviews_link && (

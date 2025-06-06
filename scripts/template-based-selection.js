@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+jusconst { Pool } = require('pg');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 require('dotenv').config({ path: 'env.local' });
 

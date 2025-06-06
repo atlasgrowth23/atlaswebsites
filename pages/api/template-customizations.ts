@@ -107,9 +107,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   else if (req.method === 'POST') {
     try {
       const { companyId, templateKey, customizations } = req.body;
+      console.log('🔧 POST request received:', { companyId, templateKey, customizations });
 
       // Validate inputs
       const validatedCompanyId = validateCompanyId(companyId);
+      console.log('✅ Validated company ID:', validatedCompanyId);
       
       if (!customizations || typeof customizations !== 'object') {
         return res.status(400).json({ 
@@ -136,6 +138,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const updatedFrames: string[] = [];
       const errors: string[] = [];
 
+      // Use supabaseAdmin to bypass RLS
+      const { supabaseAdmin } = await import('@/lib/supabase');
+
       // Process each customization
       for (const [frameKey, imageUrl] of Object.entries(customizations)) {
         try {
@@ -148,48 +153,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (imageUrl && imageUrl.toString().trim() !== '') {
             const validatedUrl = validateImageUrl(imageUrl);
             
-            // If it's an external URL, download and upload to storage
-            if (validatedUrl.startsWith('http')) {
-              try {
-                // Download and upload to storage (this also updates company_frames table)
-                const uploadResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:5000'}/api/upload-image-url`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    imageUrl: validatedUrl,
-                    companyId: validatedCompanyId,
-                    frameType: frameKey
-                  })
-                });
+            console.log(`🔧 Attempting to save: company_id=${validatedCompanyId}, slug=${frameKey}, url=${validatedUrl}`);
+            
+            const { data, error: frameError } = await supabaseAdmin
+              .from('company_frames')
+              .upsert({
+                company_id: validatedCompanyId,
+                slug: frameKey,
+                url: validatedUrl,
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'company_id,slug'
+              })
+              .select();
 
-                if (uploadResponse.ok) {
-                  const uploadData = await uploadResponse.json();
-                  console.log(`✅ Uploaded and saved: ${frameKey} = ${uploadData.storageUrl}`);
-                  updatedFrames.push(frameKey);
-                } else {
-                  const errorData = await uploadResponse.json();
-                  errors.push(`Failed to upload ${frameKey}: ${errorData.error}`);
-                }
-              } catch (uploadError) {
-                console.error(`Upload failed for ${frameKey}:`, uploadError);
-                errors.push(`Upload failed for ${frameKey}: ${uploadError instanceof Error ? uploadError.message : String(uploadError)}`);
-              }
+            if (frameError) {
+              console.error(`Database error for ${frameKey}:`, frameError);
+              errors.push(`Database error for ${frameKey}: ${frameError.message}`);
             } else {
-              // It's already a storage URL, save directly
-              await setCompanyFrame(validatedCompanyId, frameKey, validatedUrl);
+              console.log(`💾 Database result:`, data?.[0]);
               updatedFrames.push(frameKey);
               console.log(`✅ Saved company frame: ${frameKey} = ${validatedUrl}`);
             }
+            
           } else if (imageUrl === '') {
-            // Remove frame if explicitly set to empty using Supabase
-            const { supabase } = await import('@/lib/supabase');
-            await supabase
+            // Remove frame if explicitly set to empty
+            const { error: deleteError } = await supabaseAdmin
               .from('company_frames')
               .delete()
               .eq('company_id', validatedCompanyId)
               .eq('slug', frameKey);
-            
-            console.log(`❌ Removed company frame: ${frameKey}`);
+              
+            if (deleteError) {
+              console.error(`Delete error for ${frameKey}:`, deleteError);
+              errors.push(`Delete error for ${frameKey}: ${deleteError.message}`);
+            } else {
+              console.log(`❌ Removed company frame: ${frameKey}`);
+            }
           }
         } catch (frameError) {
           console.error(`Error processing frame ${frameKey}:`, frameError);

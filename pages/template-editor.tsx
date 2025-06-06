@@ -37,8 +37,7 @@ export default function TemplateEditor() {
   // Available customization options (using actual frame keys from templates)
   const customizationOptions = {
     images: [
-      { key: 'hero_img', label: 'Hero Background 1', description: 'First hero slide background image' },
-      { key: 'hero_img_2', label: 'Hero Background 2', description: 'Second hero slide background image' },
+      { key: 'hero_img', label: 'Hero Background Image', description: 'Main hero section background image' },
       { key: 'about_img', label: 'About Section Image', description: 'Image displayed in the about us section' }
     ]
   };
@@ -94,54 +93,67 @@ export default function TemplateEditor() {
     if (!company) return;
     
     setIsSaving(true);
-    setMessage('Downloading and saving images to storage...');
+    setMessage('Saving customizations...');
 
     try {
-      // Process each image URL - download and save to storage
-      const processedCustomizations: Record<string, string> = {};
+      const requestData = {
+        companyId: company.id,
+        templateKey: selectedTemplate,
+        customizations: customizations
+      };
       
-      for (const [frameKey, imageUrl] of Object.entries(customizations)) {
-        if (imageUrl && imageUrl.trim() !== '') {
-          setMessage(`Processing ${frameKey}...`);
-          
-          const uploadResponse = await fetch('/api/upload-image-url', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageUrl: imageUrl.trim(),
-              companyId: company.id,
-              frameType: frameKey
-            })
-          });
+      console.log('🚀 Sending save request:', requestData);
+      
+      // Save customizations using the template-customizations API
+      const response = await fetch('/api/template-customizations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData)
+      });
 
-          const uploadData = await uploadResponse.json();
+      const data = await response.json();
+      console.log('📡 API Response:', { status: response.status, data });
 
-          if (uploadResponse.ok) {
-            processedCustomizations[frameKey] = uploadData.storageUrl;
-          } else {
-            console.error(`Failed to process ${frameKey}:`, uploadData.error);
-            // Keep original URL as fallback
-            processedCustomizations[frameKey] = imageUrl.trim();
-          }
+      if (response.ok) {
+        console.log('✅ Save response:', data);
+        
+        if (data.updatedFrames && data.updatedFrames.length > 0) {
+          setMessage(`✅ Saved ${data.updatedFrames.length} images: ${data.updatedFrames.join(', ')}`);
+        } else {
+          setMessage('✅ Customizations saved successfully!');
+        }
+        
+        // Show any errors
+        if (data.errors && data.errors.length > 0) {
+          console.error('Save errors:', data.errors);
+          setTimeout(() => {
+            setMessage(prev => prev + ` ⚠️ Errors: ${data.errors.join(', ')}`);
+          }, 1000);
+        }
+        
+        // Refresh customizations to get the latest storage URLs
+        setTimeout(() => {
+          fetchCustomizations();
+        }, 2000);
+        
+        // Show preview link
+        setTimeout(() => {
+          setMessage(prev => prev + ` 🔗 View: /t/${selectedTemplate}/${company.slug}`);
+        }, 3000);
+      } else {
+        console.error('Save failed:', data);
+        if (data.partial) {
+          setMessage(`⚠️ Partially saved: ${data.updatedFrames?.length || 0} successful, ${data.errors?.length || 0} errors`);
+        } else {
+          setMessage('❌ Error saving customizations. Please try again.');
         }
       }
-
-      // Update customizations state with storage URLs
-      setCustomizations(processedCustomizations);
-      
-      setMessage('✅ Images saved to storage! Website will update automatically.');
-      setTimeout(() => setMessage(''), 5000);
-      
-      // Show preview link
-      if (company?.slug) {
-        setTimeout(() => {
-          setMessage(prev => prev + ` 🔗 View changes: /t/moderntrust/${company.slug}`);
-        }, 1000);
-      }
     } catch (error) {
-      setMessage('❌ Error saving images. Please try again.');
+      console.error('Save error:', error);
+      setMessage('❌ Error saving customizations. Please try again.');
     } finally {
       setIsSaving(false);
+      setTimeout(() => setMessage(''), 8000);
     }
   };
 
@@ -217,8 +229,8 @@ export default function TemplateEditor() {
                   <Link href={`/company/${slug}`}>
                     <Button variant="outline">← Back to Company</Button>
                   </Link>
-                  <Button onClick={previewTemplate} variant="outline">
-                    Preview Template
+                  <Button onClick={previewTemplate} className="bg-blue-600 text-white hover:bg-blue-700">
+                    🔍 Preview Website
                   </Button>
                 </div>
               </div>
@@ -226,8 +238,8 @@ export default function TemplateEditor() {
           </Container>
         </div>
 
-        <Container className="py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <Container className="py-8 max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 w-full overflow-hidden">
             {/* Template Selection Sidebar */}
             <div className="lg:col-span-1">
               <Card>
@@ -258,7 +270,7 @@ export default function TemplateEditor() {
             </div>
 
             {/* Customization Form */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 min-w-0">
               <div className="space-y-8">
                 {/* Custom Domain Section */}
                 <Card>
@@ -302,7 +314,7 @@ export default function TemplateEditor() {
                 <Card>
                   <CardContent className="p-6">
                     <Heading level={4} className="mb-6">🖼️ Custom Images</Heading>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                       {customizationOptions.images.map(option => (
                         <div key={option.key} className="space-y-2">
                           <label className="block font-medium text-gray-700">
@@ -319,7 +331,7 @@ export default function TemplateEditor() {
                             className="w-full"
                           />
                           {customizations[option.key] && (
-                            <div className="mt-2">
+                            <div className="mt-2 space-y-2">
                               <img
                                 src={customizations[option.key]}
                                 alt={option.label}
@@ -328,6 +340,9 @@ export default function TemplateEditor() {
                                   (e.target as HTMLImageElement).style.display = 'none';
                                 }}
                               />
+                              <div className="p-2 bg-gray-50 rounded text-xs text-gray-600 break-all">
+                                <strong>Saved URL:</strong> {customizations[option.key]}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -367,9 +382,17 @@ export default function TemplateEditor() {
                       Reset All
                     </Button>
                     <Button
+                      onClick={previewTemplate}
+                      variant="outline"
+                      disabled={!company}
+                      className="px-6"
+                    >
+                      🔍 Preview Website
+                    </Button>
+                    <Button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="px-8"
+                      className="px-8 bg-green-600 text-white hover:bg-green-700"
                     >
                       {isSaving ? 'Saving...' : 'Save Customizations'}
                     </Button>
