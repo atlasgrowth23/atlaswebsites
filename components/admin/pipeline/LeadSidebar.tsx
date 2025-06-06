@@ -72,7 +72,8 @@ const STAGE_ACTIONS = {
 };
 
 export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMoveStage, stages }: LeadSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'sms'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'sms' | 'analytics'>('overview');
+  const [sessionData, setSessionData] = useState<any[]>([]);
   const [smsMessage, setSmsMessage] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
@@ -108,6 +109,12 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       setHasInitialContact(lead.stage !== 'new_lead');
     }
   }, [lead, isOpen]);
+
+  useEffect(() => {
+    if (activeTab === 'analytics' && lead && isOpen) {
+      fetchSessionData();
+    }
+  }, [activeTab, lead, isOpen]);
 
   // Update SMS message when owner name changes
   useEffect(() => {
@@ -176,6 +183,20 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       });
     } finally {
       setLoadingAnalytics(false);
+    }
+  };
+
+  const fetchSessionData = async () => {
+    if (!lead) return;
+    try {
+      const response = await fetch(`/api/analytics/sessions?companyId=${lead.company_id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSessionData(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching session data:', error);
+      setSessionData([]);
     }
   };
 
@@ -473,6 +494,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             { key: 'overview', label: 'Overview', icon: '📊' },
             { key: 'notes', label: 'Notes', icon: '📝' },
             { key: 'sms', label: 'SMS', icon: '💬' },
+            { key: 'analytics', label: 'Analytics', icon: '📈' },
             { key: 'template', label: 'Template', icon: '🎨' }
           ].map(tab => (
             <button
@@ -504,8 +526,8 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="p-4 space-y-4">
-            {/* Key Metrics Cards */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Business Info Cards */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="text-xs text-gray-600">Website</div>
                 <div className="flex items-center gap-1 mt-1">
@@ -529,17 +551,55 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
               
               <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="text-xs text-gray-600">Total Reviews</div>
+                <div className="text-sm font-medium">{lead.company.reviews || 0}</div>
+              </div>
+              
+              <div className="bg-gray-50 p-3 rounded-lg">
                 <div className="text-xs text-gray-600">Rating</div>
                 <div className="text-sm font-medium">
                   {lead.company.rating ? `${Number(lead.company.rating).toFixed(1)} stars` : 'N/A'}
                 </div>
               </div>
-              
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="text-xs text-gray-600">Website Views</div>
-                <div className="text-sm font-medium">
-                  {loadingAnalytics ? '...' : (analyticsData?.total_sessions || 0)} unique visitors
+            </div>
+
+            {/* Review Analytics for Phone Calls */}
+            <div className="border rounded-lg p-3 bg-blue-50">
+              <h4 className="font-medium text-gray-900 mb-3 text-sm">Review Analytics (For Phone Conversations)</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-2 rounded">
+                  <div className="text-xs text-gray-600">Last 30 Days</div>
+                  <div className="text-sm font-medium">{lead.company.r_30 || 0} reviews</div>
                 </div>
+                <div className="bg-white p-2 rounded">
+                  <div className="text-xs text-gray-600">Last 60 Days</div>
+                  <div className="text-sm font-medium">{lead.company.r_60 || 0} reviews</div>
+                </div>
+                <div className="bg-white p-2 rounded">
+                  <div className="text-xs text-gray-600">Last 90 Days</div>
+                  <div className="text-sm font-medium">{lead.company.r_90 || 0} reviews</div>
+                </div>
+                <div className="bg-white p-2 rounded">
+                  <div className="text-xs text-gray-600">Last Year</div>
+                  <div className="text-sm font-medium">{lead.company.r_365 || 0} reviews</div>
+                </div>
+              </div>
+              <div className="mt-3 bg-white p-2 rounded">
+                <div className="text-xs text-gray-600">First Review Date</div>
+                <div className="text-sm font-medium">
+                  {lead.company.first_review_date 
+                    ? new Date(lead.company.first_review_date).toLocaleDateString()
+                    : 'No reviews yet'
+                  }
+                </div>
+              </div>
+            </div>
+
+            {/* Website Visitor Count */}
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="text-xs text-gray-600">Website Views</div>
+              <div className="text-sm font-medium">
+                {loadingAnalytics ? '...' : (analyticsData?.total_sessions || 0)} unique visitors
               </div>
             </div>
 
@@ -792,6 +852,108 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               
               <div className="text-xs text-gray-500 mt-2 text-center">
                 This will open your Messages app with the text pre-filled
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Tab */}
+        {activeTab === 'analytics' && (
+          <div className="p-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="font-medium text-gray-900">Website Sessions</h4>
+              <button
+                onClick={fetchSessionData}
+                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+              >
+                Refresh
+              </button>
+            </div>
+            
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-green-50 p-3 rounded-lg text-center">
+                <div className="text-lg font-bold text-green-600">
+                  {analyticsData?.total_sessions || 0}
+                </div>
+                <div className="text-xs text-gray-600">Total Sessions</div>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg text-center">
+                <div className="text-lg font-bold text-blue-600">
+                  {Math.round(analyticsData?.avg_time_seconds || 0)}s
+                </div>
+                <div className="text-xs text-gray-600">Avg Time</div>
+              </div>
+            </div>
+
+            {/* Recent Sessions */}
+            <div>
+              <h5 className="font-medium text-gray-900 mb-2 text-sm">Recent Sessions</h5>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {sessionData.length > 0 ? (
+                  sessionData.slice(0, 20).map((session, index) => {
+                    const timeOnSite = session.total_time_seconds || 0;
+                    const deviceType = session.device_type || 'Unknown';
+                    const visitDate = new Date(session.visit_start_time || session.created_at);
+                    
+                    return (
+                      <div key={session.id || index} className="bg-gray-50 p-3 rounded border">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                deviceType === 'mobile' ? 'bg-green-100 text-green-800' :
+                                deviceType === 'tablet' ? 'bg-blue-100 text-blue-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {visitDate.toLocaleDateString()} {visitDate.toLocaleTimeString()}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-700">
+                              Time on site: <span className="font-medium">{Math.round(timeOnSite)}s</span>
+                            </div>
+                            {session.page_interactions > 1 && (
+                              <div className="text-xs text-gray-600">
+                                {session.page_interactions} page interactions
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-xs px-2 py-1 rounded ${
+                              timeOnSite > 60 ? 'bg-green-100 text-green-800' :
+                              timeOnSite > 30 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {timeOnSite > 60 ? 'Engaged' : 
+                               timeOnSite > 30 ? 'Interested' : 'Quick View'}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    <div className="text-sm">No website sessions yet</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Sessions will appear here when leads visit their website
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Analytics Tips */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h6 className="font-medium text-blue-900 mb-2 text-sm">Understanding Sessions:</h6>
+              <div className="text-xs text-blue-800 space-y-1">
+                <div>• Engaged: 60+ seconds (high interest)</div>
+                <div>• Interested: 30-60 seconds (moderate interest)</div>
+                <div>• Quick View: Under 30 seconds (browsing)</div>
+                <div>• Sessions timeout after 30 minutes of inactivity</div>
               </div>
             </div>
           </div>
