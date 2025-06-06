@@ -72,7 +72,8 @@ const STAGE_ACTIONS = {
 };
 
 export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMoveStage, stages }: LeadSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'tracking'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'tracking' | 'sms'>('overview');
+  const [smsMessage, setSmsMessage] = useState('');
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -89,6 +90,12 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [showCustomizationForm, setShowCustomizationForm] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(384); // 96 * 4 = 384px (w-96)
   const [isResizing, setIsResizing] = useState(false);
+  
+  // Checklist states
+  const [meetingSet, setMeetingSet] = useState(false);
+  const [websitePermission, setWebsitePermission] = useState(''); // '', 'yes', 'no', 'hard_no'
+  const [schedulingSoftware, setSchedulingSoftware] = useState('');
+  const [hasInitialContact, setHasInitialContact] = useState(false);
 
   useEffect(() => {
     if (lead && isOpen) {
@@ -97,8 +104,18 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       fetchAnalytics();
       // Try to extract owner name from existing notes
       extractOwnerName();
+      // Check if lead has progressed past new_lead stage (has initial contact)
+      setHasInitialContact(lead.stage !== 'new_lead');
     }
   }, [lead, isOpen]);
+
+  // Update SMS message when owner name changes
+  useEffect(() => {
+    if (lead) {
+      const defaultMessage = `Hey ${ownerName || 'there'},\n\nHere's the website preview we talked about: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}\n\nThis is my personal cell phone. Please call or text me anytime if you have any questions.\n\nThank you,\nJared Thompson`;
+      setSmsMessage(defaultMessage);
+    }
+  }, [lead, ownerName]);
 
   useEffect(() => {
     if (activeTab === 'tracking' && lead && isOpen) {
@@ -181,32 +198,83 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   };
 
   const saveNote = async (noteContent: string = newNote) => {
-    if (!lead || !noteContent.trim()) return;
+    if (!lead || (!noteContent.trim() && !meetingSet && !websitePermission && !schedulingSoftware)) return;
 
     try {
+      // Build comprehensive note with checklist data
+      let fullNote = noteContent.trim();
+      
+      // Add checklist items to note
+      const checklistItems = [];
+      if (meetingSet) checklistItems.push('✅ Meeting Set');
+      if (websitePermission) {
+        const permissionText = websitePermission === 'yes' ? '✅ Allowed to Send Website: YES' : 
+                             websitePermission === 'no' ? '❌ Allowed to Send Website: NO' :
+                             websitePermission === 'hard_no' ? '🚫 Allowed to Send Website: HARD NO' : '';
+        if (permissionText) checklistItems.push(permissionText);
+      }
+      if (schedulingSoftware) checklistItems.push(`📊 Software: ${schedulingSoftware}`);
+      
+      if (checklistItems.length > 0) {
+        fullNote += (fullNote ? '\n\n' : '') + 'Actions:\n' + checklistItems.join('\n');
+      }
+
+      console.log('💾 Saving note:', { 
+        lead_id: lead.id, 
+        content: fullNote,
+        leadObject: lead 
+      });
+
       const response = await fetch('/api/pipeline/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lead_id: lead.id,
-          content: noteContent.trim(),
+          content: fullNote,
           is_private: false
         })
       });
 
+      console.log('📡 API Response status:', response.status);
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log('✅ Note saved successfully:', responseData);
         setNewNote('');
+        
+        // Auto-stage movement logic
+        if (meetingSet && lead.stage !== 'appointment_scheduled') {
+          console.log('🔄 Auto-moving to appointment_scheduled stage');
+          onMoveStage(lead.id, 'appointment_scheduled', 'Auto-moved: Meeting scheduled via checklist');
+        } else if (websitePermission === 'hard_no' && lead.stage !== 'not_interested') {
+          console.log('🔄 Auto-moving to not_interested stage');
+          onMoveStage(lead.id, 'not_interested', 'Auto-moved: Hard no on website');
+        } else if ((websitePermission === 'yes' || websitePermission === 'no') && lead.stage === 'new_lead') {
+          console.log('🔄 Auto-moving to contacted stage');
+          onMoveStage(lead.id, 'contacted', 'Auto-moved: Initial contact made');
+        }
+        
+        // Mark as having initial contact and clear form
+        setHasInitialContact(true);
+        setMeetingSet(false);
+        setWebsitePermission('');
+        // Keep schedulingSoftware for future reference
         fetchNotes();
+      } else {
+        const errorData = await response.text();
+        console.error('❌ Failed to save note:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData,
+          leadId: lead.id
+        });
+        alert(`Failed to save note: ${response.status} - ${errorData}`);
       }
     } catch (error) {
-      console.error('Error saving note:', error);
+      console.error('❌ Error saving note:', error);
     }
   };
 
-  const handleQuickNote = (template: string) => {
-    setNewNote(template);
-    saveNote(template);
-  };
 
   const handleCall = () => {
     if (lead?.company.phone) {
@@ -245,26 +313,16 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     saveNote(emailNote);
   };
 
-  const handleSMS = () => {
-    if (!lead?.company.phone) return;
+  const handleSendSMS = () => {
+    if (!lead?.company.phone || !smsMessage.trim()) return;
     
-    const ownerNameToUse = ownerName || 'there';
-    const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
-    const message = `Hey ${ownerNameToUse},
-
-Thank you for giving me a few minutes of your valuable time. Here is the website we talked about: ${websiteUrl}
-
-This is my personal cell phone. Please call or text me anytime if you have any questions.
-
-Thank you,
-Jared Thompson`;
-
     const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
-    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(smsMessage)}`;
     window.open(smsUrl, '_self');
     
-    // Auto-add SMS activity note with tracking
-    const smsNote = `💬 Sent SMS to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}`;
+    // Auto-add SMS activity note
+    const ownerNameToUse = ownerName || 'there';
+    const smsNote = `💬 Sent website SMS to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}:\n\n${smsMessage}`;
     saveNote(smsNote);
   };
 
@@ -393,30 +451,6 @@ Jared Thompson`;
           </div>
         </div>
 
-        {/* Primary Actions */}
-        <div className="flex gap-2">
-          <button
-            onClick={handleCall}
-            disabled={!lead.company.phone}
-            className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-3 rounded text-sm font-medium flex items-center justify-center gap-1"
-          >
-            📞 Call
-          </button>
-          <button
-            onClick={handleEmail}
-            disabled={!lead.company.email_1}
-            className="flex-1 bg-blue-800 hover:bg-blue-900 disabled:bg-gray-400 text-white py-2 px-3 rounded text-sm font-medium flex items-center justify-center gap-1"
-          >
-            ✉️ Email
-          </button>
-          <button
-            onClick={handleSMS}
-            disabled={!lead.company.phone}
-            className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white py-2 px-3 rounded text-sm font-medium flex items-center justify-center gap-1"
-          >
-            💬 SMS
-          </button>
-        </div>
       </div>
 
       {/* Stage Actions */}
@@ -443,23 +477,25 @@ Jared Thompson`;
           {[
             { key: 'overview', label: 'Overview', icon: '📊' },
             { key: 'notes', label: 'Notes', icon: '📝' },
+            { key: 'sms', label: 'SMS', icon: '💬' },
             { key: 'template', label: 'Template', icon: '🎨' },
             { key: 'tracking', label: 'Analytics', icon: '📈' }
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`flex-1 py-3 px-2 text-xs font-medium border-b-2 ${
+              className={`flex-1 py-2 sm:py-3 px-1 sm:px-2 text-xs font-medium border-b-2 touch-manipulation ${
                 activeTab === tab.key
                   ? 'border-blue-500 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 active:bg-gray-100'
               }`}
             >
-              <span className="block">{tab.icon}</span>
-              <span className="block mt-1">{tab.label}</span>
+              <span className="block text-sm">{tab.icon}</span>
+              <span className="block mt-1 text-xs sm:text-xs">{tab.label}</span>
             </button>
           ))}
         </div>
+        
         <button
           onClick={onClose}
           className="px-3 py-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 border-b-2 border-transparent"
@@ -470,7 +506,7 @@ Jared Thompson`;
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="p-4 space-y-4">
@@ -534,6 +570,39 @@ Jared Thompson`;
               </div>
             </div>
 
+            {/* Quick Actions */}
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-900">Quick Actions</h4>
+              <div className="flex flex-col gap-2">
+                {lead.company.reviews_link && (
+                  <a
+                    href={lead.company.reviews_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    📍 View Google Reviews (Find Owner Name)
+                  </a>
+                )}
+                {lead.company.slug && (
+                  <a
+                    href={`/t/moderntrust/${lead.company.slug}?preview=true`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    🌐 Preview Website
+                  </a>
+                )}
+              </div>
+            </div>
+
           </div>
         )}
 
@@ -542,7 +611,7 @@ Jared Thompson`;
           <div className="p-4 space-y-4">
             {/* Owner Name Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Owner Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Owner Name</label>
               <input
                 type="text"
                 value={ownerName}
@@ -554,7 +623,7 @@ Jared Thompson`;
 
             {/* New Note Input */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">Add Note</h4>
+              <h4 className="font-medium text-gray-900 mb-2">📝 Add Note</h4>
               <textarea
                 value={newNote}
                 onChange={(e) => handleNoteChange(e.target.value)}
@@ -562,30 +631,171 @@ Jared Thompson`;
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 rows={3}
               />
-              <button
-                onClick={() => saveNote()}
-                disabled={!newNote.trim()}
-                className="mt-2 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-2 rounded text-sm"
-              >
-                Save Note
-              </button>
             </div>
+
+            {/* Show action checklist only if no initial contact made */}
+            {!hasInitialContact && (
+              <div className="border border-gray-200 rounded-lg p-3 bg-blue-50">
+                <h4 className="font-medium text-gray-900 mb-3 text-sm">✅ Initial Contact Checklist</h4>
+                <div className="space-y-3">
+                  {/* Meeting Set Checkbox */}
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="meetingSet"
+                      checked={meetingSet}
+                      onChange={(e) => setMeetingSet(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="meetingSet" className="text-sm font-medium text-gray-700">
+                      📅 Meeting Set / Appointment Set
+                    </label>
+                  </div>
+
+                  {/* Website Permission Radio Buttons */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">🌐 Allowed to Send Website</label>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="website_yes"
+                          name="websitePermission"
+                          value="yes"
+                          checked={websitePermission === 'yes'}
+                          onChange={(e) => setWebsitePermission(e.target.value)}
+                          className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
+                        />
+                        <label htmlFor="website_yes" className="text-sm text-gray-700">✅ Yes</label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="website_no"
+                          name="websitePermission"
+                          value="no"
+                          checked={websitePermission === 'no'}
+                          onChange={(e) => setWebsitePermission(e.target.value)}
+                          className="w-4 h-4 text-yellow-600 border-gray-300 focus:ring-yellow-500"
+                        />
+                        <label htmlFor="website_no" className="text-sm text-gray-700">❌ No</label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="website_hard_no"
+                          name="websitePermission"
+                          value="hard_no"
+                          checked={websitePermission === 'hard_no'}
+                          onChange={(e) => setWebsitePermission(e.target.value)}
+                          className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                        />
+                        <label htmlFor="website_hard_no" className="text-sm text-gray-700">🚫 Hard No</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Scheduling Software Text Input */}
+                  <div>
+                    <label htmlFor="software" className="block text-sm font-medium text-gray-700 mb-1">
+                      📊 Scheduling/Invoice Software
+                    </label>
+                    <input
+                      type="text"
+                      id="software"
+                      value={schedulingSoftware}
+                      onChange={(e) => setSchedulingSoftware(e.target.value)}
+                      placeholder="e.g., ServiceTitan, Housecall Pro, JobNimbus..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {/* Save Button */}
+            <button
+              onClick={() => saveNote()}
+              disabled={!newNote.trim() && !meetingSet && !websitePermission && !schedulingSoftware}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-md text-sm font-medium"
+            >
+              💾 Save Note
+              {!hasInitialContact && meetingSet && <span className="text-sm block">→ Will auto-move to Appointment Scheduled</span>}
+              {!hasInitialContact && websitePermission === 'hard_no' && <span className="text-sm block">→ Will auto-move to Not Interested</span>}
+              {!hasInitialContact && (websitePermission === 'yes' || websitePermission === 'no') && <span className="text-sm block">→ Will auto-move to Contacted</span>}
+            </button>
+
+            {/* Calendar embed when meeting is set */}
+            {meetingSet && (
+              <div className="border border-blue-200 rounded-lg bg-blue-50 p-3">
+                <h4 className="font-medium text-blue-900 mb-2">📅 Schedule Appointment</h4>
+                <div className="bg-white rounded p-2">
+                  <iframe 
+                    src="https://api.leadconnectorhq.com/widget/booking/2py8ezkg4g4PPHGO6XUZ" 
+                    style={{width: '100%', height: '300px', border: 'none'}} 
+                    id="calendar_embed"
+                    title="Appointment Booking Calendar"
+                  />
+                </div>
+                <script src="https://api.leadconnectorhq.com/js/form_embed.js" type="text/javascript"></script>
+              </div>
+            )}
 
             {/* Notes History */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">Recent Notes</h4>
+              <h4 className="font-medium text-gray-900 mb-2">📚 Recent Notes</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {notes.map(note => (
-                  <div key={note.id} className="bg-gray-50 p-2 rounded text-sm">
-                    <div className="text-gray-900">{note.content}</div>
-                    <div className="text-xs text-gray-500 mt-1">
+                  <div key={note.id} className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                    <div className="text-gray-900 whitespace-pre-wrap text-sm">{note.content}</div>
+                    <div className="text-xs text-gray-500 mt-2">
                       {new Date(note.created_at).toLocaleString()}
                     </div>
                   </div>
                 ))}
                 {notes.length === 0 && (
-                  <div className="text-gray-500 text-sm italic">No notes yet</div>
+                  <div className="text-gray-500 text-sm italic text-center py-4">No notes yet</div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SMS Tab */}
+        {activeTab === 'sms' && (
+          <div className="p-3 sm:p-4 space-y-4">
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <h4 className="font-medium text-purple-900 mb-2 text-sm sm:text-base">💬 Send Website SMS</h4>
+              <div className="text-sm text-purple-700 mb-3 break-all">
+                To: {lead?.company?.phone || 'No phone number found'}
+              </div>
+              
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Message (you can edit this):
+                </label>
+                <textarea
+                  value={smsMessage}
+                  onChange={(e) => setSmsMessage(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white resize-none"
+                  rows={6}
+                  style={{minHeight: '120px'}}
+                  placeholder="Your SMS message will appear here..."
+                />
+              </div>
+              
+              <button
+                onClick={handleSendSMS}
+                disabled={!lead?.company?.phone || !smsMessage.trim()}
+                className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white py-3 px-4 rounded-md text-sm font-medium cursor-pointer touch-manipulation active:bg-purple-800"
+                type="button"
+              >
+                💬 Open SMS App to Send
+              </button>
+              
+              <div className="text-xs text-gray-500 mt-2 text-center">
+                This will open your Messages app with the text pre-filled
               </div>
             </div>
           </div>
