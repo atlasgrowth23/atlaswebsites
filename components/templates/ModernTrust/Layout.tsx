@@ -1,5 +1,6 @@
 import React from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { Company } from '@/types';
 import Header from './Header';
 import Hero from './Hero';
@@ -9,6 +10,7 @@ import CustomerReviews from './CustomerReviews';
 import GoogleReviews from './GoogleReviews';
 import ServiceArea from './ServiceArea';
 import Footer from './Footer';
+import SimpleTracker from '@/components/SimpleTracker';
 
 interface LayoutProps {
   company: Company;
@@ -52,6 +54,8 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         {/* Performance hints */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
+
       </Head>
       
       <Header company={company} />
