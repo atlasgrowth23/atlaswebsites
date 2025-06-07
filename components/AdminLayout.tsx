@@ -12,7 +12,7 @@ interface User {
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  currentPage: 'pipeline';
+  currentPage: 'pipeline' | 'accounts';
 }
 
 export default function AdminLayout({ children, currentPage }: AdminLayoutProps) {
@@ -97,13 +97,34 @@ export default function AdminLayout({ children, currentPage }: AdminLayoutProps)
           <div className="space-y-1">
             <Link 
               href="/admin/pipeline"
-              className="group flex items-center px-3 py-2.5 text-sm font-medium rounded-md bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-md ${
+                currentPage === 'pipeline' 
+                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
             >
-              <svg className="mr-3 h-5 w-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2H9m0 0v-6a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2H9" />
               </svg>
               Pipeline
             </Link>
+            
+            {/* Show accounts link only for Nicholas */}
+            {user.email === 'nicholas@atlasgrowth.ai' && (
+              <Link 
+                href="/admin/accounts"
+                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-md ${
+                  currentPage === 'accounts' 
+                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                User Accounts
+              </Link>
+            )}
           </div>
         </nav>
 

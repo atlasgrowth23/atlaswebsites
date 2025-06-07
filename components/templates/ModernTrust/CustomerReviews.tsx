@@ -178,9 +178,6 @@ const CustomerReviews: React.FC<CustomerReviewsProps> = ({ company }) => {
 
           {/* Review Count & CTA */}
           <div className="text-center mt-12">
-            <p className="text-gray-600 mb-6">
-              Showing {Math.min(reviewsToShow, fiveStarReviews.length)} of {fiveStarReviews.length} five-star reviews
-            </p>
             
             {/* Read More Reviews Button */}
             {fiveStarReviews.length > 0 && fiveStarReviews[0]?.reviews_link && (

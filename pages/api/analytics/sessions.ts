@@ -68,6 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Calculate summary stats
     const totalVisits = visits.length;
+    const uniqueVisitors = new Set(views.map(v => v.session_id)).size;
     const avgTimeOnSite = visits.length > 0 
       ? Math.round(visits.reduce((sum, v) => sum + v.time_on_site, 0) / visits.length)
       : 0;
@@ -76,6 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       visits: visits.slice(0, 20), // Limit to 20 most recent visits
       summary: {
         total_visits: totalVisits,
+        unique_visitors: uniqueVisitors,
         avg_time_on_site: avgTimeOnSite
       }
     });

@@ -11,6 +11,7 @@ import GoogleReviews from './GoogleReviews';
 import ServiceArea from './ServiceArea';
 import Footer from './Footer';
 import SimpleTracker from '@/components/SimpleTracker';
+import ChatWidget from '@/components/ChatWidget';
 
 interface LayoutProps {
   company: Company;
@@ -71,11 +72,21 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
       </main>
       <Footer company={company} />
       
+      
       {/* Analytics tracking - only when NOT in preview mode */}
       {!isPreview && <SimpleTracker companyId={company.id} />}
       
-      {/* Login reminder */}
-      <div className="hidden">Chat widget loaded</div>
+      {/* Chat Widget - always show for testing */}
+      <ChatWidget 
+        companyId={company.id}
+        companyName={company.name}
+        companyHours={company.parsed_working_hours}
+        companyLocation={{
+          latitude: company.latitude,
+          longitude: company.longitude
+        }}
+        companyLogo={company.logoUrl}
+      />
     </div>
   );
 };

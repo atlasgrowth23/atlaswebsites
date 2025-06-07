@@ -49,6 +49,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // Get company slug if not provided
+    let companySlug = payload.companySlug;
+    if (!companySlug) {
+      try {
+        const { data: company } = await supabaseAdmin
+          .from('companies')
+          .select('slug')
+          .eq('id', payload.companyId)
+          .single();
+        
+        companySlug = company?.slug || null;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 Fetched company slug:', companySlug);
+        }
+      } catch (error) {
+        console.error('⚠️ Could not fetch company slug:', error);
+      }
+    }
+
     // Get IP address
     const forwarded = req.headers['x-forwarded-for'];
     const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : req.socket.remoteAddress) || 'unknown';
@@ -71,17 +90,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const trackingData = {
       company_id: payload.companyId,
-      company_slug: payload.companySlug,
+      company_slug: companySlug,
       template_key: payload.templateKey,
       session_id: payload.sessionId,
       user_agent: userAgent,
       referrer_url: payload.referrer || null,
       ip_address: ip !== 'unknown' ? ip : null,
-      latitude: payload.location?.latitude || null,
-      longitude: payload.location?.longitude || null,
+      latitude: null,
+      longitude: null,
       device_type: deviceType,
       browser_name: browserName,
-      total_time_seconds: Math.max(payload.timeOnPage || 0, 1),
+      total_time_seconds: Math.min(payload.timeOnPage || 0, 1800), // Cap at 30 minutes
       page_interactions: (payload.interactions || 1) + (existingView?.page_interactions || 0),
       is_initial_visit: isInitial,
       visit_start_time: isInitial ? now : existingView?.visit_start_time || now,
@@ -96,11 +115,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data, error } = await supabaseAdmin
         .from('template_views')
         .update({
-          total_time_seconds: Math.max(trackingData.total_time_seconds, existingView.total_time_seconds || 0),
+          total_time_seconds: Math.min(Math.max(trackingData.total_time_seconds, existingView.total_time_seconds || 0), 1800),
           page_interactions: trackingData.page_interactions,
           visit_end_time: trackingData.visit_end_time,
-          latitude: trackingData.latitude || existingView.latitude,
-          longitude: trackingData.longitude || existingView.longitude,
+          latitude: null,
+          longitude: null,
           updated_at: trackingData.updated_at
         })
         .eq('id', existingView.id)

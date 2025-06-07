@@ -80,6 +80,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [newNote, setNewNote] = useState('');
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [ownerName, setOwnerName] = useState('');
+  const [ownerEmail, setOwnerEmail] = useState('');
   const [customizations, setCustomizations] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<{
@@ -92,6 +93,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }>;
     summary: {
       total_visits: number;
+      unique_visitors: number;
       avg_time_on_site: number;
     };
   } | null>(null);
@@ -112,6 +114,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       setNotes([]);
       setNewNote('');
       setOwnerName('');
+      setOwnerEmail('');
       setCustomizations({});
       setAnalyticsData(null);
       setMeetingSet(false);
@@ -185,10 +188,19 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       if (response.ok) {
         const data = await response.json();
         setAnalyticsData(data);
+      } else {
+        console.error('Analytics API error:', response.status, response.statusText);
+        setAnalyticsData({
+          visits: [],
+          summary: { total_visits: 0, unique_visitors: 0, avg_time_on_site: 0 }
+        });
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      setAnalyticsData(null);
+      setAnalyticsData({
+        visits: [],
+        summary: { total_visits: 0, unique_visitors: 0, avg_time_on_site: 0 }
+      });
     } finally {
       setLoadingAnalytics(false);
     }
@@ -242,6 +254,33 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       console.log(`✅ Saved owner name: ${ownerName} for lead: ${lead.id}`);
     } catch (error) {
       console.error('Error saving owner name:', error);
+    }
+  };
+
+  const saveOwnerEmail = async () => {
+    if (!lead || !ownerEmail.trim()) return;
+    
+    try {
+      const response = await fetch('/api/admin/add-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: lead.company_id,
+          owner_name: ownerName.trim() || null,
+          owner_email: ownerEmail.trim()
+        })
+      });
+      
+      if (response.ok) {
+        console.log(`✅ Saved owner email: ${ownerEmail} for company: ${lead.company_id}`);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Failed to save owner email:', errorData.error);
+        alert(`Failed to save owner email: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving owner email:', error);
+      alert('Error saving owner email. Please try again.');
     }
   };
 
@@ -638,7 +677,14 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="text-xs text-gray-600">Website Visits</div>
               <div className="text-sm font-medium">
-                {loadingAnalytics ? '...' : (analyticsData?.summary.total_visits || 0)} visits
+                {loadingAnalytics ? (
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                    Loading...
+                  </div>
+                ) : (
+                  `${analyticsData?.summary.total_visits || 0} visits`
+                )}
               </div>
             </div>
 
@@ -719,6 +765,26 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                 <button
                   onClick={saveOwnerName}
                   className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+
+            {/* Owner Email Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Owner Email</label>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={ownerEmail}
+                  onChange={(e) => setOwnerEmail(e.target.value)}
+                  placeholder="Enter owner email (e.g., john@icoalheating.com)"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <button
+                  onClick={saveOwnerEmail}
+                  className="px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
                 >
                   Save
                 </button>
@@ -909,33 +975,50 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         {activeTab === 'analytics' && (
           <div className="p-4 space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="font-medium text-gray-900">Website Analytics</h4>
-              <button
-                onClick={fetchAnalyticsData}
-                className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-              >
-                Refresh
-              </button>
+              <h4 className="font-semibold text-gray-900">Website Activity</h4>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.open(`/t/moderntrust/${lead.company.slug}`, '_blank')}
+                  className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  🌐 View Site
+                </button>
+                <button
+                  onClick={fetchAnalyticsData}
+                  className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  ↻ Refresh
+                </button>
+              </div>
             </div>
             
             {loadingAnalytics ? (
               <div className="text-center py-8">
                 <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
-                <div className="text-sm text-gray-500 mt-2">Loading analytics...</div>
+                <div className="text-sm text-gray-500 mt-2">Loading activity...</div>
               </div>
             ) : analyticsData ? (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-blue-50 p-3 rounded-lg text-center">
-                    <div className="text-lg font-bold text-blue-600">
-                      {analyticsData.summary.total_visits}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="bg-white border-2 border-blue-200 p-3 rounded-lg text-center">
+                    <div className="text-xl font-bold text-blue-600">
+                      {analyticsData.summary.total_visits || 0}
                     </div>
                     <div className="text-xs text-gray-600">Total Visits</div>
                   </div>
-                  <div className="bg-green-50 p-3 rounded-lg text-center">
-                    <div className="text-lg font-bold text-green-600">
-                      {Math.floor(analyticsData.summary.avg_time_on_site / 60)}m {analyticsData.summary.avg_time_on_site % 60}s
+                  <div className="bg-white border-2 border-green-200 p-3 rounded-lg text-center">
+                    <div className="text-xl font-bold text-green-600">
+                      {analyticsData.summary.unique_visitors || 0}
+                    </div>
+                    <div className="text-xs text-gray-600">Unique Visitors</div>
+                  </div>
+                  <div className="bg-white border-2 border-purple-200 p-3 rounded-lg text-center">
+                    <div className="text-xl font-bold text-purple-600">
+                      {analyticsData.summary.avg_time_on_site ? 
+                        `${Math.floor(analyticsData.summary.avg_time_on_site / 60)}:${String(analyticsData.summary.avg_time_on_site % 60).padStart(2, '0')}` : 
+                        '0:00'
+                      }
                     </div>
                     <div className="text-xs text-gray-600">Avg Time</div>
                   </div>
@@ -943,39 +1026,53 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
                 {/* Visits List */}
                 <div className="space-y-3">
-                  <h5 className="font-medium text-gray-900 text-sm">Recent Visits</h5>
+                  <h5 className="font-medium text-gray-900 text-sm">Recent Activity</h5>
                   {analyticsData.visits.length === 0 ? (
-                    <div className="text-center text-gray-500 py-4">
+                    <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
+                      <div className="text-lg mb-2">📊</div>
                       <div className="text-sm">No visits yet</div>
+                      <div className="text-xs text-gray-400 mt-1">Send them the website link to track activity</div>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {analyticsData.visits.map((visit, index) => (
-                        <div key={visit.id} className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
+                        <div key={visit.id} className="bg-white border border-gray-200 p-3 rounded-lg hover:shadow-sm transition-shadow">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${
-                                visit.device_type === 'mobile' ? 'bg-green-500' : 
-                                visit.device_type === 'tablet' ? 'bg-yellow-500' : 'bg-blue-500'
-                              }`} />
-                              <span className="text-xs font-medium capitalize">{visit.device_type}</span>
+                              <span className="text-lg">
+                                {visit.device_type === 'mobile' ? '📱' : 
+                                 visit.device_type === 'tablet' ? '📊' : '💻'}
+                              </span>
+                              <span className="text-sm font-medium capitalize">{visit.device_type}</span>
                             </div>
-                            <span className="text-xs text-gray-500">
-                              {new Date(visit.visit_time).toLocaleDateString()} {new Date(visit.visit_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            <span className="text-xs text-gray-500 text-right">
+                              {new Date(visit.visit_time).toLocaleDateString('en-US', { 
+                                month: 'short', day: 'numeric' 
+                              })}
+                              <br />
+                              {new Date(visit.visit_time).toLocaleTimeString([], {
+                                hour: '2-digit', minute:'2-digit'
+                              })}
                             </span>
                           </div>
-                          <div className="text-xs">
-                            <span className="text-gray-600">Time on site:</span>
-                            <span className="font-medium ml-1">
-                              {Math.floor(visit.time_on_site / 60)}m {visit.time_on_site % 60}s
-                            </span>
-                          </div>
-                          {visit.referrer && visit.referrer !== 'Direct' && (
-                            <div className="mt-2 text-xs">
-                              <span className="text-gray-600">From:</span>
-                              <span className="font-medium ml-1 truncate">{visit.referrer}</span>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm">
+                              <span className="text-gray-600">Time on site:</span>
+                              <span className="font-semibold ml-1">
+                                {visit.time_on_site >= 60 ? 
+                                  `${Math.floor(visit.time_on_site / 60)}:${String(visit.time_on_site % 60).padStart(2, '0')}` : 
+                                  `0:${String(visit.time_on_site).padStart(2, '0')}`
+                                }
+                              </span>
                             </div>
-                          )}
+                            {visit.referrer && visit.referrer !== 'Direct' && (
+                              <div className="text-xs text-blue-600">
+                                via {visit.referrer.includes('google') ? 'Google' : 
+                                     visit.referrer.includes('facebook') ? 'Facebook' : 
+                                     'Referral'}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -984,23 +1081,13 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </>
             ) : (
               <div className="text-center text-gray-500 py-8">
-                <div className="text-sm">No analytics data yet</div>
+                <div className="text-lg mb-2">📊</div>
+                <div className="text-sm">No analytics data</div>
                 <div className="text-xs text-gray-400 mt-1">
                   Data will appear when leads visit their website
                 </div>
               </div>
             )}
-
-            {/* Analytics Tips */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <h6 className="font-medium text-blue-900 mb-2 text-sm">Understanding Sessions:</h6>
-              <div className="text-xs text-blue-800 space-y-1">
-                <div>• Engaged: 60+ seconds (high interest)</div>
-                <div>• Interested: 30-60 seconds (moderate interest)</div>
-                <div>• Quick View: Under 30 seconds (browsing)</div>
-                <div>• Sessions timeout after 30 minutes of inactivity</div>
-              </div>
-            </div>
           </div>
         )}
 

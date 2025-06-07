@@ -9,8 +9,6 @@ export default function Document() {
       <body>
         <Main />
         <NextScript />
-        {/* Template view tracking script */}
-        <script src="/js/template-tracker.js" async defer />
       </body>
     </Html>
   );

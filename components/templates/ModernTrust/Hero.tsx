@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { Company } from '@/types';
 import { getPhotoUrl } from '@/lib/photo';
@@ -8,12 +8,72 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ company }) => {
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    service: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // Single hero configuration
   const heroConfig = {
     image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
     title: `Professional HVAC Service in`,
     subtitle: (company as any).display_city || company.city || 'Your Area',
     description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
+  };
+
+  const handleQuoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quoteForm.name.trim() || !quoteForm.phone.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/chat/create-contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          companyId: company.id,
+          visitorId: `hero_${Date.now()}`,
+          conversationId: null,
+          name: quoteForm.name.trim(),
+          email: quoteForm.email.trim() || undefined,
+          phone: quoteForm.phone.trim()
+        })
+      });
+
+      if (response.ok) {
+        // Also send a message to the conversation
+        await fetch('/api/chat/send-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: `Quote request from hero form: ${quoteForm.service ? `Service: ${quoteForm.service}. ` : ''}${quoteForm.message ? `Message: ${quoteForm.message}` : 'General quote request.'}`,
+            companyId: company.id,
+            visitorId: `hero_${Date.now()}`,
+            conversationId: null,
+            companyName: company.name,
+            response: 'Thank you for your quote request! We will contact you soon with pricing information.'
+          })
+        });
+
+        setQuoteForm({ name: '', email: '', phone: '', service: '', message: '' });
+        setShowQuoteForm(false);
+        alert('Thank you! We\'ll contact you soon with your free quote.');
+      } else {
+        throw new Error('Failed to submit quote request');
+      }
+    } catch (error) {
+      console.error('Error submitting quote:', error);
+      alert('Sorry, there was an error. Please try calling us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -68,7 +128,10 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
                 </a>
               )}
 
-              <button className="border-2 border-white bg-white/10 backdrop-blur-md text-white hover:bg-white hover:text-gray-900 px-8 py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1">
+              <button 
+                onClick={() => setShowQuoteForm(true)}
+                className="border-2 border-white bg-white/10 backdrop-blur-md text-white hover:bg-white hover:text-gray-900 px-8 py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1"
+              >
                 <div className="flex items-center justify-center">
                   <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -115,6 +178,150 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
           </div>
         </div>
       </div>
+
+      {/* Quote Form Modal */}
+      {showQuoteForm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto transform animate-in slide-in-from-bottom-4 duration-500">
+            {/* Header with Company Branding */}
+            <div className="relative p-8 bg-gradient-to-br from-red-600 via-red-500 to-orange-500 rounded-t-3xl">
+              <div className="absolute inset-0 bg-black/10 rounded-t-3xl"></div>
+              <div className="relative flex justify-between items-start">
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-white">Get Your Free Quote</h3>
+                  <p className="text-red-100 text-base">Quick response guaranteed • No obligation</p>
+                  <div className="flex items-center space-x-2 mt-3">
+                    <div className="flex items-center space-x-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                      <svg className="w-4 h-4 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-white text-sm font-medium">Licensed & Insured</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowQuoteForm(false)}
+                  className="text-red-100 hover:text-white transition-colors p-2 rounded-full hover:bg-white/20 backdrop-blur-sm"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleQuoteSubmit} className="p-8">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-3">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={quoteForm.name}
+                      onChange={(e) => setQuoteForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-300"
+                      placeholder="Your full name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-800 mb-3">Phone Number *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={quoteForm.phone}
+                      onChange={(e) => setQuoteForm(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-300"
+                      placeholder="(555) 123-4567"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">Email Address</label>
+                  <input
+                    type="email"
+                    value={quoteForm.email}
+                    onChange={(e) => setQuoteForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-300"
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">Service Needed</label>
+                  <select
+                    value={quoteForm.service}
+                    onChange={(e) => setQuoteForm(prev => ({ ...prev, service: e.target.value }))}
+                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-300 bg-white"
+                  >
+                    <option value="">Select a service</option>
+                    <option value="ac-repair">AC Repair & Service</option>
+                    <option value="heating-repair">Heating Repair & Service</option>
+                    <option value="installation">New System Installation</option>
+                    <option value="maintenance">Preventive Maintenance</option>
+                    <option value="emergency">Emergency Service</option>
+                    <option value="duct-cleaning">Duct Cleaning</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-3">Tell Us About Your Needs</label>
+                  <textarea
+                    value={quoteForm.message}
+                    onChange={(e) => setQuoteForm(prev => ({ ...prev, message: e.target.value }))}
+                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200 hover:border-gray-300 resize-none"
+                    placeholder="Describe your HVAC needs, any issues you're experiencing, or questions you have..."
+                    rows={4}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setShowQuoteForm(false)}
+                  className="px-6 py-3 text-base font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !quoteForm.name.trim() || !quoteForm.phone.trim()}
+                  className="flex-1 px-6 py-4 text-base font-bold text-white bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-xl hover:shadow-red-500/30 flex items-center justify-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Sending Quote Request...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Get My Free Quote</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600">
+                  By submitting this form, you agree to be contacted by our team. 
+                  <br />
+                  <span className="font-semibold text-gray-800">We respect your privacy and never share your information.</span>
+                </p>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

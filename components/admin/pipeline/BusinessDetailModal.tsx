@@ -349,11 +349,56 @@ export default function BusinessDetailModal({ lead, isOpen, onClose, onUpdate }:
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
+                    ✉️ Owner Email
+                  </label>
+                  <input
+                    type="email"
+                    value={lead.company.email_1 || ''}
+                    onChange={async (e) => {
+                      // Update company email_1 field directly
+                      try {
+                        const response = await fetch('/api/pipeline/owner-name', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            company_id: lead.company_id,
+                            email_1: e.target.value
+                          })
+                        });
+                        if (response.ok) {
+                          // Update local state
+                          lead.company.email_1 = e.target.value;
+                        }
+                      } catch (error) {
+                        console.error('Error updating owner email:', error);
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Enter owner email"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📞 Phone Number
                   </label>
                   <input
                     type="text"
                     value={lead.company.phone || ''}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🌐 Website
+                  </label>
+                  <input
+                    type="text"
+                    value={lead.company.site || ''}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
                   />

@@ -122,10 +122,8 @@
   const sendAnalytics = async (isFinal = false) => {
     const payload = createPayload(isFinal);
     
-    // Only send if meaningful time spent (>= 1 second) or if initial/final
-    if (payload.timeOnPage < 1 && !payload.isInitial && !isFinal) {
-      return;
-    }
+    // Always send analytics - professional tracking doesn't filter
+    // (except skip duplicate initial calls)
     
     try {
       if (isFinal && navigator.sendBeacon) {
@@ -174,15 +172,14 @@
   updateActivity();
   resetInactivityTimer();
 
-  // Send initial analytics after 2 seconds (allows page to fully load)
-  setTimeout(() => sendAnalytics(), 2000);
+  // Send initial analytics immediately (professional tracking starts right away)
+  sendAnalytics();
 
-  // Send periodic updates every 30 seconds
+  // Send updates every 5 seconds for real-time tracking
   const updateInterval = setInterval(() => {
-    if (trackingState.totalTime > 0) {
-      sendAnalytics();
-    }
-  }, 30000);
+    updateActivity(); // Update time before sending
+    sendAnalytics();
+  }, 5000);
 
   // Final analytics on page exit
   const handlePageExit = () => {

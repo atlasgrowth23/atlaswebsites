@@ -1,0 +1,73 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { email } = req.body;
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // First check if email exists in tk_contacts with a valid company_id
+    const { data: contact, error: contactError } = await supabase
+      .from('tk_contacts')
+      .select('owner_email, owner_name, company_id')
+      .eq('owner_email', email)
+      .single();
+
+    if (contactError || !contact) {
+      return res.status(404).json({ 
+        error: 'Email not found in our records',
+        message: 'Please contact support at support@atlasgrowth.ai'
+      });
+    }
+
+    if (!contact.company_id) {
+      return res.status(404).json({ 
+        error: 'Email not linked to a business',
+        message: 'Please contact support at support@atlasgrowth.ai'
+      });
+    }
+
+    // Get company details to confirm it exists
+    const { data: company, error: companyError } = await supabase
+      .from('companies')
+      .select('id, name, slug')
+      .eq('id', contact.company_id)
+      .single();
+
+    if (companyError || !company) {
+      return res.status(404).json({ 
+        error: 'Company not found',
+        message: 'Please contact support at support@atlasgrowth.ai'
+      });
+    }
+
+    // Successfully validated - return success
+    res.status(200).json({
+      success: true,
+      message: 'Login validated successfully',
+      user: {
+        email: contact.owner_email,
+        name: contact.owner_name,
+        company_id: contact.company_id,
+        company_name: company.name,
+        company_slug: company.slug
+      }
+    });
+
+  } catch (error) {
+    console.error('Simple login API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
