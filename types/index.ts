@@ -33,4 +33,9 @@ export interface Company {
   formatted_address?: string;
   // Added for tracking functionality
   tracking_enabled?: boolean;
+  // Business hours
+  hours?: string;
+  saturday_hours?: string;
+  sunday_hours?: string;
+  emergency_service?: boolean;
 }

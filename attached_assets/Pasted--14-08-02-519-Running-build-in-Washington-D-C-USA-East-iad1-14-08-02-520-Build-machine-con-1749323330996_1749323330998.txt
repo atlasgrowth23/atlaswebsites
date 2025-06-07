@@ -1,0 +1,39 @@
+[14:08:02.519] Running build in Washington, D.C., USA (East) – iad1
+[14:08:02.520] Build machine configuration: 2 cores, 8 GB
+[14:08:02.537] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: ec98663)
+[14:08:03.458] Cloning completed: 920.000ms
+[14:08:05.694] Restored build cache from previous deployment (3LMEZHvn38hXjmBT5rhov24xW7SS)
+[14:08:06.214] Running "vercel build"
+[14:08:06.807] Vercel CLI 42.2.0
+[14:08:07.143] Installing dependencies...
+[14:08:15.750] 
+[14:08:15.751] added 4 packages, removed 2 packages, and changed 46 packages in 8s
+[14:08:15.753] 
+[14:08:15.754] 96 packages are looking for funding
+[14:08:15.754]   run `npm fund` for details
+[14:08:15.799] Detected Next.js version: 15.3.3
+[14:08:15.805] Running "npm run build"
+[14:08:15.917] 
+[14:08:15.917] > workspace@1.0.0 build
+[14:08:15.918] > next build
+[14:08:15.918] 
+[14:08:16.831]    ▲ Next.js 15.3.3
+[14:08:16.832]    - Environments: .env.production
+[14:08:16.832] 
+[14:08:16.874]    Linting and checking validity of types ...
+[14:08:26.707] Failed to compile.
+[14:08:26.707] 
+[14:08:26.708] ./components/templates/ModernTrust/Layout.tsx:83:31
+[14:08:26.708] Type error: Property 'hours' does not exist on type 'Company'.
+[14:08:26.708] 
+[14:08:26.708] [0m [90m 81 |[39m         companyId[33m=[39m{[33mString[39m(company[33m.[39mid)}[0m
+[14:08:26.708] [0m [90m 82 |[39m         companyName[33m=[39m{company[33m.[39mname}[0m
+[14:08:26.709] [0m[31m[1m>[22m[39m[90m 83 |[39m         companyHours[33m=[39m{company[33m.[39mhours [33m||[39m undefined}[0m
+[14:08:26.709] [0m [90m    |[39m                               [31m[1m^[22m[39m[0m
+[14:08:26.709] [0m [90m 84 |[39m         companyLocation[33m=[39m{{[0m
+[14:08:26.709] [0m [90m 85 |[39m           latitude[33m:[39m company[33m.[39mlatitude[33m,[39m[0m
+[14:08:26.709] [0m [90m 86 |[39m           longitude[33m:[39m company[33m.[39mlongitude[0m
+[14:08:26.730] Next.js build worker exited with code: 1 and signal: null
+[14:08:26.747] Error: Command "npm run build" exited with 1
+[14:08:27.009] 
+[14:08:29.862] Exiting build container
