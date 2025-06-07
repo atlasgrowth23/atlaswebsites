@@ -107,6 +107,10 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [websitePermission, setWebsitePermission] = useState(''); // '', 'yes', 'no', 'hard_no'
   const [schedulingSoftware, setSchedulingSoftware] = useState('');
   const [hasInitialContact, setHasInitialContact] = useState(false);
+  
+  // Enhanced notes states
+  const [noteType, setNoteType] = useState('general');
+  const [isPrivateNote, setIsPrivateNote] = useState(false);
 
   useEffect(() => {
     if (lead && isOpen) {
@@ -120,6 +124,8 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       setMeetingSet(false);
       setWebsitePermission('');
       setSchedulingSoftware('');
+      setNoteType('general');
+      setIsPrivateNote(false);
       
       // Then fetch new data
       fetchNotes();
@@ -793,14 +799,55 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
             {/* New Note Input */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">📝 Add Note</h4>
-              <textarea
-                value={newNote}
-                onChange={(e) => handleNoteChange(e.target.value)}
-                placeholder="Type your note..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                rows={3}
-              />
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-gray-900">📝 Add Note</h4>
+                <select
+                  value={noteType}
+                  onChange={(e) => setNoteType(e.target.value)}
+                  className="text-xs border border-gray-300 rounded px-2 py-1"
+                >
+                  <option value="general">General Note</option>
+                  <option value="call">Phone Call</option>
+                  <option value="email">Email Sent</option>
+                  <option value="meeting">Meeting/Demo</option>
+                  <option value="follow_up">Follow-up Required</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+              <div className="relative">
+                <textarea
+                  value={newNote}
+                  onChange={(e) => handleNoteChange(e.target.value)}
+                  placeholder="Type your note... (@ to mention team members)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  rows={3}
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <label className="flex items-center text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={isPrivateNote}
+                      onChange={(e) => setIsPrivateNote(e.target.checked)}
+                      className="mr-1 w-3 h-3"
+                    />
+                    Private note
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleNoteChange(newNote + '\n\n@Jared - ')}
+                      className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
+                    >
+                      @Jared
+                    </button>
+                    <button
+                      onClick={() => handleNoteChange(newNote + '\n\nFOLLOW UP: ')}
+                      className="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-2 py-1 rounded"
+                    >
+                      + Follow-up
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Show action checklist only if no initial contact made */}
@@ -914,16 +961,58 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
             {/* Notes History */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">📚 Recent Notes</h4>
+              <h4 className="font-medium text-gray-900 mb-2">📚 Team Notes & Activity</h4>
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {notes.map(note => (
-                  <div key={note.id} className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                    <div className="text-gray-900 whitespace-pre-wrap text-sm">{note.content}</div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      {new Date(note.created_at).toLocaleString()}
+                {notes.map(note => {
+                  const noteTypeColors = {
+                    general: 'border-gray-200 bg-gray-50',
+                    call: 'border-blue-200 bg-blue-50',
+                    email: 'border-green-200 bg-green-50',
+                    meeting: 'border-purple-200 bg-purple-50',
+                    follow_up: 'border-yellow-200 bg-yellow-50',
+                    urgent: 'border-red-200 bg-red-50'
+                  };
+                  
+                  const noteTypeIcons = {
+                    general: '📝',
+                    call: '📞',
+                    email: '✉️',
+                    meeting: '🤝',
+                    follow_up: '⏰',
+                    urgent: '🚨'
+                  };
+                  
+                  // Try to detect note type from content
+                  let detectedType = 'general';
+                  if (note.content.includes('📞') || note.content.toLowerCase().includes('called')) detectedType = 'call';
+                  else if (note.content.includes('✉️') || note.content.toLowerCase().includes('email')) detectedType = 'email';
+                  else if (note.content.toLowerCase().includes('follow up')) detectedType = 'follow_up';
+                  else if (note.content.includes('@Jared')) detectedType = 'urgent';
+                  
+                  const colorClass = noteTypeColors[detectedType as keyof typeof noteTypeColors] || noteTypeColors.general;
+                  const icon = noteTypeIcons[detectedType as keyof typeof noteTypeIcons] || noteTypeIcons.general;
+                  
+                  return (
+                    <div key={note.id} className={`p-3 rounded-md border ${colorClass}`}>
+                      <div className="flex items-start gap-2">
+                        <span className="text-sm">{icon}</span>
+                        <div className="flex-1">
+                          <div className="text-gray-900 whitespace-pre-wrap text-sm">{note.content}</div>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="text-xs text-gray-500">
+                              {new Date(note.created_at).toLocaleString()}
+                            </div>
+                            {note.content.includes('@Jared') && (
+                              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                                Mention
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {notes.length === 0 && (
                   <div className="text-gray-500 text-sm italic text-center py-4">No notes yet</div>
                 )}

@@ -39,11 +39,26 @@ export default function SimpleTracker({ companyId }: SimpleTrackerProps) {
     // Initial tracking
     trackVisit(0, true);
 
-    // Track time every 10 seconds
+    // Track at meaningful engagement milestones: 30s, 2min, 5min, 10min
+    const trackingMilestones = [30, 120, 300, 600]; // seconds
+    let milestoneIndex = 0;
+    
     trackingIntervalRef.current = setInterval(() => {
       const timeOnPage = Math.floor((Date.now() - startTime) / 1000);
-      trackVisit(timeOnPage, false);
-    }, 10000);
+      
+      // Only track at specific milestones
+      if (milestoneIndex < trackingMilestones.length && timeOnPage >= trackingMilestones[milestoneIndex]) {
+        trackVisit(trackingMilestones[milestoneIndex], false);
+        milestoneIndex++;
+        
+        // If we've reached all milestones, clear the interval
+        if (milestoneIndex >= trackingMilestones.length) {
+          if (trackingIntervalRef.current) {
+            clearInterval(trackingIntervalRef.current);
+          }
+        }
+      }
+    }, 5000); // Check every 5 seconds
 
     // Track on page unload
     const handleBeforeUnload = () => {

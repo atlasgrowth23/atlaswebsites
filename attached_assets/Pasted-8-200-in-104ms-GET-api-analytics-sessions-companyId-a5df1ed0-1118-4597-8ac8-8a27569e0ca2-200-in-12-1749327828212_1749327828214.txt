@@ -1,0 +1,152 @@
+8 200 in 104ms
+ GET /api/analytics/sessions?companyId=a5df1ed0-1118-4597-8ac8-8a27569e0ca2 200 in 123ms
+ GET /api/template-customizations?slug=mannings-hvac-repairs-llc&template=moderntrust 200 in 166ms
+ GET /api/pipeline/owner-name?leadId=ca055397-77f5-4de0-a816-94918a75ded8 200 in 119ms
+ GET /api/analytics/sessions?companyId=a5df1ed0-1118-4597-8ac8-8a27569e0ca2 304 in 88ms
+ GET /api/analytics/sessions?companyId=07b2012c-b8ee-4c4e-aab4-9fcbc5423da0 200 in 89ms
+ GET /api/pipeline/owner-name?leadId=7d398d09-7f4f-4b3c-990e-8ba4542c264e 200 in 91ms
+ GET /api/pipeline/notes?leadId=7d398d09-7f4f-4b3c-990e-8ba4542c264e 200 in 133ms
+ GET /api/analytics/sessions?companyId=07b2012c-b8ee-4c4e-aab4-9fcbc5423da0 304 in 90ms
+ GET /api/template-customizations?slug=hunt-heat-air-services-llc&template=moderntrust 200 in 330ms
+✅ Company loaded: Hunt Heat & Air Services LLC Logo mode: logo
+Using company-specific frame: hero_img https://lh3.googleusercontent.com/p/AF1QipO-jmyvEckWSrE6m94pQYvF6e_modAby1hXso8F=w2048-h2048-k-no?v=1749157054808
+Using company-specific frame: about_img https://lh3.googleusercontent.com/p/AF1QipPTRe4yvz1ylBfYyONV0dOt-u8jw7wAZRJ8JgQY=w2048-h2048-k-no?v=1749157054831
+ GET /t/moderntrust/hunt-heat-air-services-llc 200 in 606ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 0
+}
+🔍 Fetched company slug: hunt-heat-air-services-llc
+ POST /api/analytics/track 200 in 263ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 10
+}
+🔍 Loading pipeline: no_website_arkansas
+🔍 Fetched company slug: hunt-heat-air-services-llc
+📊 Found 96 pipeline entries
+✅ Returning 96 leads for no_website_arkansas
+ GET /api/pipeline/leads?pipeline_type=no_website_arkansas 200 in 415ms
+ POST /api/analytics/track 200 in 441ms
+ GET /api/analytics/sessions?companyId=07b2012c-b8ee-4c4e-aab4-9fcbc5423da0 200 in 95ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 377ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 20
+}
+🔍 Fetched company slug: hunt-heat-air-services-llc
+ POST /api/analytics/track 200 in 313ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 30
+}
+🔍 Fetched company slug: hunt-heat-air-services-llc
+ POST /api/analytics/track 200 in 311ms
+ GET /api/pipeline/notes?leadId=e471337b-17b7-417b-aae4-d83bd3fc121d 200 in 87ms
+ GET /api/template-customizations?slug=adams-heat-and-air-llc&template=moderntrust 200 in 187ms
+ GET /api/analytics/sessions?companyId=0c6ddb1e-be4c-474a-a94b-14c41310a449 200 in 140ms
+ GET /api/pipeline/owner-name?leadId=e471337b-17b7-417b-aae4-d83bd3fc121d 200 in 134ms
+ GET /api/analytics/sessions?companyId=0c6ddb1e-be4c-474a-a94b-14c41310a449 304 in 107ms
+✅ Company loaded: Adams Heat and Air LLC Logo mode: logo
+Using company-specific frame: hero_img https://lh3.googleusercontent.com/p/AF1QipM6En-OByJYBFFa6DLklBGSE_34j2osV_nrYkck=w2048-h2048-k-no?v=1749157292482
+Using company-specific frame: about_img https://lh3.googleusercontent.com/p/AF1QipPIh0xgpeSKKIYZ3QFW1E7fBIOlHPprTBCkop-3=w2048-h2048-k-no?v=1749157292506
+ GET /t/moderntrust/adams-heat-and-air-llc?preview=true 200 in 529ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 40
+}
+🔍 Loading pipeline: no_website_arkansas
+🔍 Fetched company slug: hunt-heat-air-services-llc
+📊 Found 96 pipeline entries
+ POST /api/analytics/track 200 in 325ms
+✅ Returning 96 leads for no_website_arkansas
+ GET /api/pipeline/leads?pipeline_type=no_website_arkansas 304 in 538ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 701ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 50
+}
+ GET /api/template-customizations?slug=adams-heat-and-air-llc&template=moderntrust 304 in 3ms
+🔍 Fetched company slug: hunt-heat-air-services-llc
+ GET /api/analytics/sessions?companyId=0c6ddb1e-be4c-474a-a94b-14c41310a449 304 in 112ms
+ GET /api/pipeline/notes?leadId=e471337b-17b7-417b-aae4-d83bd3fc121d 304 in 136ms
+ GET /api/pipeline/owner-name?leadId=e471337b-17b7-417b-aae4-d83bd3fc121d 304 in 114ms
+ POST /api/analytics/track 200 in 305ms
+✅ Company loaded: Adams Heat and Air LLC Logo mode: logo
+Using company-specific frame: hero_img https://lh3.googleusercontent.com/p/AF1QipM6En-OByJYBFFa6DLklBGSE_34j2osV_nrYkck=w2048-h2048-k-no?v=1749157292482
+Using company-specific frame: about_img https://lh3.googleusercontent.com/p/AF1QipPIh0xgpeSKKIYZ3QFW1E7fBIOlHPprTBCkop-3=w2048-h2048-k-no?v=1749157292506
+ GET /t/moderntrust/adams-heat-and-air-llc?preview=true 200 in 520ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 60
+}
+🔍 Fetched company slug: hunt-heat-air-services-llc
+ POST /api/analytics/track 200 in 485ms
+🔍 Loading pipeline: no_website_arkansas
+📊 Found 96 pipeline entries
+✅ Returning 96 leads for no_website_arkansas
+ GET /api/pipeline/leads?pipeline_type=no_website_arkansas 304 in 458ms
+🔍 Loading pipeline: no_website_alabama
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 95
+}
+📊 Found 186 pipeline entries
+🔍 Fetched company slug: hunt-heat-air-services-llc
+ POST /api/analytics/track 200 in 307ms
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 453ms
+🔍 Loading pipeline: no_website_arkansas
+📊 Found 96 pipeline entries
+✅ Returning 96 leads for no_website_arkansas
+ GET /api/pipeline/leads?pipeline_type=no_website_arkansas 304 in 397ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 395ms
+🔍 Loading pipeline: no_website_arkansas
+📊 Found 96 pipeline entries
+✅ Returning 96 leads for no_website_arkansas
+ GET /api/pipeline/leads?pipeline_type=no_website_arkansas 304 in 522ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 429ms
+📊 Tracking payload received: {
+  companyId: '07b2012c-b8ee-4c4e-aab4-9fcbc5423da0',
+  sessionId: '1749327650550_69t7zenay',
+  templateKey: 'moderntrust',
+  timeOnPage: 155
+}
+🔍 Fetched company slug: hunt-heat-air-services-llc
+ POST /api/analytics/track 200 in 343ms
+🔍 Loading pipeline: no_website_arkansas
+📊 Found 96 pipeline entries
+✅ Returning 96 leads for no_website_arkansas
+ GET /api/pipeline/leads?pipeline_type=no_website_arkansas 304 in 386ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 441ms

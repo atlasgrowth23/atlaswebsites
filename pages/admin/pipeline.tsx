@@ -309,18 +309,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                             </a>
                           )}
                           
-                          {/* Template Editor Button */}
-                          {lead.company.slug && (
-                            <a
-                              href={`/template-editor?slug=${lead.company.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 px-2 py-1 rounded"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              🏢 Upload Logo
-                            </a>
-                          )}
+
                           
                           <select
                             onChange={(e) => {
