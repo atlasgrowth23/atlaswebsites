@@ -403,20 +403,25 @@ export default function Pipeline({ companies }: PipelineProps) {
 
         {/* Pipeline Selector */}
         <div className="mb-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 bg-gray-100 p-2 rounded-lg">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 bg-gray-100 p-2 rounded-lg">
             {[
               { key: 'no_website_alabama', label: 'Alabama - No Website', count: pipelineStats['no_website_alabama'] || 0 },
               { key: 'no_website_arkansas', label: 'Arkansas - No Website', count: pipelineStats['no_website_arkansas'] || 0 },
               { key: 'has_website_alabama', label: 'Alabama - Has Website', count: pipelineStats['has_website_alabama'] || 0 },
-              { key: 'has_website_arkansas', label: 'Arkansas - Has Website', count: pipelineStats['has_website_arkansas'] || 0 }
+              { key: 'has_website_arkansas', label: 'Arkansas - Has Website', count: pipelineStats['has_website_arkansas'] || 0 },
+              { key: 'broken_websites', label: 'Broken Websites', count: pipelineStats['broken_websites'] || 0, color: 'bg-red-50 border-red-200 text-red-700' }
             ].map(pipeline => (
               <button
                 key={pipeline.key}
                 onClick={() => setSelectedPipelineType(pipeline.key)}
                 className={`p-3 rounded-md font-medium transition-colors text-sm ${
                   selectedPipelineType === pipeline.key
-                    ? 'bg-white text-blue-600 shadow-lg border-2 border-blue-500'
-                    : 'bg-white/50 text-gray-700 hover:bg-white hover:shadow-md'
+                    ? pipeline.key === 'broken_websites'
+                      ? 'bg-white text-red-600 shadow-lg border-2 border-red-500'
+                      : 'bg-white text-blue-600 shadow-lg border-2 border-blue-500'
+                    : pipeline.key === 'broken_websites'
+                      ? 'bg-red-50 text-red-700 hover:bg-red-100 hover:shadow-md border border-red-200'
+                      : 'bg-white/50 text-gray-700 hover:bg-white hover:shadow-md'
                 }`}
               >
                 <div className="font-semibold">{pipeline.label}</div>
