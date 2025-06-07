@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import DomainManagement from '@/components/DomainManagement';
 
 interface Company {
   id: string;
@@ -1085,6 +1086,21 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   >
                     🔍 Preview Website
                   </button>
+                  
+                  {/* Domain Management Component */}
+                  <div className="w-full">
+                    <DomainManagement 
+                      company={lead.company}
+                      onUpdate={(updatedCompany) => {
+                        // Update the lead's company data
+                        const updatedLead = {
+                          ...lead,
+                          company: updatedCompany
+                        };
+                        onUpdateLead(updatedLead);
+                      }}
+                    />
+                  </div>
                   
                   {lead.company.reviews_link && (
                     <a
