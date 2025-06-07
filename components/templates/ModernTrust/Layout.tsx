@@ -74,13 +74,13 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
       
       
       {/* Analytics tracking - only when NOT in preview mode */}
-      {!isPreview && <SimpleTracker companyId={company.id} />}
+      {!isPreview && company.id && <SimpleTracker companyId={String(company.id)} />}
       
       {/* Chat Widget - always show for testing */}
       <ChatWidget 
-        companyId={company.id}
+        companyId={String(company.id)}
         companyName={company.name}
-        companyHours={company.parsed_working_hours}
+        companyHours={company.hours || undefined}
         companyLocation={{
           latitude: company.latitude,
           longitude: company.longitude

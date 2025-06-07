@@ -12,7 +12,7 @@ interface User {
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  currentPage: 'pipeline' | 'accounts';
+  currentPage: 'pipeline' | 'accounts' | 'analytics' | 'templates';
 }
 
 export default function AdminLayout({ children, currentPage }: AdminLayoutProps) {
