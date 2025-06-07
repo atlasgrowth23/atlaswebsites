@@ -1,0 +1,69 @@
+
+> workspace@1.0.0 dev
+   ▲ Next.js 15.3.3
+   - Local:        http://localhost:5000
+   - Network:      http://172.31.128.62:5000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1578ms
+ ⚠ Cross origin request detected from 08ae3c1f-e9b6-4bf6-ab86-bd4047cf2e2e-00-14hzr9gglg8zw.riker.replit.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 3.7s (384 modules)
+ ✓ Compiled in 305ms (277 modules)
+ GET /_next/static/webpack/3ca8073c58d66fd9.webpack.hot-update.json 404 in 4178ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 880ms (165 modules)
+ ○ Compiling /admin/pipeline ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (100kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled /admin/pipeline in 1891ms (554 modules)
+ GET /_next/static/webpack/3ca8073c58d66fd9.webpack.hot-update.json 404 in 624ms
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET /admin/pipeline 200 in 2262ms
+Warning: data for page "/admin/pipeline" is 477 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance.
+See more info here: https://nextjs.org/docs/messages/large-page-data
+Warning: data for page "/admin/pipeline" is 477 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance.
+See more info here: https://nextjs.org/docs/messages/large-page-data
+ GET /admin/pipeline 200 in 378ms
+ ✓ Compiled /api/pipeline/leads in 140ms (198 modules)
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 413ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 377ms
+Warning: data for page "/admin/pipeline" is 477 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance.
+See more info here: https://nextjs.org/docs/messages/large-page-data
+ GET /admin/pipeline 200 in 460ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 233ms
+Warning: data for page "/admin/pipeline" is 477 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance.
+See more info here: https://nextjs.org/docs/messages/large-page-data
+ GET /admin/pipeline 200 in 418ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 200 in 254ms
+ ✓ Compiled /admin/login in 325ms (573 modules)
+ GET /_next/data/development/admin/login.json 200 in 596ms
+ ✓ Compiled /api/auth/login in 73ms (202 modules)
+ POST /api/auth/login 200 in 83ms
+ GET /admin/dashboard 404 in 223ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 285ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 327ms
+🔍 Loading pipeline: no_website_alabama
+📊 Found 186 pipeline entries
+✅ Returning 186 leads for no_website_alabama
+ GET /api/pipeline/leads?pipeline_type=no_website_alabama 304 in 266ms

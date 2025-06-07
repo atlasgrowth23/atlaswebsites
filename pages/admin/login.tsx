@@ -26,7 +26,7 @@ export default function Login() {
       if (response.ok) {
         // Store auth token/session
         localStorage.setItem('auth_token', data.token);
-        router.push('/admin/dashboard');
+        router.push('/admin/pipeline');
       } else {
         setError(data.error || 'Login failed');
       }

@@ -6,15 +6,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user has auth token
-    const authToken = localStorage.getItem('auth_token');
-    if (authToken) {
-      // Redirect to admin dashboard if authenticated
-      router.replace('/admin/pipeline');
-    } else {
-      // Redirect to login if not authenticated
-      router.replace('/admin/login');
-    }
+    // Always redirect to pipeline page
+    router.replace('/admin/pipeline');
   }, [router]);
 
   return (
