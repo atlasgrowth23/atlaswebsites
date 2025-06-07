@@ -170,28 +170,18 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   };
 
-  const fetchAnalytics = async () => {
+  const fetchAnalyticsData = async () => {
     if (!lead) return;
     setLoadingAnalytics(true);
     try {
-      const response = await fetch(`/api/analytics-summary?companyId=${lead.company_id}`);
+      const response = await fetch(`/api/analytics/simple-summary?companyId=${lead.company_id}`);
       if (response.ok) {
         const data = await response.json();
-        setAnalyticsData({
-          total_views: data.total_views || 0,
-          total_sessions: data.total_sessions || 0,
-          avg_time_seconds: data.avg_time_seconds || 0,
-          mobile_percentage: data.mobile_percentage || 0
-        });
+        setAnalyticsData(data);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      setAnalyticsData({
-        total_views: 0,
-        total_sessions: 0,
-        avg_time_seconds: 0,
-        mobile_percentage: 0
-      });
+      setAnalyticsData(null);
     } finally {
       setLoadingAnalytics(false);
     }
@@ -912,90 +902,82 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         {activeTab === 'analytics' && (
           <div className="p-4 space-y-4">
             <div className="flex justify-between items-center">
-              <h4 className="font-medium text-gray-900">Website Sessions</h4>
+              <h4 className="font-medium text-gray-900">Website Analytics</h4>
               <button
-                onClick={fetchSessionData}
+                onClick={fetchAnalyticsData}
                 className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
               >
                 Refresh
               </button>
             </div>
             
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-green-50 p-3 rounded-lg text-center">
-                <div className="text-lg font-bold text-green-600">
-                  {analyticsData?.total_sessions || 0}
-                </div>
-                <div className="text-xs text-gray-600">Total Sessions</div>
+            {loadingAnalytics ? (
+              <div className="text-center py-8">
+                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+                <div className="text-sm text-gray-500 mt-2">Loading analytics...</div>
               </div>
-              <div className="bg-blue-50 p-3 rounded-lg text-center">
-                <div className="text-lg font-bold text-blue-600">
-                  {Math.round(analyticsData?.avg_time_seconds || 0)}s
+            ) : analyticsData ? (
+              <>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-blue-50 p-3 rounded-lg text-center">
+                    <div className="text-lg font-bold text-blue-600">
+                      {analyticsData.total_views}
+                    </div>
+                    <div className="text-xs text-gray-600">Total Views</div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded-lg text-center">
+                    <div className="text-lg font-bold text-green-600">
+                      {analyticsData.device_breakdown.mobile + analyticsData.device_breakdown.tablet}
+                    </div>
+                    <div className="text-xs text-gray-600">Mobile Visits</div>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-600">Avg Time</div>
-              </div>
-            </div>
 
-            {/* Recent Sessions */}
-            <div>
-              <h5 className="font-medium text-gray-900 mb-2 text-sm">Recent Sessions</h5>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {sessionData.length > 0 ? (
-                  sessionData.slice(0, 20).map((session, index) => {
-                    const timeOnSite = session.total_time_seconds || 0;
-                    const deviceType = session.device_type || 'Unknown';
-                    const visitDate = new Date(session.visit_start_time || session.created_at);
-                    
-                    return (
-                      <div key={session.id || index} className="bg-gray-50 p-3 rounded border">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                deviceType === 'mobile' ? 'bg-green-100 text-green-800' :
-                                deviceType === 'tablet' ? 'bg-blue-100 text-blue-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {deviceType.charAt(0).toUpperCase() + deviceType.slice(1)}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {visitDate.toLocaleDateString()} {visitDate.toLocaleTimeString()}
-                              </span>
-                            </div>
-                            <div className="text-sm text-gray-700">
-                              Time on site: <span className="font-medium">{Math.round(timeOnSite)}s</span>
-                            </div>
-                            {session.page_interactions > 1 && (
-                              <div className="text-xs text-gray-600">
-                                {session.page_interactions} page interactions
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <div className={`text-xs px-2 py-1 rounded ${
-                              timeOnSite > 60 ? 'bg-green-100 text-green-800' :
-                              timeOnSite > 30 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {timeOnSite > 60 ? 'Engaged' : 
-                               timeOnSite > 30 ? 'Interested' : 'Quick View'}
-                            </div>
-                          </div>
+                {/* Device Breakdown */}
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h5 className="font-medium text-gray-900 mb-2 text-sm">Device Types</h5>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Desktop</span>
+                      <span className="text-sm font-medium">{analyticsData.device_breakdown.desktop}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Mobile</span>
+                      <span className="text-sm font-medium">{analyticsData.device_breakdown.mobile}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Tablet</span>
+                      <span className="text-sm font-medium">{analyticsData.device_breakdown.tablet}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Referrers */}
+                {analyticsData.top_referrers && analyticsData.top_referrers.length > 0 && (
+                  <div className="bg-gray-50 p-3 rounded-lg">
+                    <h5 className="font-medium text-gray-900 mb-2 text-sm">Top Referrers</h5>
+                    <div className="space-y-1">
+                      {analyticsData.top_referrers.map((ref: any, index: number) => (
+                        <div key={index} className="flex justify-between text-xs">
+                          <span className="truncate flex-1 mr-2">
+                            {ref.referrer === 'Direct' ? 'Direct Traffic' : ref.referrer}
+                          </span>
+                          <span className="font-medium">{ref.count}</span>
                         </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center text-gray-500 py-8">
-                    <div className="text-sm">No website sessions yet</div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      Sessions will appear here when leads visit their website
+                      ))}
                     </div>
                   </div>
                 )}
+              </>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                <div className="text-sm">No analytics data yet</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  Data will appear when leads visit their website
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Analytics Tips */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
