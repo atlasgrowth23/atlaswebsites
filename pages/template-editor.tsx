@@ -34,6 +34,8 @@ export default function TemplateEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDomainSaving, setIsDomainSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
   // Available customization options (using actual frame keys from templates)
   const customizationOptions = {
     images: [
@@ -154,6 +156,53 @@ export default function TemplateEditor() {
     } finally {
       setIsSaving(false);
       setTimeout(() => setMessage(''), 8000);
+    }
+  };
+
+  const uploadLogo = async () => {
+    if (!logoFile || !company?.id) return;
+    
+    setIsLogoUploading(true);
+    setMessage('Uploading logo...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', logoFile);
+      formData.append('companyId', company.id);
+      formData.append('frameType', 'logo');
+
+      const response = await fetch('/api/upload-logo-file', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage('✅ Logo uploaded successfully!');
+        setLogoFile(null);
+        
+        // Update the customizations with the new logo URL
+        setCustomizations(prev => ({
+          ...prev,
+          logo: data.storageUrl
+        }));
+        
+        // Refresh customizations to get the latest data
+        setTimeout(() => {
+          fetchCustomizations();
+        }, 1000);
+        
+        setTimeout(() => setMessage(''), 4000);
+      } else {
+        setMessage(`❌ Upload failed: ${data.error}`);
+        setTimeout(() => setMessage(''), 6000);
+      }
+    } catch (error) {
+      setMessage('❌ Error uploading logo. Please try again.');
+      setTimeout(() => setMessage(''), 6000);
+    } finally {
+      setIsLogoUploading(false);
     }
   };
 
@@ -305,6 +354,74 @@ export default function TemplateEditor() {
                             Preview: https://{customDomain}
                           </Text>
                         )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Logo Upload Section */}
+                <Card>
+                  <CardContent className="p-6">
+                    <Heading level={4} className="mb-6">🏢 Company Logo</Heading>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block font-medium text-gray-700 mb-2">
+                          Upload Logo File
+                        </label>
+                        <Text size="sm" className="text-gray-500 mb-4">
+                          Upload your company logo (JPG, PNG, WebP, or SVG). Maximum file size: 5MB.
+                        </Text>
+                        
+                        <div className="flex gap-4 items-end">
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp,image/svg+xml"
+                              onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-3 focus:ring-blue-500 focus:border-blue-500 bg-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                          </div>
+                          <Button
+                            onClick={uploadLogo}
+                            disabled={!logoFile || isLogoUploading}
+                            className="px-6 bg-green-600 text-white hover:bg-green-700"
+                          >
+                            {isLogoUploading ? 'Uploading...' : 'Upload Logo'}
+                          </Button>
+                        </div>
+                        
+                        {logoFile && (
+                          <div className="mt-2 text-sm text-gray-600">
+                            Selected: {logoFile.name} ({(logoFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Current Logo Preview */}
+                      {customizations.logo && (
+                        <div className="mt-4">
+                          <label className="block font-medium text-gray-700 mb-2">Current Logo</label>
+                          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+                            <img
+                              src={customizations.logo}
+                              alt="Current logo"
+                              className="w-20 h-20 object-contain rounded-lg border bg-white"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-gray-900">Logo Active</div>
+                              <div className="text-xs text-gray-500 break-all">{customizations.logo}</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <Text size="sm" className="text-blue-700">
+                          💡 <strong>Pro Tip:</strong> If you don't have a logo, you can generate one with ChatGPT and download it, then upload it here!
+                        </Text>
                       </div>
                     </div>
                   </CardContent>

@@ -188,7 +188,7 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
               <div className="absolute inset-0 bg-black/10 rounded-t-3xl"></div>
               <div className="relative flex justify-between items-start">
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-bold text-white">Get Your Free Quote</h3>
+                  <h3 className="text-2xl font-bold text-white">Get Your Free Quote from {company.name}</h3>
                   <p className="text-red-100 text-base">Quick response guaranteed • No obligation</p>
                   <div className="flex items-center space-x-2 mt-3">
                     <div className="flex items-center space-x-1 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">

@@ -45,6 +45,12 @@ export default function CompanyDetail({ company }: CompanyDetailProps) {
                 <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
                 <div className="space-y-3">
                   <Link 
+                    href={`/template-editor?slug=${company.slug}`}
+                    className="block w-full bg-purple-600 text-white text-center py-2 px-4 rounded hover:bg-purple-700 font-semibold"
+                  >
+                    🏢 Upload Logo & Edit Template
+                  </Link>
+                  <Link 
                     href={`/templates/${company.slug}`}
                     className="block w-full bg-blue-600 text-white text-center py-2 px-4 rounded hover:bg-blue-700"
                   >

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Company } from '@/types';
 
 interface ServiceModalProps {
@@ -22,6 +22,20 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, service, c
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showAllDetails, setShowAllDetails] = useState(false);
+  const [showAllBenefits, setShowAllBenefits] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -189,7 +203,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, service, c
             <div>
               <h3 className="text-xl font-bold mb-4 text-gray-800">What's Included</h3>
               <ul className="space-y-3 mb-6">
-                {currentDetails.details.map((detail, index) => (
+                {(isMobile && !showAllDetails ? currentDetails.details.slice(0, 3) : currentDetails.details).map((detail, index) => (
                   <li key={index} className="flex items-start space-x-3">
                     <svg className={`w-5 h-5 ${colors.text} mt-0.5 flex-shrink-0`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -198,10 +212,18 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, service, c
                   </li>
                 ))}
               </ul>
+              {isMobile && currentDetails.details.length > 3 && (
+                <button
+                  onClick={() => setShowAllDetails(!showAllDetails)}
+                  className={`text-sm ${colors.text} hover:underline mb-6 font-medium`}
+                >
+                  {showAllDetails ? 'Show Less' : `Show All ${currentDetails.details.length} Features`}
+                </button>
+              )}
 
               <h3 className="text-xl font-bold mb-4 text-gray-800">Benefits</h3>
-              <ul className="space-y-3">
-                {currentDetails.benefits.map((benefit, index) => (
+              <ul className="space-y-3 mb-4">
+                {(isMobile && !showAllBenefits ? currentDetails.benefits.slice(0, 2) : currentDetails.benefits).map((benefit, index) => (
                   <li key={index} className="flex items-start space-x-3">
                     <svg className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -210,6 +232,14 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, service, c
                   </li>
                 ))}
               </ul>
+              {isMobile && currentDetails.benefits.length > 2 && (
+                <button
+                  onClick={() => setShowAllBenefits(!showAllBenefits)}
+                  className={`text-sm ${colors.text} hover:underline font-medium`}
+                >
+                  {showAllBenefits ? 'Show Less' : `Show All ${currentDetails.benefits.length} Benefits`}
+                </button>
+              )}
             </div>
 
             {/* Contact Form */}
