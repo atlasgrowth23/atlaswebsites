@@ -1,0 +1,39 @@
+[14:13:17.203] Running build in Washington, D.C., USA (East) – iad1
+[14:13:17.203] Build machine configuration: 2 cores, 8 GB
+[14:13:17.222] Cloning github.com/atlasgrowth23/atlaswebsites (Branch: main, Commit: 4ed2139)
+[14:13:18.164] Cloning completed: 941.000ms
+[14:13:20.492] Restored build cache from previous deployment (3LMEZHvn38hXjmBT5rhov24xW7SS)
+[14:13:21.052] Running "vercel build"
+[14:13:21.477] Vercel CLI 42.2.0
+[14:13:21.765] Installing dependencies...
+[14:13:30.120] 
+[14:13:30.120] added 4 packages, removed 2 packages, and changed 46 packages in 8s
+[14:13:30.121] 
+[14:13:30.121] 96 packages are looking for funding
+[14:13:30.121]   run `npm fund` for details
+[14:13:30.155] Detected Next.js version: 15.3.3
+[14:13:30.159] Running "npm run build"
+[14:13:30.293] 
+[14:13:30.294] > workspace@1.0.0 build
+[14:13:30.294] > next build
+[14:13:30.294] 
+[14:13:30.951]    ▲ Next.js 15.3.3
+[14:13:30.952]    - Environments: .env.production
+[14:13:30.952] 
+[14:13:30.992]    Linting and checking validity of types ...
+[14:13:40.824] Failed to compile.
+[14:13:40.824] 
+[14:13:40.825] ./pages/admin/accounts.tsx:646:37
+[14:13:40.825] Type error: Property 'name' does not exist on type '{ id: any; name: any; logo_storage_path: any; }[]'.
+[14:13:40.825] 
+[14:13:40.826] [0m [90m 644 |[39m       owner_name[33m:[39m user[33m.[39mowner_name [33m||[39m [32m''[39m[33m,[39m[0m
+[14:13:40.826] [0m [90m 645 |[39m       company_id[33m:[39m user[33m.[39mcompany_id[33m,[39m[0m
+[14:13:40.826] [0m[31m[1m>[22m[39m[90m 646 |[39m       company_name[33m:[39m user[33m.[39mcompanies[33m?[39m[33m.[39mname [33m||[39m [32m'No Company'[39m[33m,[39m[0m
+[14:13:40.826] [0m [90m     |[39m                                     [31m[1m^[22m[39m[0m
+[14:13:40.826] [0m [90m 647 |[39m       logo_url[33m:[39m user[33m.[39mcompanies[33m?[39m[33m.[39mlogo_storage_path [33m||[39m [32m''[39m[33m,[39m[0m
+[14:13:40.827] [0m [90m 648 |[39m       created_at[33m:[39m user[33m.[39mcreated_at[33m,[39m[0m
+[14:13:40.827] [0m [90m 649 |[39m       updated_at[33m:[39m user[33m.[39mupdated_at[0m
+[14:13:40.850] Next.js build worker exited with code: 1 and signal: null
+[14:13:40.865] Error: Command "npm run build" exited with 1
+[14:13:41.138] 
+[14:13:44.061] Exiting build container
