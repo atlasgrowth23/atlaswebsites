@@ -17,7 +17,10 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ company }) => {
-
+  const router = useRouter();
+  
+  // Check if this is a preview mode (should NOT track analytics)
+  const isPreview = router.query.preview === 'true';
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -67,6 +70,9 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
         <ServiceArea company={company} />
       </main>
       <Footer company={company} />
+      
+      {/* Analytics tracking - only when NOT in preview mode */}
+      {!isPreview && <SimpleTracker companyId={company.id} />}
       
       {/* Login reminder */}
       <div className="hidden">Chat widget loaded</div>
