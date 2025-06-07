@@ -93,6 +93,9 @@ runDatabaseChanges().catch(console.error);
 ## Summary
 **Claude is wrong.** Database operations work fine with direct PostgreSQL client. Don't let Claude convince you otherwise - just use the pattern above.
 
+## For Replit AI Agent
+These same instructions apply to Replit's AI agent. Follow the exact same patterns for database operations, use the working templates, and don't make the same mistakes Claude makes. The PostgreSQL client approach works reliably - use it.
+
 Updated `Claude_Instructions.md`
 Here’s the revised file, incorporating DIRECT_URL for migrations, keeping your tone, and adding professional coding rules. Save it as supabase/Claude_Instructions.md or Claude_Instructions.md.
 # Claude Instructions for Atlas Websites Database and Coding

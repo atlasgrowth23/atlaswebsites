@@ -83,20 +83,16 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [customizations, setCustomizations] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<{
-    sessions: Array<{
+    visits: Array<{
       id: string;
-      duration: number;
+      time_on_site: number;
       device_type: string;
-      pages_visited: number;
-      start_time: string;
-      end_time: string;
+      visit_time: string;
       referrer: string;
     }>;
     summary: {
-      total_sessions: number;
-      total_page_views: number;
-      avg_session_duration: number;
-      device_breakdown: { desktop: number; mobile: number; tablet: number };
+      total_visits: number;
+      avg_time_on_site: number;
     };
   } | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
@@ -640,9 +636,9 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
             {/* Website Visitor Count */}
             <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-xs text-gray-600">Website Views</div>
+              <div className="text-xs text-gray-600">Website Visits</div>
               <div className="text-sm font-medium">
-                {loadingAnalytics ? '...' : (analyticsData?.summary.total_page_views || 0)} page views
+                {loadingAnalytics ? '...' : (analyticsData?.summary.total_visits || 0)} visits
               </div>
             </div>
 
@@ -933,57 +929,51 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-blue-50 p-3 rounded-lg text-center">
                     <div className="text-lg font-bold text-blue-600">
-                      {analyticsData.summary.total_sessions}
+                      {analyticsData.summary.total_visits}
                     </div>
-                    <div className="text-xs text-gray-600">Total Sessions</div>
+                    <div className="text-xs text-gray-600">Total Visits</div>
                   </div>
                   <div className="bg-green-50 p-3 rounded-lg text-center">
                     <div className="text-lg font-bold text-green-600">
-                      {Math.floor(analyticsData.summary.avg_session_duration / 60)}m {analyticsData.summary.avg_session_duration % 60}s
+                      {Math.floor(analyticsData.summary.avg_time_on_site / 60)}m {analyticsData.summary.avg_time_on_site % 60}s
                     </div>
-                    <div className="text-xs text-gray-600">Avg Session</div>
+                    <div className="text-xs text-gray-600">Avg Time</div>
                   </div>
                 </div>
 
-                {/* Sessions List */}
+                {/* Visits List */}
                 <div className="space-y-3">
-                  <h5 className="font-medium text-gray-900 text-sm">Recent Sessions</h5>
-                  {analyticsData.sessions.length === 0 ? (
+                  <h5 className="font-medium text-gray-900 text-sm">Recent Visits</h5>
+                  {analyticsData.visits.length === 0 ? (
                     <div className="text-center text-gray-500 py-4">
-                      <div className="text-sm">No sessions yet</div>
+                      <div className="text-sm">No visits yet</div>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {analyticsData.sessions.map((session, index) => (
-                        <div key={session.id} className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
+                      {analyticsData.visits.map((visit, index) => (
+                        <div key={visit.id} className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
                               <div className={`w-2 h-2 rounded-full ${
-                                session.device_type === 'mobile' ? 'bg-green-500' : 
-                                session.device_type === 'tablet' ? 'bg-yellow-500' : 'bg-blue-500'
+                                visit.device_type === 'mobile' ? 'bg-green-500' : 
+                                visit.device_type === 'tablet' ? 'bg-yellow-500' : 'bg-blue-500'
                               }`} />
-                              <span className="text-xs font-medium capitalize">{session.device_type}</span>
+                              <span className="text-xs font-medium capitalize">{visit.device_type}</span>
                             </div>
                             <span className="text-xs text-gray-500">
-                              {new Date(session.start_time).toLocaleDateString()} {new Date(session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              {new Date(visit.visit_time).toLocaleDateString()} {new Date(visit.visit_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </span>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 text-xs">
-                            <div>
-                              <span className="text-gray-600">Duration:</span>
-                              <span className="font-medium ml-1">
-                                {Math.floor(session.duration / 60)}m {session.duration % 60}s
-                              </span>
-                            </div>
-                            <div>
-                              <span className="text-gray-600">Pages:</span>
-                              <span className="font-medium ml-1">{session.pages_visited}</span>
-                            </div>
+                          <div className="text-xs">
+                            <span className="text-gray-600">Time on site:</span>
+                            <span className="font-medium ml-1">
+                              {Math.floor(visit.time_on_site / 60)}m {visit.time_on_site % 60}s
+                            </span>
                           </div>
-                          {session.referrer && session.referrer !== 'Direct' && (
+                          {visit.referrer && visit.referrer !== 'Direct' && (
                             <div className="mt-2 text-xs">
                               <span className="text-gray-600">From:</span>
-                              <span className="font-medium ml-1 truncate">{session.referrer}</span>
+                              <span className="font-medium ml-1 truncate">{visit.referrer}</span>
                             </div>
                           )}
                         </div>
