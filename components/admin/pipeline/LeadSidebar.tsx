@@ -83,15 +83,21 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [customizations, setCustomizations] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<{
-    total_views: number;
-    device_breakdown: {
-      desktop: number;
-      mobile: number;
-      tablet: number;
+    sessions: Array<{
+      id: string;
+      duration: number;
+      device_type: string;
+      pages_visited: number;
+      start_time: string;
+      end_time: string;
+      referrer: string;
+    }>;
+    summary: {
+      total_sessions: number;
+      total_page_views: number;
+      avg_session_duration: number;
+      device_breakdown: { desktop: number; mobile: number; tablet: number };
     };
-    daily_views: Record<string, number>;
-    top_referrers: Array<{ referrer: string; count: number }>;
-    period: string;
   } | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [showCustomizationForm, setShowCustomizationForm] = useState(true);
