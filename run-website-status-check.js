@@ -77,8 +77,8 @@ async function runWebsiteStatusCheck() {
         AND site != '' 
         AND site != 'N/A'
         AND TRIM(site) != ''
+        AND (site_status IS NULL OR site_status = 'unknown' OR last_checked < NOW() - INTERVAL '7 days')
       ORDER BY name
-      LIMIT 50
     `);
     
     console.log(`Found ${result.rows.length} companies with websites to check`);
