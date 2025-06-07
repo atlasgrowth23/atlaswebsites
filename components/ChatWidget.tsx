@@ -257,7 +257,7 @@ export default function ChatWidget({
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[32rem] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col z-50 animate-in slide-in-from-bottom-4 duration-300 overflow-hidden">
+        <div className="fixed bottom-4 right-4 left-4 sm:left-auto sm:bottom-6 sm:right-6 w-auto sm:w-96 h-[85vh] sm:h-[32rem] max-h-[600px] bg-white rounded-2xl shadow-2xl border border-gray-100 flex flex-col z-50 animate-in slide-in-from-bottom-4 duration-300 overflow-hidden">
           {/* Header */}
           <div className="flex justify-between items-center p-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
             <div className="flex items-center space-x-3">
@@ -403,8 +403,8 @@ export default function ChatWidget({
           </div>
 
           {/* Input Area */}
-          <div className="p-4 border-t border-gray-100 bg-white">
-            <div className="flex space-x-3">
+          <div className="p-3 sm:p-4 border-t border-gray-100 bg-white">
+            <div className="flex space-x-2 sm:space-x-3">
               <input
                 ref={inputRef}
                 type="text"
@@ -412,13 +412,13 @@ export default function ChatWidget({
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="flex-1 px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                 disabled={isWaitingForResponse}
               />
               <button
                 onClick={sendMessage}
                 disabled={!inputMessage.trim() || isWaitingForResponse}
-                className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[3rem]"
+                className="px-3 py-2 sm:px-4 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[2.5rem] sm:min-w-[3rem]"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

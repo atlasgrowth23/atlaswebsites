@@ -283,7 +283,7 @@ export default function Pipeline({ companies }: PipelineProps) {
                         
                         {/* Stage Move Actions */}
                         <div className="flex flex-wrap gap-1 sm:gap-2">
-                          {/* Preview Website Button */}
+                          {/* Preview Our Site Button */}
                           {lead.company.slug && (
                             <a
                               href={`/t/moderntrust/${lead.company.slug}?preview=true`}
@@ -292,7 +292,20 @@ export default function Pipeline({ companies }: PipelineProps) {
                               className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              🌐 Preview
+                              🌐 Preview Our Site
+                            </a>
+                          )}
+                          
+                          {/* Preview Their Site Button */}
+                          {lead.company.site && (
+                            <a
+                              href={lead.company.site.startsWith('http') ? lead.company.site : `https://${lead.company.site}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs bg-green-100 hover:bg-green-200 text-green-700 px-2 py-1 rounded"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              🏠 Preview Their Site
                             </a>
                           )}
                           
