@@ -84,9 +84,14 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [isSaving, setIsSaving] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<{
     total_views: number;
-    total_sessions: number;
-    avg_time_seconds: number;
-    mobile_percentage: number;
+    device_breakdown: {
+      desktop: number;
+      mobile: number;
+      tablet: number;
+    };
+    daily_views: Record<string, number>;
+    top_referrers: Array<{ referrer: string; count: number }>;
+    period: string;
   } | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [showCustomizationForm, setShowCustomizationForm] = useState(true);
@@ -114,7 +119,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       // Then fetch new data
       fetchNotes();
       fetchCustomizations();
-      fetchAnalytics();
+      fetchAnalyticsData();
       fetchOwnerName();
       // Check if lead has progressed past new_lead stage (has initial contact)
       setHasInitialContact(lead.stage !== 'new_lead');
@@ -123,7 +128,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
 
   useEffect(() => {
     if (activeTab === 'analytics' && lead && isOpen) {
-      fetchSessionData();
+      fetchAnalyticsData();
     }
   }, [activeTab, lead, isOpen]);
 
@@ -631,7 +636,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="text-xs text-gray-600">Website Views</div>
               <div className="text-sm font-medium">
-                {loadingAnalytics ? '...' : (analyticsData?.total_sessions || 0)} unique visitors
+                {loadingAnalytics ? '...' : (analyticsData?.total_views || 0)} page views
               </div>
             </div>
 
