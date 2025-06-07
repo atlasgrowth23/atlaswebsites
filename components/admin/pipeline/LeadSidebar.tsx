@@ -185,7 +185,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead) return;
     setLoadingAnalytics(true);
     try {
-      const response = await fetch(`/api/analytics/simple-summary?companyId=${lead.company_id}`);
+      const response = await fetch(`/api/analytics/sessions?companyId=${lead.company_id}`);
       if (response.ok) {
         const data = await response.json();
         setAnalyticsData(data);
@@ -642,7 +642,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="text-xs text-gray-600">Website Views</div>
               <div className="text-sm font-medium">
-                {loadingAnalytics ? '...' : (analyticsData?.total_views || 0)} page views
+                {loadingAnalytics ? '...' : (analyticsData?.summary.total_page_views || 0)} page views
               </div>
             </div>
 
@@ -930,56 +930,67 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             ) : analyticsData ? (
               <>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 mb-4">
                   <div className="bg-blue-50 p-3 rounded-lg text-center">
                     <div className="text-lg font-bold text-blue-600">
-                      {analyticsData.total_views}
+                      {analyticsData.summary.total_sessions}
                     </div>
-                    <div className="text-xs text-gray-600">Total Views</div>
+                    <div className="text-xs text-gray-600">Total Sessions</div>
                   </div>
                   <div className="bg-green-50 p-3 rounded-lg text-center">
                     <div className="text-lg font-bold text-green-600">
-                      {analyticsData.device_breakdown.mobile + analyticsData.device_breakdown.tablet}
+                      {Math.floor(analyticsData.summary.avg_session_duration / 60)}m {analyticsData.summary.avg_session_duration % 60}s
                     </div>
-                    <div className="text-xs text-gray-600">Mobile Visits</div>
+                    <div className="text-xs text-gray-600">Avg Session</div>
                   </div>
                 </div>
 
-                {/* Device Breakdown */}
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <h5 className="font-medium text-gray-900 mb-2 text-sm">Device Types</h5>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Desktop</span>
-                      <span className="text-sm font-medium">{analyticsData.device_breakdown.desktop}</span>
+                {/* Sessions List */}
+                <div className="space-y-3">
+                  <h5 className="font-medium text-gray-900 text-sm">Recent Sessions</h5>
+                  {analyticsData.sessions.length === 0 ? (
+                    <div className="text-center text-gray-500 py-4">
+                      <div className="text-sm">No sessions yet</div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Mobile</span>
-                      <span className="text-sm font-medium">{analyticsData.device_breakdown.mobile}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Tablet</span>
-                      <span className="text-sm font-medium">{analyticsData.device_breakdown.tablet}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Top Referrers */}
-                {analyticsData.top_referrers && analyticsData.top_referrers.length > 0 && (
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <h5 className="font-medium text-gray-900 mb-2 text-sm">Top Referrers</h5>
-                    <div className="space-y-1">
-                      {analyticsData.top_referrers.map((ref: any, index: number) => (
-                        <div key={index} className="flex justify-between text-xs">
-                          <span className="truncate flex-1 mr-2">
-                            {ref.referrer === 'Direct' ? 'Direct Traffic' : ref.referrer}
-                          </span>
-                          <span className="font-medium">{ref.count}</span>
+                  ) : (
+                    <div className="space-y-2">
+                      {analyticsData.sessions.map((session, index) => (
+                        <div key={session.id} className="bg-gray-50 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${
+                                session.device_type === 'mobile' ? 'bg-green-500' : 
+                                session.device_type === 'tablet' ? 'bg-yellow-500' : 'bg-blue-500'
+                              }`} />
+                              <span className="text-xs font-medium capitalize">{session.device_type}</span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {new Date(session.start_time).toLocaleDateString()} {new Date(session.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <span className="text-gray-600">Duration:</span>
+                              <span className="font-medium ml-1">
+                                {Math.floor(session.duration / 60)}m {session.duration % 60}s
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Pages:</span>
+                              <span className="font-medium ml-1">{session.pages_visited}</span>
+                            </div>
+                          </div>
+                          {session.referrer && session.referrer !== 'Direct' && (
+                            <div className="mt-2 text-xs">
+                              <span className="text-gray-600">From:</span>
+                              <span className="font-medium ml-1 truncate">{session.referrer}</span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             ) : (
               <div className="text-center text-gray-500 py-8">
