@@ -1,0 +1,87 @@
+
+> workspace@1.0.0 dev
+   ▲ Next.js 15.3.3
+   - Local:        http://localhost:5000
+   - Network:      http://172.31.128.63:5000
+
+ ✓ Starting...
+ ✓ Ready in 1908ms
+ ✓ Compiled /middleware in 159ms
+ ✓ Compiled (165 modules)
+Middleware error: Error: supabaseUrl is required.
+    at middleware (middleware.ts:18:6)
+  16 |     // Direct Supabase lookup - no Edge Config bullshit
+  17 |     const supabase = createClient(
+> 18 |       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     |      ^
+  19 |       process.env.SUPABASE_SERVICE_ROLE_KEY!
+  20 |     );
+  21 | {
+  
+}
+Middleware error: Error: supabaseUrl is required.
+    at middleware (middleware.ts:18:6)
+  16 |     // Direct Supabase lookup - no Edge Config bullshit
+  17 |     const supabase = createClient(
+> 18 |       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     |      ^
+  19 |       process.env.SUPABASE_SERVICE_ROLE_KEY!
+  20 |     );
+  21 | {
+  
+}
+ ○ Compiling /_error ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (100kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ✓ Compiled /_error in 6.2s (384 modules)
+ GET / 404 in 6971ms
+ GET / 404 in 7006ms
+ ✓ Compiled in 822ms (277 modules)
+Middleware error: Error: supabaseUrl is required.
+    at middleware (middleware.ts:18:6)
+  16 |     // Direct Supabase lookup - no Edge Config bullshit
+  17 |     const supabase = createClient(
+> 18 |       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     |      ^
+  19 |       process.env.SUPABASE_SERVICE_ROLE_KEY!
+  20 |     );
+  21 | {
+  
+}
+Middleware error: Error: supabaseUrl is required.
+    at middleware (middleware.ts:18:6)
+  16 |     // Direct Supabase lookup - no Edge Config bullshit
+  17 |     const supabase = createClient(
+> 18 |       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     |      ^
+  19 |       process.env.SUPABASE_SERVICE_ROLE_KEY!
+  20 |     );
+  21 | {
+  
+}
+Middleware error: Error: supabaseUrl is required.
+    at middleware (middleware.ts:18:6)
+  16 |     // Direct Supabase lookup - no Edge Config bullshit
+  17 |     const supabase = createClient(
+> 18 |       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     |      ^
+  19 |       process.env.SUPABASE_SERVICE_ROLE_KEY!
+  20 |     );
+  21 | {
+  
+}
+ GET / 404 in 249ms
+Middleware error: Error: supabaseUrl is required.
+    at middleware (middleware.ts:18:6)
+  16 |     // Direct Supabase lookup - no Edge Config bullshit
+  17 |     const supabase = createClient(
+> 18 |       process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     |      ^
+  19 |       process.env.SUPABASE_SERVICE_ROLE_KEY!
+  20 |     );
+  21 | {
+  
+}
+ ⚠ Cross origin request detected from 08ae3c1f-e9b6-4bf6-ab86-bd4047cf2e2e-00-14hzr9gglg8zw.riker.replit.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ⚠ Cross origin request detected from 127.0.0.1 to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
