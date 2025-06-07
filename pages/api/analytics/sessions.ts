@@ -31,19 +31,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Company ID required' });
     }
 
-    // Get last 30 days of page views
+    // Get last 30 days of template views (real tracking data)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const { data: views, error } = await supabaseAdmin
-      .from('page_views')
-      .select('*')
+      .from('template_views')
+      .select('id, session_id, total_time_seconds, device_type, visit_start_time, referrer_url, created_at')
       .eq('company_id', companyId)
-      .gte('viewed_at', thirtyDaysAgo.toISOString())
-      .order('viewed_at', { ascending: false });
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching page views:', error);
+      console.error('Error fetching template views:', error);
       return res.status(500).json({ error: 'Failed to fetch analytics' });
     }
 
@@ -57,13 +57,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Convert each page view to a visit (no grouping needed)
-    const visits: Visit[] = views.map((view, index) => ({
-      id: `visit_${view.id}`,
-      time_on_site: 60, // Default 1 minute - will be replaced with actual tracking data later
-      device_type: view.device_type,
-      visit_time: view.viewed_at,
-      referrer: view.referrer || 'Direct'
+    // Convert each template view to a visit with real time data
+    const visits: Visit[] = views.map((view) => ({
+      id: `visit_${view.session_id}`,
+      time_on_site: view.total_time_seconds || 0,
+      device_type: view.device_type || 'desktop',
+      visit_time: view.visit_start_time || view.created_at,
+      referrer: view.referrer_url || 'Direct'
     }));
 
     // Calculate summary stats
