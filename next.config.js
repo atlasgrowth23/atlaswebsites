@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  typescript: {
-    // Temporarily ignore type errors during build
-    ignoreBuildErrors: true,
-  },
+
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',

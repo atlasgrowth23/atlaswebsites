@@ -54,6 +54,10 @@ export type Company = {
   emergency_service?: boolean
   created_at?: string
   updated_at?: string
+  // Additional properties for template rendering
+  logoUrl?: string
+  latitude?: number
+  longitude?: number
 }
 
 export type CompanyFrame = {

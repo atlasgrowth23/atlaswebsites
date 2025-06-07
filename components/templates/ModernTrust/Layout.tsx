@@ -1,7 +1,7 @@
 import React from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { Company } from '@/types';
+import { Company } from '@/lib/supabase';
 import Header from './Header';
 import Hero from './Hero';
 import About from './About';
