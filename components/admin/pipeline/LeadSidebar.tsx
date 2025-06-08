@@ -144,28 +144,55 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   }, [activeTab, lead, isOpen]);
 
+  // Detect current user (you'll need to pass this from auth context)
+  const currentUser = 'Nick'; // TODO: Get from auth context - 'Nick' or 'Jared'
+  const isNick = currentUser === 'Nick';
+
   // Generate SMS snippets
   const generateAnswerCallSnippet = () => {
     if (!lead) return '';
-    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug} - Nick Atlas Growth`;
+    const signature = isNick ? 'Nick\nAtlas Growth' : 'Jared\nAtlas Growth';
+    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug} - ${signature}`;
   };
 
-  const generateVoicemailSnippet = () => {
+  const generateVoicemailSnippetPart1 = () => {
     if (!lead) return '';
     
-    const ownerGreeting = ownerName.trim() ? `Hey ${ownerName}` : 'Hey there';
-    const sender = 'Nick'; // Change this to 'Jared' when needed
-    const location = sender === 'Nick' ? 'from Birmingham' : 'from Little Rock';
+    const ownerGreeting = ownerName.trim() ? `What's up ${ownerName}` : 'What\'s up man';
+    const sender = isNick ? 'Nick' : 'Jared';
+    const location = isNick ? 'from Birmingham' : 'from Little Rock';
+    const signature = `${sender}\nAtlas Growth`;
     
-    return `${ownerGreeting}, this is ${sender} with Atlas Growth ${location}. Here is the website we made for you: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}. I just left you a voicemail with some details. Please feel free to text or call me at any time if you have any questions. Thank you. ${sender}, Atlas Growth.`;
+    return `${ownerGreeting}, this is ${sender} with Atlas Growth ${location}. I just left you a voicemail with some details. Please feel free to text or call me at any time if you have any questions. Thank you.\n${signature}`;
   };
 
-  // Update SMS message when owner name changes - default to Answer Call snippet
+  const generateVoicemailSnippetPart2 = () => {
+    if (!lead) return '';
+    const signature = isNick ? 'Nick\nAtlas Growth' : 'Jared\nAtlas Growth';
+    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}\n${signature}`;
+  };
+
+  // Auto-send SMS function
+  const sendSMSSnippet = (message: string) => {
+    if (!lead?.company.phone || !message.trim()) return;
+    
+    const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
+    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+    window.open(smsUrl, '_self');
+    
+    // Auto-add SMS activity note
+    const ownerNameToUse = ownerName || 'there';
+    const smsNote = `💬 Sent SMS to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}:\n\n${message}`;
+    saveNote(smsNote);
+  };
+
+  // Don't auto-populate message anymore - just clear it
   useEffect(() => {
-    if (lead && !editingSnippet) {
-      setSmsMessage(generateAnswerCallSnippet());
+    if (lead) {
+      setSmsMessage('');
+      setEditingSnippet(false);
     }
-  }, [lead, ownerName, editingSnippet]);
+  }, [lead, ownerName]);
 
 
   const fetchNotes = async () => {
@@ -911,60 +938,86 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
               
               {/* Snippet Buttons */}
-              <div className="flex gap-2 mb-3">
-                <button
-                  onClick={() => {
-                    setEditingSnippet(false);
-                    setSmsMessage(generateAnswerCallSnippet());
-                  }}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium"
-                >
-                  Answer Call Snippet
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingSnippet(false);
-                    setSmsMessage(generateVoicemailSnippet());
-                  }}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-md text-sm font-medium"
-                >
-                  Voicemail Snippet
-                </button>
-                <button
-                  onClick={() => setEditingSnippet(true)}
-                  className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-md text-sm font-medium"
-                >
-                  Edit
-                </button>
+              <div className="space-y-2 mb-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => sendSMSSnippet(generateAnswerCallSnippet())}
+                    disabled={!lead?.company?.phone}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
+                  >
+                    📞 Answer Call Snippet
+                  </button>
+                  {isNick && (
+                    <button
+                      onClick={() => setEditingSnippet(true)}
+                      className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-md text-sm font-medium"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart1())}
+                    disabled={!lead?.company?.phone}
+                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
+                  >
+                    📝 Voicemail Part 1
+                  </button>
+                  <button
+                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart2())}
+                    disabled={!lead?.company?.phone}
+                    className="flex-1 bg-green-700 hover:bg-green-800 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
+                  >
+                    🌐 Voicemail Part 2
+                  </button>
+                </div>
               </div>
               
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {editingSnippet ? 'Edit Message:' : 'Current Message:'}
-                </label>
-                <textarea
-                  value={smsMessage}
-                  onChange={(e) => setSmsMessage(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white resize-none"
-                  rows={4}
-                  style={{minHeight: '100px'}}
-                  placeholder="Your SMS message will appear here..."
-                  readOnly={!editingSnippet}
-                />
-              </div>
+              {/* Only show message editor when in edit mode */}
+              {editingSnippet && (
+                <>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Edit Custom Message:
+                    </label>
+                    <textarea
+                      value={smsMessage}
+                      onChange={(e) => setSmsMessage(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white resize-none"
+                      rows={4}
+                      style={{minHeight: '100px'}}
+                      placeholder="Type your custom SMS message..."
+                    />
+                  </div>
+                  
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => sendSMSSnippet(smsMessage)}
+                      disabled={!lead?.company?.phone || !smsMessage.trim()}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
+                    >
+                      💬 Send Custom SMS
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingSnippet(false);
+                        setSmsMessage('');
+                      }}
+                      className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-3 rounded-md text-sm font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
               
-              <button
-                onClick={handleSendSMS}
-                disabled={!lead?.company?.phone || !smsMessage.trim()}
-                className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white py-3 px-4 rounded-md text-sm font-medium cursor-pointer touch-manipulation active:bg-purple-800"
-                type="button"
-              >
-                💬 Open SMS App to Send
-              </button>
-              
-              <div className="text-xs text-gray-500 mt-2 text-center">
-                This will open your Messages app with the text pre-filled
-              </div>
+              {!editingSnippet && (
+                <div className="text-xs text-gray-500 text-center mt-2">
+                  Click any snippet button above to automatically open SMS with the message pre-filled
+                </div>
+              )}
             </div>
           </div>
         )}
