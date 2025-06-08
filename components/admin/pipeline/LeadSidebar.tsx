@@ -89,12 +89,16 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       id: string;
       time_on_site: number;
       device_type: string;
+      device_model: string;
       visit_time: string;
       referrer: string;
+      is_return_visitor: boolean;
     }>;
     summary: {
       total_visits: number;
       unique_visitors: number;
+      return_visitors: number;
+      bounce_rate: number;
       avg_time_on_site: number;
     };
   } | null>(null);
@@ -171,16 +175,26 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   };
 
   // Auto-send SMS function
-  const sendSMSSnippet = (message: string) => {
+  const sendSMSSnippet = (message: string, snippetType?: string) => {
     if (!lead?.company.phone || !message.trim()) return;
     
     const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
     const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
     window.open(smsUrl, '_self');
     
-    // Auto-add SMS activity note
+    // Auto-add SMS activity note with link tracking
     const ownerNameToUse = ownerName || 'there';
-    const smsNote = `💬 Sent SMS to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}:\n\n${message}`;
+    const timestamp = new Date().toLocaleTimeString();
+    const websiteUrl = `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
+    
+    let smsNote = `💬 Sent SMS to ${ownerNameToUse} (${lead.company.name}) at ${timestamp}:\n\n${message}`;
+    
+    // Add link sent tracking if message contains website URL
+    if (message.includes(websiteUrl)) {
+      const linkType = snippetType || 'custom message';
+      smsNote += `\n\n🔗 Website link sent via ${linkType} - tracking analytics for visitor activity`;
+    }
+    
     saveNote(smsNote);
   };
 
@@ -939,7 +953,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               <div className="space-y-2 mb-3">
                 <div className="flex gap-2">
                   <button
-                    onClick={() => sendSMSSnippet(generateAnswerCallSnippet())}
+                    onClick={() => sendSMSSnippet(generateAnswerCallSnippet(), 'Answer Call Snippet')}
                     disabled={!lead?.company?.phone}
                     className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
                   >
@@ -957,14 +971,14 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart1())}
+                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart1(), 'Voicemail Part 1')}
                     disabled={!lead?.company?.phone}
                     className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
                   >
                     📝 Voicemail Part 1
                   </button>
                   <button
-                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart2())}
+                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart2(), 'Voicemail Part 2')}
                     disabled={!lead?.company?.phone}
                     className="flex-1 bg-green-700 hover:bg-green-800 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
                   >
@@ -992,7 +1006,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   
                   <div className="flex gap-2 mb-3">
                     <button
-                      onClick={() => sendSMSSnippet(smsMessage)}
+                      onClick={() => sendSMSSnippet(smsMessage, 'Custom Message')}
                       disabled={!lead?.company?.phone || !smsMessage.trim()}
                       className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
                     >
@@ -1048,8 +1062,8 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
             ) : analyticsData ? (
               <>
-                {/* Summary Cards */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
+                {/* Enhanced Summary Cards */}
+                <div className="grid grid-cols-2 gap-2 mb-4">
                   <div className="bg-white border-2 border-blue-200 p-3 rounded-lg text-center">
                     <div className="text-xl font-bold text-blue-600">
                       {analyticsData.summary.total_visits || 0}
@@ -1062,6 +1076,22 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     </div>
                     <div className="text-xs text-gray-600">Unique Visitors</div>
                   </div>
+                  <div className="bg-white border-2 border-orange-200 p-3 rounded-lg text-center">
+                    <div className="text-xl font-bold text-orange-600">
+                      {analyticsData.summary.return_visitors || 0}
+                    </div>
+                    <div className="text-xs text-gray-600">Return Visitors</div>
+                  </div>
+                  <div className="bg-white border-2 border-red-200 p-3 rounded-lg text-center">
+                    <div className="text-xl font-bold text-red-600">
+                      {analyticsData.summary.bounce_rate || 0}%
+                    </div>
+                    <div className="text-xs text-gray-600">Bounce Rate</div>
+                  </div>
+                </div>
+                
+                {/* Time & Performance */}
+                <div className="grid grid-cols-1 gap-2 mb-4">
                   <div className="bg-white border-2 border-purple-200 p-3 rounded-lg text-center">
                     <div className="text-xl font-bold text-purple-600">
                       {analyticsData.summary.avg_time_on_site ? 
@@ -1069,7 +1099,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                         '0:00'
                       }
                     </div>
-                    <div className="text-xs text-gray-600">Avg Time</div>
+                    <div className="text-xs text-gray-600">Average Time on Site</div>
                   </div>
                 </div>
 
@@ -1085,14 +1115,21 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   ) : (
                     <div className="space-y-2">
                       {analyticsData.visits.map((visit, index) => (
-                        <div key={visit.id} className="bg-white border border-gray-200 p-3 rounded-lg hover:shadow-sm transition-shadow">
+                        <div key={visit.id} className={`border p-3 rounded-lg hover:shadow-sm transition-shadow ${
+                          visit.is_return_visitor ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
+                        }`}>
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
                               <span className="text-lg">
                                 {visit.device_type === 'mobile' ? '📱' : 
                                  visit.device_type === 'tablet' ? '📊' : '💻'}
                               </span>
-                              <span className="text-sm font-medium capitalize">{visit.device_type}</span>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium">{visit.device_model}</span>
+                                {visit.is_return_visitor && (
+                                  <span className="text-xs text-blue-600 font-medium">↩️ Return Visitor</span>
+                                )}
+                              </div>
                             </div>
                             <span className="text-xs text-gray-500 text-right">
                               {new Date(visit.visit_time).toLocaleDateString('en-US', { 
@@ -1106,21 +1143,24 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                           </div>
                           <div className="flex items-center justify-between">
                             <div className="text-sm">
-                              <span className="text-gray-600">Time on site:</span>
-                              <span className="font-semibold ml-1">
+                              <span className="text-gray-600">Time:</span>
+                              <span className={`font-semibold ml-1 ${
+                                visit.time_on_site < 10 ? 'text-red-600' : visit.time_on_site > 120 ? 'text-green-600' : 'text-gray-900'
+                              }`}>
                                 {visit.time_on_site >= 60 ? 
                                   `${Math.floor(visit.time_on_site / 60)}:${String(visit.time_on_site % 60).padStart(2, '0')}` : 
                                   `0:${String(visit.time_on_site).padStart(2, '0')}`
                                 }
                               </span>
+                              {visit.time_on_site < 10 && <span className="text-xs text-red-500 ml-1">(Bounce)</span>}
                             </div>
-                            {visit.referrer && visit.referrer !== 'Direct' && (
-                              <div className="text-xs text-blue-600">
-                                via {visit.referrer.includes('google') ? 'Google' : 
-                                     visit.referrer.includes('facebook') ? 'Facebook' : 
-                                     'Referral'}
-                              </div>
-                            )}
+                            <div className="text-xs text-gray-600">
+                              {visit.referrer === 'Direct SMS Link' ? '📱 SMS Link' :
+                               visit.referrer === 'Google Search' ? '🔍 Google' :
+                               visit.referrer === 'Facebook' ? '📘 Facebook' :
+                               visit.referrer === 'Internal Navigation' ? '🔗 Internal' :
+                               `📧 ${visit.referrer}`}
+                            </div>
                           </div>
                         </div>
                       ))}

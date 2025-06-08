@@ -23,49 +23,62 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const payload: TrackingPayload = req.body;
+    const { 
+      companyId, 
+      sessionId, 
+      visitorId,
+      templateKey, 
+      timeOnPage,
+      deviceType,
+      deviceModel,
+      fingerprint,
+      userAgent,
+      referrer,
+      pageUrl,
+      pageTitle,
+      isInitial 
+    } = req.body;
     
     // Debug logging for development
     if (process.env.NODE_ENV === 'development') {
       console.log('📊 Tracking payload received:', {
-        companyId: payload.companyId,
-        sessionId: payload.sessionId,
-        templateKey: payload.templateKey,
-        timeOnPage: payload.timeOnPage
+        companyId,
+        sessionId,
+        visitorId,
+        templateKey,
+        timeOnPage,
+        deviceModel
       });
     }
     
     // Validate required fields
-    if (!payload.companyId || !payload.sessionId || !payload.templateKey) {
+    if (!companyId || !sessionId || !templateKey) {
       console.error('❌ Missing required fields:', { 
-        companyId: !!payload.companyId, 
-        sessionId: !!payload.sessionId, 
-        templateKey: !!payload.templateKey 
+        companyId: !!companyId, 
+        sessionId: !!sessionId, 
+        templateKey: !!templateKey 
       });
       return res.status(400).json({ 
         error: 'Missing required fields',
-        required: ['companyId', 'sessionId', 'templateKey'],
-        received: payload
+        required: ['companyId', 'sessionId', 'templateKey']
       });
     }
 
-    // Get company slug if not provided
-    let companySlug = payload.companySlug;
-    if (!companySlug) {
-      try {
-        const { data: company } = await supabaseAdmin
-          .from('companies')
-          .select('slug')
-          .eq('id', payload.companyId)
-          .single();
-        
-        companySlug = company?.slug || null;
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 Fetched company slug:', companySlug);
-        }
-      } catch (error) {
-        console.error('⚠️ Could not fetch company slug:', error);
+    // Get company slug
+    let companySlug = null;
+    try {
+      const { data: company } = await supabaseAdmin
+        .from('companies')
+        .select('slug')
+        .eq('id', companyId)
+        .single();
+      
+      companySlug = company?.slug || null;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Fetched company slug:', companySlug);
       }
+    } catch (error) {
+      console.error('⚠️ Could not fetch company slug:', error);
     }
 
     // Get IP address
@@ -73,38 +86,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : req.socket.remoteAddress) || 'unknown';
 
     // Enhanced device and browser detection
-    const userAgent = payload.userAgent || 'Unknown';
-    const deviceType = detectDeviceType(userAgent);
-    const browserName = detectBrowserName(userAgent);
+    const detectedDeviceType = deviceType || detectDeviceType(userAgent || 'Unknown');
+    const browserName = detectBrowserName(userAgent || 'Unknown');
+
+    // Check if this is a return visitor
+    const isReturnVisitor = await checkReturnVisitor(visitorId, companyId, fingerprint);
 
     // Check for existing session
     const { data: existingView } = await supabaseAdmin
       .from('template_views')
-      .select('id, total_time_seconds, page_interactions, visit_start_time, latitude, longitude')
-      .eq('session_id', payload.sessionId)
-      .eq('company_id', payload.companyId)
+      .select('id, total_time_seconds, page_interactions, visit_start_time, visitor_id')
+      .eq('session_id', sessionId)
+      .eq('company_id', companyId)
       .single();
 
-    const now = payload.timestamp || new Date().toISOString();
-    const isInitial = payload.isInitial ?? !existingView;
+    const now = new Date().toISOString();
+    const isInitialVisit = isInitial ?? !existingView;
     
     const trackingData = {
-      company_id: payload.companyId,
+      company_id: companyId,
       company_slug: companySlug,
-      template_key: payload.templateKey,
-      session_id: payload.sessionId,
-      user_agent: userAgent,
-      referrer_url: payload.referrer || null,
+      template_key: templateKey,
+      session_id: sessionId,
+      visitor_id: visitorId,
+      user_agent: userAgent || 'Unknown',
+      referrer_url: referrer || null,
       ip_address: ip !== 'unknown' ? ip : null,
-      latitude: null,
-      longitude: null,
-      device_type: deviceType,
+      device_type: detectedDeviceType,
+      device_model: deviceModel || null,
       browser_name: browserName,
-      total_time_seconds: Math.min(payload.timeOnPage || 0, 1800), // Cap at 30 minutes
-      page_interactions: (payload.interactions || 1) + (existingView?.page_interactions || 0),
-      is_initial_visit: isInitial,
-      visit_start_time: isInitial ? now : existingView?.visit_start_time || now,
-      visit_end_time: !isInitial ? now : null,
+      screen_resolution: fingerprint?.screenResolution || null,
+      timezone: fingerprint?.timezone || null,
+      language: fingerprint?.language || null,
+      platform: fingerprint?.platform || null,
+      touch_support: fingerprint?.touchSupport || false,
+      page_title: pageTitle || null,
+      is_return_visitor: isReturnVisitor,
+      total_time_seconds: Math.min(timeOnPage || 0, 1800), // Cap at 30 minutes
+      page_interactions: 1 + (existingView?.page_interactions || 0),
+      is_initial_visit: isInitialVisit,
+      visit_start_time: isInitialVisit ? now : existingView?.visit_start_time || now,
+      visit_end_time: !isInitialVisit ? now : null,
       updated_at: now
     };
 
@@ -215,6 +237,44 @@ async function updateDailyAnalytics(companyId: string, deviceType: string) {
 
   } catch (error) {
     console.error('Error updating daily analytics:', error);
+  }
+}
+
+// Professional return visitor detection
+async function checkReturnVisitor(visitorId: string, companyId: string, fingerprint: any): Promise<boolean> {
+  if (!visitorId) return false;
+  
+  try {
+    // Check if visitor_id has visited this company before
+    const { data: existingVisits } = await supabaseAdmin
+      .from('template_views')
+      .select('id')
+      .eq('visitor_id', visitorId)
+      .eq('company_id', companyId)
+      .limit(1);
+    
+    if (existingVisits && existingVisits.length > 0) {
+      return true;
+    }
+    
+    // Fallback: Check fingerprint match for visitors without cookies
+    if (fingerprint?.screenResolution && fingerprint?.timezone && fingerprint?.platform) {
+      const { data: fingerprintMatches } = await supabaseAdmin
+        .from('template_views')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('screen_resolution', fingerprint.screenResolution)
+        .eq('timezone', fingerprint.timezone)
+        .eq('platform', fingerprint.platform)
+        .limit(1);
+      
+      return fingerprintMatches && fingerprintMatches.length > 0;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking return visitor:', error);
+    return false;
   }
 }
 

@@ -15,8 +15,11 @@ interface Visit {
   id: string;
   time_on_site: number; // in seconds
   device_type: string;
+  device_model: string;
   visit_time: string;
   referrer: string;
+  is_return_visitor: boolean;
+  visitor_id: string;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -57,18 +60,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Convert each template view to a visit with real time data
-    const visits: Visit[] = views.map((view) => ({
+    // Convert each template view to a visit with enhanced data
+    const visits: Visit[] = views.map((view: any) => ({
       id: `visit_${view.session_id}`,
       time_on_site: view.total_time_seconds || 0,
       device_type: view.device_type || 'desktop',
+      device_model: view.device_model || view.device_type || 'Unknown',
       visit_time: view.visit_start_time || view.created_at,
-      referrer: view.referrer_url || 'Direct'
+      referrer: view.referrer_url || 'Direct SMS Link',
+      is_return_visitor: view.is_return_visitor || false,
+      visitor_id: view.visitor_id
     }));
 
-    // Calculate summary stats
+    // Calculate professional stats
     const totalVisits = visits.length;
-    const uniqueVisitors = new Set(views.map(v => v.session_id)).size;
+    const uniqueVisitors = new Set(views.map((v: any) => v.visitor_id).filter(Boolean)).size;
+    const returnVisitors = visits.filter(v => v.is_return_visitor).length;
+    const bounceRate = visits.length > 0 
+      ? Math.round((visits.filter(v => v.time_on_site < 10).length / visits.length) * 100)
+      : 0;
     const avgTimeOnSite = visits.length > 0 
       ? Math.round(visits.reduce((sum, v) => sum + v.time_on_site, 0) / visits.length)
       : 0;
@@ -78,6 +88,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       summary: {
         total_visits: totalVisits,
         unique_visitors: uniqueVisitors,
+        return_visitors: returnVisitors,
+        bounce_rate: bounceRate,
         avg_time_on_site: avgTimeOnSite
       }
     });

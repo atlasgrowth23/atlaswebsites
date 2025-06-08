@@ -4,9 +4,99 @@ interface SimpleTrackerProps {
   companyId: string;
 }
 
+// Professional device fingerprinting
+const generateDeviceFingerprint = () => {
+  const screen = window.screen;
+  const nav = navigator;
+  
+  return {
+    screenResolution: `${screen.width}x${screen.height}`,
+    colorDepth: screen.colorDepth,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    language: nav.language,
+    platform: nav.platform,
+    userAgent: nav.userAgent,
+    touchSupport: 'ontouchstart' in window,
+    deviceMemory: (nav as any).deviceMemory || 'unknown',
+    hardwareConcurrency: nav.hardwareConcurrency || 'unknown'
+  };
+};
+
+// Generate visitor ID with fallback fingerprint
+const getOrCreateVisitorId = () => {
+  // Try to get existing visitor ID from cookie
+  const existingId = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('visitor_id='))
+    ?.split('=')[1];
+    
+  if (existingId) {
+    return existingId;
+  }
+  
+  // Generate new visitor ID
+  const newVisitorId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Set cookie for 1 year
+  const expiry = new Date();
+  expiry.setFullYear(expiry.getFullYear() + 1);
+  document.cookie = `visitor_id=${newVisitorId}; expires=${expiry.toUTCString()}; path=/; SameSite=Lax`;
+  
+  return newVisitorId;
+};
+
+// Detect device type professionally
+const getDeviceInfo = () => {
+  const ua = navigator.userAgent;
+  const screen = window.screen;
+  
+  // Detect device type
+  let deviceType = 'desktop';
+  let deviceModel = 'Unknown';
+  
+  if (/iPad/.test(ua)) {
+    deviceType = 'tablet';
+    deviceModel = 'iPad';
+  } else if (/iPhone/.test(ua)) {
+    deviceType = 'mobile';
+    const match = ua.match(/iPhone OS (\d+)_(\d+)/);
+    deviceModel = match ? `iPhone (iOS ${match[1]}.${match[2]})` : 'iPhone';
+  } else if (/Android/.test(ua)) {
+    deviceType = /Mobile/.test(ua) ? 'mobile' : 'tablet';
+    const match = ua.match(/Android (\d+\.?\d*)/);
+    deviceModel = match ? `Android ${match[1]}` : 'Android Device';
+  } else if (screen.width <= 768) {
+    deviceType = 'mobile';
+  } else if (screen.width <= 1024) {
+    deviceType = 'tablet';
+  }
+  
+  return { deviceType, deviceModel };
+};
+
+// Smart referrer detection
+const getSmartReferrer = () => {
+  const referrer = document.referrer;
+  if (!referrer) return 'Direct SMS Link';
+  
+  if (referrer.includes('google.com')) return 'Google Search';
+  if (referrer.includes('facebook.com')) return 'Facebook';
+  if (referrer.includes('instagram.com')) return 'Instagram';
+  if (referrer.includes('linkedin.com')) return 'LinkedIn';
+  if (referrer.includes('twitter.com') || referrer.includes('x.com')) return 'Twitter/X';
+  if (referrer.includes('bing.com')) return 'Bing Search';
+  if (referrer.includes('yahoo.com')) return 'Yahoo Search';
+  
+  // Same domain = internal navigation
+  if (referrer.includes(window.location.hostname)) return 'Internal Navigation';
+  
+  return 'External Referral';
+};
+
 export default function SimpleTracker({ companyId }: SimpleTrackerProps) {
   const startTimeRef = useRef<number>(Date.now());
   const sessionIdRef = useRef<string>(`${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const visitorIdRef = useRef<string>(getOrCreateVisitorId());
   const trackingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -14,8 +104,10 @@ export default function SimpleTracker({ companyId }: SimpleTrackerProps) {
 
     const templateKey = 'moderntrust'; // Default template
     const startTime = startTimeRef.current;
+    const deviceInfo = getDeviceInfo();
+    const deviceFingerprint = generateDeviceFingerprint();
     
-    // Track initial visit
+    // Professional tracking with all data points
     const trackVisit = async (timeOnPage: number, isInitial: boolean = false) => {
       try {
         await fetch('/api/analytics/track', {
@@ -24,11 +116,27 @@ export default function SimpleTracker({ companyId }: SimpleTrackerProps) {
           body: JSON.stringify({
             companyId,
             sessionId: sessionIdRef.current,
+            visitorId: visitorIdRef.current,
             templateKey,
             timeOnPage,
+            isInitial,
+            // Professional device data
+            deviceType: deviceInfo.deviceType,
+            deviceModel: deviceInfo.deviceModel,
+            referrer: getSmartReferrer(),
+            // Device fingerprint for unique visitor detection
+            fingerprint: {
+              screenResolution: deviceFingerprint.screenResolution,
+              timezone: deviceFingerprint.timezone,
+              language: deviceFingerprint.language,
+              platform: deviceFingerprint.platform,
+              touchSupport: deviceFingerprint.touchSupport
+            },
+            // Browser info
             userAgent: navigator.userAgent,
-            referrer: document.referrer,
-            isInitial
+            // Page info
+            pageUrl: window.location.href,
+            pageTitle: document.title
           })
         });
       } catch (error) {
@@ -60,16 +168,22 @@ export default function SimpleTracker({ companyId }: SimpleTrackerProps) {
       }
     }, 5000); // Check every 5 seconds
 
-    // Track on page unload
+    // Track on page unload with professional data
     const handleBeforeUnload = () => {
       const timeOnPage = Math.floor((Date.now() - startTime) / 1000);
       navigator.sendBeacon('/api/analytics/track', JSON.stringify({
         companyId,
         sessionId: sessionIdRef.current,
+        visitorId: visitorIdRef.current,
         templateKey,
         timeOnPage,
+        deviceType: deviceInfo.deviceType,
+        deviceModel: deviceInfo.deviceModel,
+        fingerprint: deviceFingerprint,
         userAgent: navigator.userAgent,
-        referrer: document.referrer,
+        referrer: getSmartReferrer(),
+        pageUrl: window.location.href,
+        pageTitle: document.title,
         isInitial: false
       }));
     };
