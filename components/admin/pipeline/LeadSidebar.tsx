@@ -76,6 +76,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'sms' | 'analytics'>('overview');
   const [sessionData, setSessionData] = useState<any[]>([]);
   const [smsMessage, setSmsMessage] = useState('');
+  const [editingSnippet, setEditingSnippet] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -143,13 +144,23 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   }, [activeTab, lead, isOpen]);
 
-  // Update SMS message when owner name changes
-  useEffect(() => {
-    if (lead) {
-      const defaultMessage = `Hey ${ownerName || 'there'},\n\nHere's the website preview we talked about: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}\n\nThis is my personal cell phone. Please call or text me anytime if you have any questions.\n\nThank you,\nJared Thompson`;
-      setSmsMessage(defaultMessage);
+  // Generate SMS snippets
+  const generateSnippet1 = () => {
+    if (!lead) return '';
+    
+    if (ownerName.trim()) {
+      return `Hey ${ownerName}, this is Nick! Here's your website: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
+    } else {
+      return `Hey this is Nick from Atlas Growth! Here's your website: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
     }
-  }, [lead, ownerName]);
+  };
+
+  // Update SMS message when owner name changes or snippet is regenerated
+  useEffect(() => {
+    if (lead && !editingSnippet) {
+      setSmsMessage(generateSnippet1());
+    }
+  }, [lead, ownerName, editingSnippet]);
 
 
   const fetchNotes = async () => {
@@ -291,77 +302,26 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   };
 
   const saveNote = async (noteContent: string = newNote) => {
-    if (!lead || (!noteContent.trim() && !meetingSet && !websitePermission && !schedulingSoftware)) return;
+    if (!lead || !noteContent.trim()) return;
 
     try {
-      // Build comprehensive note with checklist data
-      let fullNote = noteContent.trim();
-      
-      // Add checklist items to note
-      const checklistItems = [];
-      if (meetingSet) checklistItems.push('✅ Meeting Set');
-      if (websitePermission) {
-        const permissionText = websitePermission === 'yes' ? '✅ Allowed to Send Website: YES' : 
-                             websitePermission === 'no' ? '❌ Allowed to Send Website: NO' :
-                             websitePermission === 'hard_no' ? '🚫 Allowed to Send Website: HARD NO' : '';
-        if (permissionText) checklistItems.push(permissionText);
-      }
-      if (schedulingSoftware) checklistItems.push(`📊 Software: ${schedulingSoftware}`);
-      
-      if (checklistItems.length > 0) {
-        fullNote += (fullNote ? '\n\n' : '') + 'Actions:\n' + checklistItems.join('\n');
-      }
-
-      console.log('💾 Saving note:', { 
-        lead_id: lead.id, 
-        content: fullNote,
-        leadObject: lead 
-      });
-
       const response = await fetch('/api/pipeline/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lead_id: lead.id,
-          content: fullNote,
+          content: noteContent.trim(),
           is_private: false,
           created_by: ownerName || 'Unknown'
         })
       });
 
-      console.log('📡 API Response status:', response.status);
-
       if (response.ok) {
-        const responseData = await response.json();
-        console.log('✅ Note saved successfully:', responseData);
         setNewNote('');
-        
-        // Auto-stage movement logic
-        if (meetingSet && lead.stage !== 'appointment_scheduled') {
-          console.log('🔄 Auto-moving to appointment_scheduled stage');
-          onMoveStage(lead.id, 'appointment_scheduled', 'Auto-moved: Meeting scheduled via checklist');
-        } else if (websitePermission === 'hard_no' && lead.stage !== 'not_interested') {
-          console.log('🔄 Auto-moving to not_interested stage');
-          onMoveStage(lead.id, 'not_interested', 'Auto-moved: Hard no on website');
-        } else if ((websitePermission === 'yes' || websitePermission === 'no') && lead.stage === 'new_lead') {
-          console.log('🔄 Auto-moving to contacted stage');
-          onMoveStage(lead.id, 'contacted', 'Auto-moved: Initial contact made');
-        }
-        
-        // Mark as having initial contact and clear form
-        setHasInitialContact(true);
-        setMeetingSet(false);
-        setWebsitePermission('');
-        // Keep schedulingSoftware for future reference
         fetchNotes();
       } else {
         const errorData = await response.text();
-        console.error('❌ Failed to save note:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          leadId: lead.id
-        });
+        console.error('❌ Failed to save note:', errorData);
         alert(`Failed to save note: ${response.status} - ${errorData}`);
       }
     } catch (error) {
@@ -687,11 +647,8 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             {/* Business Info Cards */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="text-xs text-gray-600">Website</div>
-                <div className="flex items-center gap-1 mt-1">
-                  <span className={`w-2 h-2 rounded-full ${lead.company.site ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                  <span className="text-sm font-medium">{lead.company.site ? 'Has Site' : 'No Site'}</span>
-                </div>
+                <div className="text-xs text-gray-600">City</div>
+                <div className="text-sm font-medium">{lead.company.city}</div>
               </div>
               
               <div className="bg-gray-50 p-3 rounded-lg">
@@ -707,23 +664,26 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   </span>
                 </div>
               </div>
-              
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="text-xs text-gray-600">Total Reviews</div>
-                <div className="text-sm font-medium">{lead.company.reviews || 0}</div>
-              </div>
-              
-              <div className="bg-gray-50 p-3 rounded-lg">
-                <div className="text-xs text-gray-600">Rating</div>
-                <div className="text-sm font-medium">
-                  {lead.company.rating ? `${Number(lead.company.rating).toFixed(1)} stars` : 'N/A'}
-                </div>
-              </div>
             </div>
 
             {/* Review Analytics for Phone Calls */}
             <div className="border rounded-lg p-3 bg-blue-50">
               <h4 className="font-medium text-gray-900 mb-3 text-sm">Review Analytics (For Phone Conversations)</h4>
+              
+              {/* Total Reviews and Rating */}
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-white p-2 rounded">
+                  <div className="text-xs text-gray-600">Total Reviews</div>
+                  <div className="text-sm font-medium">{lead.company.reviews || 0}</div>
+                </div>
+                <div className="bg-white p-2 rounded">
+                  <div className="text-xs text-gray-600">Rating</div>
+                  <div className="text-sm font-medium">
+                    {lead.company.rating ? `${Number(lead.company.rating).toFixed(1)} stars` : 'N/A'}
+                  </div>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white p-2 rounded">
                   <div className="text-xs text-gray-600">Last 30 Days</div>
@@ -750,77 +710,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     : 'No reviews yet'
                   }
                 </div>
-              </div>
-            </div>
-
-            {/* Website Visitor Count */}
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-xs text-gray-600">Website Visits</div>
-              <div className="text-sm font-medium">
-                {loadingAnalytics ? (
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                    Loading...
-                  </div>
-                ) : (
-                  `${analyticsData?.summary.total_visits || 0} visits`
-                )}
-              </div>
-            </div>
-
-            {/* Contact Info */}
-            <div className="border rounded-lg p-3">
-              <h4 className="font-medium text-gray-900 mb-2">Contact Information</h4>
-              <div className="space-y-2 text-sm">
-                {lead.company.phone && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Phone:</span>
-                    <span className="font-medium">{lead.company.phone}</span>
-                  </div>
-                )}
-                {lead.company.email_1 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Email:</span>
-                    <span className="font-medium text-xs">{lead.company.email_1}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Location:</span>
-                  <span className="font-medium">{lead.company.city}, {lead.company.state}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900">Quick Actions</h4>
-              <div className="flex flex-col gap-2">
-                {lead.company.reviews_link && (
-                  <a
-                    href={lead.company.reviews_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                    </svg>
-                    📍 View Google Reviews (Find Owner Name)
-                  </a>
-                )}
-                {lead.company.slug && (
-                  <a
-                    href={`/t/moderntrust/${lead.company.slug}?preview=true`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-3 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                    🌐 Preview Website
-                  </a>
-                )}
               </div>
             </div>
 
@@ -896,16 +785,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                   rows={3}
                 />
-                <div className="flex items-center justify-between mt-2">
-                  <label className="flex items-center text-xs text-gray-600">
-                    <input
-                      type="checkbox"
-                      checked={isPrivateNote}
-                      onChange={(e) => setIsPrivateNote(e.target.checked)}
-                      className="mr-1 w-3 h-3"
-                    />
-                    Private note
-                  </label>
+                <div className="flex items-center justify-end mt-2">
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleNoteChange(newNote + '\n\n@Jared - ')}
@@ -924,114 +804,17 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
             </div>
 
-            {/* Show action checklist only if no initial contact made */}
-            {!hasInitialContact && (
-              <div className="border border-gray-200 rounded-lg p-3 bg-blue-50">
-                <h4 className="font-medium text-gray-900 mb-3 text-sm">✅ Initial Contact Checklist</h4>
-                <div className="space-y-3">
-                  {/* Meeting Set Checkbox */}
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="meetingSet"
-                      checked={meetingSet}
-                      onChange={(e) => setMeetingSet(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="meetingSet" className="text-sm font-medium text-gray-700">
-                      📅 Meeting Set / Appointment Set
-                    </label>
-                  </div>
-
-                  {/* Website Permission Radio Buttons */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">🌐 Allowed to Send Website</label>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="website_yes"
-                          name="websitePermission"
-                          value="yes"
-                          checked={websitePermission === 'yes'}
-                          onChange={(e) => setWebsitePermission(e.target.value)}
-                          className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
-                        />
-                        <label htmlFor="website_yes" className="text-sm text-gray-700">✅ Yes</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="website_no"
-                          name="websitePermission"
-                          value="no"
-                          checked={websitePermission === 'no'}
-                          onChange={(e) => setWebsitePermission(e.target.value)}
-                          className="w-4 h-4 text-yellow-600 border-gray-300 focus:ring-yellow-500"
-                        />
-                        <label htmlFor="website_no" className="text-sm text-gray-700">❌ No</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="website_hard_no"
-                          name="websitePermission"
-                          value="hard_no"
-                          checked={websitePermission === 'hard_no'}
-                          onChange={(e) => setWebsitePermission(e.target.value)}
-                          className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
-                        />
-                        <label htmlFor="website_hard_no" className="text-sm text-gray-700">🚫 Hard No</label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Scheduling Software Text Input */}
-                  <div>
-                    <label htmlFor="software" className="block text-sm font-medium text-gray-700 mb-1">
-                      📊 Scheduling/Invoice Software
-                    </label>
-                    <input
-                      type="text"
-                      id="software"
-                      value={schedulingSoftware}
-                      onChange={(e) => setSchedulingSoftware(e.target.value)}
-                      placeholder="e.g., ServiceTitan, Housecall Pro, JobNimbus..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
 
 
             {/* Save Button */}
             <button
               onClick={() => saveNote()}
-              disabled={!newNote.trim() && !meetingSet && !websitePermission && !schedulingSoftware}
+              disabled={!newNote.trim()}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-md text-sm font-medium"
             >
               💾 Save Note
-              {!hasInitialContact && meetingSet && <span className="text-sm block">→ Will auto-move to Appointment Scheduled</span>}
-              {!hasInitialContact && websitePermission === 'hard_no' && <span className="text-sm block">→ Will auto-move to Not Interested</span>}
-              {!hasInitialContact && (websitePermission === 'yes' || websitePermission === 'no') && <span className="text-sm block">→ Will auto-move to Contacted</span>}
             </button>
 
-            {/* Calendar embed when meeting is set */}
-            {meetingSet && (
-              <div className="border border-blue-200 rounded-lg bg-blue-50 p-3">
-                <h4 className="font-medium text-blue-900 mb-2">📅 Schedule Appointment</h4>
-                <div className="bg-white rounded p-2">
-                  <iframe 
-                    src="https://api.leadconnectorhq.com/widget/booking/2py8ezkg4g4PPHGO6XUZ" 
-                    style={{width: '100%', height: '300px', border: 'none'}} 
-                    id="calendar_embed"
-                    title="Appointment Booking Calendar"
-                  />
-                </div>
-                <script src="https://api.leadconnectorhq.com/js/form_embed.js" type="text/javascript"></script>
-              </div>
-            )}
 
             {/* Notes History */}
             <div>
@@ -1099,22 +882,42 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         {activeTab === 'sms' && (
           <div className="p-3 sm:p-4 space-y-4">
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-              <h4 className="font-medium text-purple-900 mb-2 text-sm sm:text-base">💬 Send Website SMS</h4>
+              <h4 className="font-medium text-purple-900 mb-2 text-sm sm:text-base">💬 SMS Snippets</h4>
               <div className="text-sm text-purple-700 mb-3 break-all">
                 To: {lead?.company?.phone || 'No phone number found'}
               </div>
               
+              {/* Snippet Buttons */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => {
+                    setEditingSnippet(false);
+                    setSmsMessage(generateSnippet1());
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium"
+                >
+                  Snippet 1
+                </button>
+                <button
+                  onClick={() => setEditingSnippet(true)}
+                  className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-md text-sm font-medium"
+                >
+                  Edit Snippet
+                </button>
+              </div>
+              
               <div className="mb-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message (you can edit this):
+                  {editingSnippet ? 'Edit Message:' : 'Current Message:'}
                 </label>
                 <textarea
                   value={smsMessage}
                   onChange={(e) => setSmsMessage(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white resize-none"
-                  rows={6}
-                  style={{minHeight: '120px'}}
+                  rows={4}
+                  style={{minHeight: '100px'}}
                   placeholder="Your SMS message will appear here..."
+                  readOnly={!editingSnippet}
                 />
               </div>
               
