@@ -151,8 +151,8 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   // Generate SMS snippets
   const generateAnswerCallSnippet = () => {
     if (!lead) return '';
-    const signature = isNick ? 'Nick\nAtlas Growth' : 'Jared\nAtlas Growth';
-    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug} - ${signature}`;
+    const sender = isNick ? 'Nick' : 'Jared';
+    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}\n\n${sender}\nAtlas Growth`;
   };
 
   const generateVoicemailSnippetPart1 = () => {
@@ -161,15 +161,13 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     const ownerGreeting = ownerName.trim() ? `What's up ${ownerName}` : 'What\'s up man';
     const sender = isNick ? 'Nick' : 'Jared';
     const location = isNick ? 'from Birmingham' : 'from Little Rock';
-    const signature = `${sender}\nAtlas Growth`;
     
-    return `${ownerGreeting}, this is ${sender} with Atlas Growth ${location}. I just left you a voicemail with some details. Please feel free to text or call me at any time if you have any questions. Thank you.\n${signature}`;
+    return `${ownerGreeting}, this is ${sender} with Atlas Growth ${location}. I just left you a voicemail with some details. Please feel free to text or call me at any time if you have any questions. Thank you.\n-${sender}\nAtlas Growth`;
   };
 
   const generateVoicemailSnippetPart2 = () => {
     if (!lead) return '';
-    const signature = isNick ? 'Nick\nAtlas Growth' : 'Jared\nAtlas Growth';
-    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}\n${signature}`;
+    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
   };
 
   // Auto-send SMS function
