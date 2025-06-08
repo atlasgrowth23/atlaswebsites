@@ -467,11 +467,15 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
+      if (!isResizing || typeof window === 'undefined') return;
       
-      const newWidth = window.innerWidth - e.clientX;
+      // Calculate width based on distance from center
+      const centerX = window.innerWidth / 2;
+      const distanceFromCenter = Math.abs(e.clientX - centerX);
+      const newWidth = distanceFromCenter * 2; // Width = 2 * distance from center
+      
       const minWidth = 320; // Minimum width
-      const maxWidth = window.innerWidth * 0.8; // Max 80% of screen
+      const maxWidth = window.innerWidth * 0.9; // Max 90% of screen
       
       setSidebarWidth(Math.max(minWidth, Math.min(newWidth, maxWidth)));
     };
@@ -500,20 +504,35 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
   const stageActions = STAGE_ACTIONS[lead.stage as keyof typeof STAGE_ACTIONS] || [];
 
   return (
-    <div 
-      className="fixed right-0 top-0 h-full bg-white shadow-2xl border-l border-gray-200 z-40 transform transition-transform duration-300 ease-in-out"
-      style={{ width: `${sidebarWidth}px` }}
-    >
-      {/* Resize Handle */}
-      <div
-        className={`absolute left-0 top-0 bottom-0 w-1 bg-gray-300 hover:bg-blue-500 cursor-ew-resize transition-colors ${
-          isResizing ? 'bg-blue-500' : ''
-        }`}
-        onMouseDown={handleMouseDown}
-        title="Drag to resize"
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-30"
+        onClick={onClose}
       />
       
-      <div className="h-full ml-1">
+      {/* Centered Modal */}
+      <div 
+        className="fixed inset-0 flex items-center justify-center z-40 p-4"
+      >
+        <div 
+          className="bg-white shadow-2xl border border-gray-200 rounded-lg h-full max-h-[90vh] transform transition-transform duration-300 ease-in-out overflow-hidden"
+          style={{ 
+            width: `${typeof window !== 'undefined' ? Math.min(sidebarWidth, window.innerWidth - 32) : sidebarWidth}px`, 
+            maxWidth: 'calc(100vw - 2rem)' 
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Resize Handle */}
+          <div
+            className={`absolute left-0 top-0 bottom-0 w-1 bg-gray-300 hover:bg-blue-500 cursor-ew-resize transition-colors rounded-l-lg ${
+              isResizing ? 'bg-blue-500' : ''
+            }`}
+            onMouseDown={handleMouseDown}
+            title="Drag to resize"
+          />
+          
+          <div className="h-full ml-1 flex flex-col">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
         <div className="flex justify-between items-start mb-3">
@@ -553,23 +572,78 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
       </div>
 
-      {/* Stage Actions */}
-      {stageActions.length > 0 && (
-        <div className="p-4 bg-gray-50 border-b">
-          <p className="text-xs text-gray-600 mb-2">Quick Stage Actions:</p>
-          <div className="flex gap-2">
-            {stageActions.map(action => (
+      {/* Quick Actions Bar - Always visible */}
+      <div className="p-4 bg-gray-50 border-b">
+        <div className="flex flex-col gap-3">
+          {/* Top Row: Phone + Stage Actions */}
+          <div className="flex items-center gap-2">
+            {/* Phone Icon */}
+            {lead.company.phone && (
               <button
-                key={action.stage}
-                onClick={() => onMoveStage(lead.id, action.stage)}
-                className={`${action.color} text-white px-3 py-1 rounded text-xs font-medium hover:opacity-90`}
+                onClick={handleCall}
+                className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors"
+                title={`Call ${lead.company.phone}`}
               >
-                {action.label}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
               </button>
-            ))}
+            )}
+            
+            {/* Stage Actions */}
+            {stageActions.length > 0 && (
+              <>
+                <div className="h-6 w-px bg-gray-300"></div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-600 mb-1">Quick Stage Actions:</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {stageActions.map(action => (
+                      <button
+                        key={action.stage}
+                        onClick={() => onMoveStage(lead.id, action.stage)}
+                        className={`${action.color} text-white px-3 py-1 rounded text-xs font-medium hover:opacity-90`}
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Bottom Row: Preview Website + View Google Reviews */}
+          <div className="flex gap-2">
+            {lead.company.slug && (
+              <a
+                href={`/t/moderntrust/${lead.company.slug}?preview=true`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Preview Website
+              </a>
+            )}
+            
+            {lead.company.reviews_link && (
+              <a
+                href={lead.company.reviews_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+                View Google Reviews
+              </a>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Tabs */}
       <div className="flex border-b bg-white">
@@ -1302,8 +1376,10 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
           </div>
         )}
 
+          </div>
+          </div>
+        </div>
       </div>
-      </div>
-    </div>
+    </>
   );
 }
