@@ -15,41 +15,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: 'Invalid lead ID' });
       }
 
-      // Get owner name for the lead
+      // Get owner name and email for the lead
       const { data: lead, error } = await supabase
         .from('lead_pipeline')
-        .select('owner_name')
+        .select('owner_name, owner_email')
         .eq('id', leadId)
         .single();
 
       if (error) {
-        console.error('Error fetching owner name:', error);
-        return res.status(500).json({ error: 'Failed to fetch owner name' });
+        console.error('Error fetching owner info:', error);
+        return res.status(500).json({ error: 'Failed to fetch owner info' });
       }
 
-      res.status(200).json({ owner_name: lead?.owner_name || '' });
+      res.status(200).json({ 
+        owner_name: lead?.owner_name || '',
+        owner_email: lead?.owner_email || ''
+      });
       
     } else if (req.method === 'POST') {
-      const { lead_id, owner_name, company_id, email_1 } = req.body;
+      const { lead_id, owner_name, owner_email, company_id, email_1 } = req.body;
 
-      // Update owner name in lead_pipeline table
-      if (lead_id && owner_name !== undefined) {
+      // Update owner name and/or email in lead_pipeline table
+      if (lead_id && (owner_name !== undefined || owner_email !== undefined)) {
+        const updateData: any = {
+          updated_at: new Date().toISOString()
+        };
+
+        if (owner_name !== undefined) {
+          updateData.owner_name = owner_name || null;
+        }
+
+        if (owner_email !== undefined) {
+          updateData.owner_email = owner_email || null;
+        }
+
         const { data, error } = await supabase
           .from('lead_pipeline')
-          .update({
-            owner_name: owner_name || null,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', lead_id)
           .select('*')
           .single();
 
         if (error) {
-          console.error('Error updating owner name:', error);
-          return res.status(500).json({ error: 'Failed to update owner name' });
+          console.error('Error updating owner info:', error);
+          return res.status(500).json({ error: 'Failed to update owner info' });
         }
 
-        return res.status(200).json({ success: true, owner_name: data.owner_name });
+        return res.status(200).json({ 
+          success: true, 
+          owner_name: data.owner_name,
+          owner_email: data.owner_email 
+        });
       }
 
       // Update email_1 in companies table

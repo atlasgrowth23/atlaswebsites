@@ -145,20 +145,25 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   }, [activeTab, lead, isOpen]);
 
   // Generate SMS snippets
-  const generateSnippet1 = () => {
+  const generateAnswerCallSnippet = () => {
     if (!lead) return '';
-    
-    if (ownerName.trim()) {
-      return `Hey ${ownerName}, this is Nick! Here's your website: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
-    } else {
-      return `Hey this is Nick from Atlas Growth! Here's your website: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
-    }
+    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug} - Nick Atlas Growth`;
   };
 
-  // Update SMS message when owner name changes or snippet is regenerated
+  const generateVoicemailSnippet = () => {
+    if (!lead) return '';
+    
+    const ownerGreeting = ownerName.trim() ? `Hey ${ownerName}` : 'Hey there';
+    const sender = 'Nick'; // Change this to 'Jared' when needed
+    const location = sender === 'Nick' ? 'from Birmingham' : 'from Little Rock';
+    
+    return `${ownerGreeting}, this is ${sender} with Atlas Growth ${location}. Here is the website we made for you: https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}. I just left you a voicemail with some details. Please feel free to text or call me at any time if you have any questions. Thank you. ${sender}, Atlas Growth.`;
+  };
+
+  // Update SMS message when owner name changes - default to Answer Call snippet
   useEffect(() => {
     if (lead && !editingSnippet) {
-      setSmsMessage(generateSnippet1());
+      setSmsMessage(generateAnswerCallSnippet());
     }
   }, [lead, ownerName, editingSnippet]);
 
@@ -245,10 +250,11 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       if (response.ok) {
         const data = await response.json();
         setOwnerName(data.owner_name || '');
-        console.log(`✅ Loaded owner name: ${data.owner_name} for lead: ${lead.id}`);
+        setOwnerEmail(data.owner_email || '');
+        console.log(`✅ Loaded owner info: ${data.owner_name} / ${data.owner_email} for lead: ${lead.id}`);
       }
     } catch (error) {
-      console.error('Error fetching owner name:', error);
+      console.error('Error fetching owner info:', error);
     }
   };
 
@@ -278,21 +284,38 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead || !ownerEmail.trim()) return;
     
     try {
-      const response = await fetch('/api/admin/add-email', {
+      // Save to lead_pipeline first
+      const pipelineResponse = await fetch('/api/pipeline/owner-name', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          company_id: lead.company_id,
-          owner_name: ownerName.trim() || null,
+          lead_id: lead.id,
           owner_email: ownerEmail.trim()
         })
       });
       
-      if (response.ok) {
-        console.log(`✅ Saved owner email: ${ownerEmail} for company: ${lead.company_id}`);
+      if (pipelineResponse.ok) {
+        console.log(`✅ Saved owner email to pipeline: ${ownerEmail} for lead: ${lead.id}`);
+        
+        // Also save to tk_contacts for master record
+        const contactResponse = await fetch('/api/admin/add-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: lead.company_id,
+            owner_name: ownerName.trim() || null,
+            owner_email: ownerEmail.trim()
+          })
+        });
+        
+        if (contactResponse.ok) {
+          console.log(`✅ Saved owner email to tk_contacts: ${ownerEmail} for company: ${lead.company_id}`);
+        } else {
+          console.log('⚠️ Failed to save to tk_contacts, but pipeline save succeeded');
+        }
       } else {
-        const errorData = await response.json();
-        console.error('❌ Failed to save owner email:', errorData.error);
+        const errorData = await pipelineResponse.json();
+        console.error('❌ Failed to save owner email to pipeline:', errorData.error);
         alert(`Failed to save owner email: ${errorData.error}`);
       }
     } catch (error) {
@@ -892,17 +915,26 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                 <button
                   onClick={() => {
                     setEditingSnippet(false);
-                    setSmsMessage(generateSnippet1());
+                    setSmsMessage(generateAnswerCallSnippet());
                   }}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium"
                 >
-                  Snippet 1
+                  Answer Call Snippet
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingSnippet(false);
+                    setSmsMessage(generateVoicemailSnippet());
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-md text-sm font-medium"
+                >
+                  Voicemail Snippet
                 </button>
                 <button
                   onClick={() => setEditingSnippet(true)}
                   className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-md text-sm font-medium"
                 >
-                  Edit Snippet
+                  Edit
                 </button>
               </div>
               
