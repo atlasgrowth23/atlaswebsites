@@ -99,7 +99,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   } | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [showCustomizationForm, setShowCustomizationForm] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(384); // 96 * 4 = 384px (w-96)
+  const [sidebarWidth, setSidebarWidth] = useState(800); // Default to 800px for better desktop experience
   const [isResizing, setIsResizing] = useState(false);
   
   // Checklist states
@@ -544,19 +544,19 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             {/* Width presets */}
             <div className="flex gap-1">
               <button
-                onClick={() => setSidebarWidth(384)}
-                className={`w-6 h-4 rounded-sm border border-blue-300 ${sidebarWidth === 384 ? 'bg-blue-300' : 'bg-blue-100'}`}
-                title="Small (384px)"
-              />
-              <button
                 onClick={() => setSidebarWidth(600)}
                 className={`w-6 h-4 rounded-sm border border-blue-300 ${sidebarWidth === 600 ? 'bg-blue-300' : 'bg-blue-100'}`}
-                title="Medium (600px)"
+                title="Small (600px)"
               />
               <button
                 onClick={() => setSidebarWidth(800)}
                 className={`w-6 h-4 rounded-sm border border-blue-300 ${sidebarWidth === 800 ? 'bg-blue-300' : 'bg-blue-100'}`}
-                title="Large (800px)"
+                title="Medium (800px)"
+              />
+              <button
+                onClick={() => setSidebarWidth(1000)}
+                className={`w-6 h-4 rounded-sm border border-blue-300 ${sidebarWidth === 1000 ? 'bg-blue-300' : 'bg-blue-100'}`}
+                title="Large (1000px)"
               />
             </div>
             <button 
