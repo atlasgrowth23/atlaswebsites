@@ -10,7 +10,7 @@ export interface ActivityData {
   actionData?: Record<string, any>;
 }
 
-// Track activity in database
+// Track activity in database and trigger auto-stage updates
 export async function trackActivity(data: ActivityData) {
   try {
     const { data: result, error } = await supabaseAdmin
@@ -28,6 +28,12 @@ export async function trackActivity(data: ActivityData) {
       console.error('Activity tracking error:', error);
       return { success: false, error };
     }
+
+    // Auto-update pipeline stage based on activity
+    await autoUpdateLeadStage(data.leadId, data.action);
+
+    // Auto-add tags based on activity
+    await autoAddTags(data.leadId, data.action, data.actionData);
 
     return { success: true, data: result };
   } catch (error) {
@@ -131,6 +137,115 @@ export async function endActiveSession(userName: string) {
   }
 }
 
+// Auto-update lead stage based on activity
+export async function autoUpdateLeadStage(leadId: string, action: string) {
+  try {
+    // Get current lead stage
+    const { data: lead, error: leadError } = await supabaseAdmin
+      .from('lead_pipeline')
+      .select('stage')
+      .eq('id', leadId)
+      .single();
+
+    if (leadError || !lead) {
+      console.error('Could not fetch lead for stage update:', leadError);
+      return;
+    }
+
+    let newStage = null;
+
+    // Stage update logic based on activities
+    switch (action) {
+      case ACTIVITY_ACTIONS.SMS_ANSWER_CALL:
+        // Answer Call Snippet sent = Live Call stage
+        if (lead.stage === 'new_lead') {
+          newStage = 'live_call';
+        }
+        break;
+
+      case ACTIVITY_ACTIONS.SMS_VOICEMAIL_1:
+        // Voicemail Part 1 sent = Voicemail stage
+        if (lead.stage === 'new_lead') {
+          newStage = 'voicemail';
+        }
+        break;
+
+      case ACTIVITY_ACTIONS.UNSUCCESSFUL_CALL:
+        // Mark as unsuccessful
+        newStage = 'unsuccessful';
+        break;
+
+      default:
+        // No stage update needed for other actions
+        return;
+    }
+
+    // Update stage if needed
+    if (newStage && newStage !== lead.stage) {
+      const { error: updateError } = await supabaseAdmin
+        .from('lead_pipeline')
+        .update({ 
+          stage: newStage,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', leadId);
+
+      if (updateError) {
+        console.error('Failed to auto-update lead stage:', updateError);
+      } else {
+        console.log(`Auto-updated lead ${leadId} from ${lead.stage} to ${newStage} due to ${action}`);
+      }
+    }
+  } catch (error) {
+    console.error('Auto stage update failed:', error);
+  }
+}
+
+// Auto-add tags based on activities
+export async function autoAddTags(leadId: string, action: string, actionData?: Record<string, any>) {
+  try {
+    const tagsToAdd: string[] = [];
+
+    // Determine which tags to add based on action
+    switch (action) {
+      case ACTIVITY_ACTIONS.SMS_ANSWER_CALL:
+        tagsToAdd.push('answered-call');
+        break;
+      
+      case ACTIVITY_ACTIONS.SMS_VOICEMAIL_1:
+        tagsToAdd.push('voicemail-left');
+        break;
+      
+      // Note: viewed-during-call and viewed-after-voicemail will be handled by website tracking
+      // return-visitor will be handled by website analytics
+    }
+
+    // Add tags via API
+    for (const tagType of tagsToAdd) {
+      try {
+        const response = await fetch('/api/tags/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadId,
+            tagType,
+            createdBy: 'system',
+            metadata: { triggeredBy: action, actionData }
+          })
+        });
+
+        if (!response.ok) {
+          console.error(`Failed to add tag ${tagType}:`, await response.text());
+        }
+      } catch (error) {
+        console.error(`Error adding tag ${tagType}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Auto tag addition failed:', error);
+  }
+}
+
 // Activity action types
 export const ACTIVITY_ACTIONS = {
   PREVIEW_WEBSITE: 'preview_website',
@@ -143,5 +258,8 @@ export const ACTIVITY_ACTIONS = {
   OWNER_EMAIL_ADDED: 'owner_email_added',
   NOTE_ADDED: 'note_added',
   TEMPLATE_SAVED: 'template_saved',
-  UNSUCCESSFUL_CALL: 'unsuccessful_call_marked'
+  UNSUCCESSFUL_CALL: 'unsuccessful_call_marked',
+  APPOINTMENT_SET: 'appointment_set',
+  SALE_MADE: 'sale_made',
+  CALLBACK_RECEIVED: 'callback_received'
 } as const;

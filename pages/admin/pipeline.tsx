@@ -4,6 +4,7 @@ import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
 import LeadSidebar from '@/components/admin/pipeline/LeadSidebar';
 import { getAllCompanies } from '@/lib/supabase-db';
+import { getActiveSession } from '@/lib/activityTracker';
 
 interface Company {
   id: string;
@@ -46,13 +47,12 @@ interface PipelineProps {
 
 const STAGES = [
   { key: 'new_lead', title: 'New Lead', color: 'bg-blue-500', textColor: 'text-white', description: 'Ready to contact' },
-  { key: 'voicemail_left', title: 'Voicemail Left', color: 'bg-indigo-500', textColor: 'text-white', description: 'Left voicemail' },
-  { key: 'contacted', title: 'Contacted', color: 'bg-green-500', textColor: 'text-white', description: 'Initial contact made' },
-  { key: 'website_viewed', title: 'Website Viewed', color: 'bg-purple-500', textColor: 'text-white', description: 'Engaged with site' },
-  { key: 'appointment_scheduled', title: 'Appointment Scheduled', color: 'bg-orange-500', textColor: 'text-white', description: 'Meeting set' },
-  { key: 'follow_up', title: 'Follow-up', color: 'bg-yellow-500', textColor: 'text-white', description: 'Needs follow-up' },
-  { key: 'sale_closed', title: 'Sale Closed', color: 'bg-emerald-600', textColor: 'text-white', description: 'Deal won' },
-  { key: 'not_interested', title: 'Not Interested', color: 'bg-gray-500', textColor: 'text-white', description: 'Not a fit' }
+  { key: 'live_call', title: 'Live Call', color: 'bg-green-500', textColor: 'text-white', description: 'Talked to them' },
+  { key: 'voicemail', title: 'Voicemail', color: 'bg-indigo-500', textColor: 'text-white', description: 'Left voicemail' },
+  { key: 'site_viewed', title: 'Site Viewed', color: 'bg-purple-500', textColor: 'text-white', description: 'Visited website' },
+  { key: 'appointment', title: 'Appointment', color: 'bg-orange-500', textColor: 'text-white', description: 'Meeting set' },
+  { key: 'sale_made', title: 'Sale Made', color: 'bg-emerald-600', textColor: 'text-white', description: 'Deal won' },
+  { key: 'unsuccessful', title: 'Unsuccessful', color: 'bg-gray-500', textColor: 'text-white', description: 'Not interested' }
 ];
 
 export default function Pipeline({ companies }: PipelineProps) {
@@ -64,15 +64,141 @@ export default function Pipeline({ companies }: PipelineProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [pipelineStats, setPipelineStats] = useState<Record<string, number>>({});
+  
+  // Session management state
+  const [activeSession, setActiveSession] = useState<any>(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const currentUser = 'Nick'; // TODO: Get from auth context
 
   useEffect(() => {
     fetchPipelineData();
+    checkActiveSession();
     
     // Auto-refresh pipeline data every 30 seconds to catch auto-stage updates
-    const refreshInterval = setInterval(fetchPipelineData, 30000);
+    const refreshInterval = setInterval(() => {
+      fetchPipelineData();
+      checkActiveSession();
+    }, 30000);
     
     return () => clearInterval(refreshInterval);
   }, [selectedPipelineType]);
+
+  // Real-time session duration updates
+  useEffect(() => {
+    if (!activeSession) return;
+    
+    const updateInterval = setInterval(() => {
+      // Force re-render to update duration display
+      setActiveSession(prev => ({ ...prev }));
+    }, 1000);
+    
+    return () => clearInterval(updateInterval);
+  }, [activeSession]);
+
+  // Check for active session
+  const checkActiveSession = async () => {
+    try {
+      const response = await fetch('/api/sessions?user=' + currentUser);
+      if (response.ok) {
+        const data = await response.json();
+        const active = data.sessions.find((s: any) => !s.end_time);
+        setActiveSession(active || null);
+      }
+    } catch (error) {
+      console.error('Failed to check active session:', error);
+    }
+  };
+
+  // Start new session
+  const startSession = async () => {
+    setSessionLoading(true);
+    try {
+      const response = await fetch('/api/sessions/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName: currentUser })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setActiveSession(data.session);
+      } else {
+        const error = await response.json();
+        alert(`Failed to start session: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to start session:', error);
+      alert('Failed to start session. Please try again.');
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
+  // End active session
+  const endSession = async () => {
+    if (!activeSession) return;
+    
+    setSessionLoading(true);
+    try {
+      const response = await fetch('/api/sessions/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName: currentUser })
+      });
+
+      if (response.ok) {
+        setActiveSession(null);
+      } else {
+        const error = await response.json();
+        alert(`Failed to end session: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to end session:', error);
+      alert('Failed to end session. Please try again.');
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
+  // Format session duration
+  const formatSessionDuration = (startTime: string) => {
+    const start = new Date(startTime);
+    const now = new Date();
+    const durationMs = now.getTime() - start.getTime();
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  // Reset test pipeline
+  const resetTestPipeline = async () => {
+    if (!confirm('🔄 Reset Test Pipeline?\n\nThis will:\n• Move all test leads back to "New Lead" stage\n• Clear all activity logs\n• Remove all tags\n• Clear appointments\n• Remove website visits\n\nThis cannot be undone. Continue?')) {
+      return;
+    }
+
+    setSessionLoading(true);
+    try {
+      const response = await fetch('/api/pipeline/reset-test-pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ Success!\n\nReset ${data.leadsReset} test leads back to "New Lead" stage.\n\nAll activity logs, tags, and appointments have been cleared.\n\nReady for fresh testing!`);
+        await fetchPipelineData(); // Refresh the pipeline data
+      } else {
+        const error = await response.json();
+        alert(`❌ Reset failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to reset test pipeline:', error);
+      alert('❌ Failed to reset test pipeline. Please try again.');
+    } finally {
+      setSessionLoading(false);
+    }
+  };
 
   const fetchPipelineData = async () => {
     try {
@@ -283,19 +409,6 @@ export default function Pipeline({ companies }: PipelineProps) {
                         
                         {/* Stage Move Actions */}
                         <div className="flex flex-wrap gap-1 sm:gap-2">
-                          {/* Preview Our Site Button */}
-                          {lead.company.slug && (
-                            <a
-                              href={`/t/moderntrust/${lead.company.slug}?preview=true`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              🌐 Preview Our Site
-                            </a>
-                          )}
-                          
                           {/* Preview Their Site Button */}
                           {lead.company.site && (
                             <a
@@ -308,24 +421,6 @@ export default function Pipeline({ companies }: PipelineProps) {
                               🏠 Preview Their Site
                             </a>
                           )}
-                          
-
-                          
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                moveLeadToStage(lead.id, e.target.value);
-                              }
-                            }}
-                            className="text-xs border border-gray-300 rounded px-2 py-1"
-                            defaultValue=""
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <option value="">Move to...</option>
-                            {STAGES.filter(s => s.key !== selectedStage).map(stage => (
-                              <option key={stage.key} value={stage.key}>{stage.title}</option>
-                            ))}
-                          </select>
                         </div>
                       </div>
                     </div>
@@ -365,8 +460,37 @@ export default function Pipeline({ companies }: PipelineProps) {
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Lead Pipeline</h2>
-          <p className="text-gray-600">HVAC contractors without existing websites</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Lead Pipeline</h2>
+              <p className="text-gray-600">
+                {selectedPipelineType === 'atlas_test_pipeline' 
+                  ? '🧪 Test environment with realistic HVAC businesses' 
+                  : 'HVAC contractors without existing websites'
+                }
+              </p>
+            </div>
+            
+            {/* Reset Button for Test Pipeline */}
+            {selectedPipelineType === 'atlas_test_pipeline' && (
+              <button
+                onClick={resetTestPipeline}
+                disabled={sessionLoading}
+                className="bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
+              >
+                {sessionLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    🔄 Reset Test Pipeline
+                  </>
+                )}
+              </button>
+            )}
+          </div>
           
           {/* Search Bar for Overview */}
           <div className="mt-4 flex gap-4">
@@ -390,10 +514,84 @@ export default function Pipeline({ companies }: PipelineProps) {
           </div>
         </div>
 
+        {/* Session Controls */}
+        <div className="mb-6">
+          {activeSession ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <div>
+                    <h3 className="font-semibold text-green-800">Cold Call Session Active</h3>
+                    <p className="text-sm text-green-600">
+                      Started: {new Date(activeSession.start_time).toLocaleTimeString()} • 
+                      Duration: {formatSessionDuration(activeSession.start_time)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a 
+                    href="/admin/sessions" 
+                    className="text-green-700 hover:text-green-900 text-sm font-medium"
+                  >
+                    View Sessions →
+                  </a>
+                  <a 
+                    href="/admin/calendar" 
+                    className="text-blue-700 hover:text-blue-900 text-sm font-medium"
+                  >
+                    📅 Calendar →
+                  </a>
+                  <button
+                    onClick={endSession}
+                    disabled={sessionLoading}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {sessionLoading ? 'Ending...' : 'End Session'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-gray-800">Cold Call Session</h3>
+                  <p className="text-sm text-gray-600">
+                    Start a session to track your call activities and pipeline progress
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a 
+                    href="/admin/sessions" 
+                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
+                  >
+                    View Sessions →
+                  </a>
+                  <a 
+                    href="/admin/calendar" 
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  >
+                    📅 Calendar →
+                  </a>
+                  <button
+                    onClick={startSession}
+                    disabled={sessionLoading}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    {sessionLoading ? 'Starting...' : 'Start Session'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Pipeline Selector */}
         <div className="mb-6">
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 bg-gray-100 p-2 rounded-lg">
             {[
+              { key: 'atlas_test_pipeline', label: '🧪 Test Pipeline', count: pipelineStats['atlas_test_pipeline'] || 0, color: 'bg-green-50 border-green-200 text-green-700' },
               { key: 'no_website_alabama', label: 'Alabama - No Website', count: pipelineStats['no_website_alabama'] || 0 },
               { key: 'no_website_arkansas', label: 'Arkansas - No Website', count: pipelineStats['no_website_arkansas'] || 0 },
               { key: 'has_website_alabama', label: 'Alabama - Has Website', count: pipelineStats['has_website_alabama'] || 0 },
@@ -407,10 +605,14 @@ export default function Pipeline({ companies }: PipelineProps) {
                   selectedPipelineType === pipeline.key
                     ? pipeline.key === 'broken_websites'
                       ? 'bg-white text-red-600 shadow-lg border-2 border-red-500'
-                      : 'bg-white text-blue-600 shadow-lg border-2 border-blue-500'
+                      : pipeline.key === 'atlas_test_pipeline'
+                        ? 'bg-white text-green-600 shadow-lg border-2 border-green-500'
+                        : 'bg-white text-blue-600 shadow-lg border-2 border-blue-500'
                     : pipeline.key === 'broken_websites'
                       ? 'bg-red-50 text-red-700 hover:bg-red-100 hover:shadow-md border border-red-200'
-                      : 'bg-white/50 text-gray-700 hover:bg-white hover:shadow-md'
+                      : pipeline.key === 'atlas_test_pipeline'
+                        ? 'bg-green-50 text-green-700 hover:bg-green-100 hover:shadow-md border border-green-200'
+                        : 'bg-white/50 text-gray-700 hover:bg-white hover:shadow-md'
                 }`}
               >
                 <div className="font-semibold">{pipeline.label}</div>

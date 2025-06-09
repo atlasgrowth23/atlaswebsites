@@ -105,6 +105,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         created_by: 'admin'
       });
 
+    // Also log to activity_log for the Activity tab
+    await supabaseAdmin
+      .from('activity_log')
+      .insert({
+        lead_id: actualLeadId,
+        company_id: companyId,
+        user_name: 'admin',
+        action: 'stage_moved',
+        action_data: {
+          from_stage: currentStage,
+          to_stage: stage,
+          notes: notes || null
+        }
+      });
+
     // Auto-enable tracking when moved to 'contacted' stage
     if (stage === 'contacted') {
       await supabaseAdmin

@@ -284,27 +284,96 @@ async function autoUpdatePipelineStage(companyId: string) {
       .eq('company_id', companyId)
       .single();
 
-    if (!pipelineLead || pipelineLead.stage !== 'contacted') return;
+    // Only auto-move from live_call or voicemail to site_viewed
+    if (!pipelineLead || !['live_call', 'voicemail'].includes(pipelineLead.stage)) return;
+
+    const previousStage = pipelineLead.stage;
 
     await supabaseAdmin
       .from('lead_pipeline')
       .update({
-        stage: 'website_viewed',
-        last_contact_date: new Date().toISOString()
+        stage: 'site_viewed',
+        updated_at: new Date().toISOString()
       })
       .eq('id', pipelineLead.id);
 
+    // Track this as an activity for session analytics
     await supabaseAdmin
-      .from('contact_log')
+      .from('activity_log')
       .insert({
+        lead_id: pipelineLead.id,
         company_id: companyId,
-        stage_from: 'contacted',
-        stage_to: 'website_viewed',
-        notes: 'Auto-moved: First website visit detected',
-        created_by: 'system'
+        user_name: 'system',
+        action: 'website_visited',
+        action_data: { 
+          previous_stage: previousStage,
+          auto_update: true 
+        }
       });
+
+    // Add website visit tags
+    await addWebsiteVisitTags(pipelineLead.id, previousStage);
+
+    console.log(`✅ Auto-moved lead ${pipelineLead.id} from ${previousStage} to site_viewed`);
 
   } catch (error) {
     console.error('Error in auto pipeline stage update:', error);
+  }
+}
+
+// Function to add website visit tags based on previous stage
+async function addWebsiteVisitTags(leadId: string, previousStage: string) {
+  try {
+    const tagsToAdd: string[] = [];
+
+    // Determine which tags to add based on previous stage
+    if (previousStage === 'live_call') {
+      tagsToAdd.push('viewed-during-call');
+    } else if (previousStage === 'voicemail') {
+      tagsToAdd.push('viewed-after-voicemail');
+    }
+
+    // Add return visitor tag if they've visited before
+    const { data: previousVisits } = await supabaseAdmin
+      .from('template_views')
+      .select('id')
+      .eq('company_id', (await supabaseAdmin
+        .from('lead_pipeline')
+        .select('company_id')
+        .eq('id', leadId)
+        .single()).data?.company_id)
+      .limit(2);
+
+    if (previousVisits && previousVisits.length > 1) {
+      tagsToAdd.push('return-visitor');
+    }
+
+    // Add tags via API
+    for (const tagType of tagsToAdd) {
+      try {
+        const response = await fetch('/api/tags/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadId,
+            tagType,
+            createdBy: 'system',
+            metadata: { 
+              triggeredBy: 'website_visit',
+              previousStage,
+              timestamp: new Date().toISOString()
+            }
+          })
+        });
+
+        if (!response.ok) {
+          console.error(`Failed to add website visit tag ${tagType}:`, await response.text());
+        }
+      } catch (error) {
+        console.error(`Error adding website visit tag ${tagType}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error adding website visit tags:', error);
   }
 }

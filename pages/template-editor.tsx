@@ -239,11 +239,6 @@ export default function TemplateEditor() {
     }
   };
 
-  const previewTemplate = () => {
-    if (company) {
-      window.open(`/t/${selectedTemplate}/${company.slug}`, '_blank');
-    }
-  };
 
   if (isLoading) {
     return (
@@ -278,9 +273,6 @@ export default function TemplateEditor() {
                   <Link href={`/company/${slug}`}>
                     <Button variant="outline">← Back to Company</Button>
                   </Link>
-                  <Button onClick={previewTemplate} className="bg-blue-600 text-white hover:bg-blue-700">
-                    🔍 Preview Website
-                  </Button>
                 </div>
               </div>
             </div>
@@ -497,14 +489,6 @@ export default function TemplateEditor() {
                       disabled={isSaving}
                     >
                       Reset All
-                    </Button>
-                    <Button
-                      onClick={previewTemplate}
-                      variant="outline"
-                      disabled={!company}
-                      className="px-6"
-                    >
-                      🔍 Preview Website
                     </Button>
                     <Button
                       onClick={handleSave}

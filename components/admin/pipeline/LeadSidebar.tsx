@@ -54,27 +54,15 @@ interface LeadSidebarProps {
 }
 
 
-const STAGE_ACTIONS = {
-  'new_lead': [
-    { stage: 'voicemail_left', label: 'Left Voicemail', color: 'bg-indigo-600' },
-    { stage: 'contacted', label: 'Mark Contacted', color: 'bg-green-600' }
-  ],
-  'voicemail_left': [
-    { stage: 'contacted', label: 'Mark Contacted', color: 'bg-green-600' },
-    { stage: 'not_interested', label: 'Not Interested', color: 'bg-gray-600' }
-  ],
-  'contacted': [
-    { stage: 'appointment_scheduled', label: 'Schedule Meeting', color: 'bg-orange-600' },
-    { stage: 'follow_up', label: 'Needs Follow-up', color: 'bg-yellow-600' }
-  ],
-  'appointment_scheduled': [
-    { stage: 'sale_closed', label: 'Close Sale', color: 'bg-emerald-600' },
-    { stage: 'follow_up', label: 'Reschedule', color: 'bg-yellow-600' }
-  ]
-};
+// Manual action buttons - no automatic stage transitions from these
+const MANUAL_ACTIONS = [
+  { action: 'appointment', label: 'Set Appointment', color: 'bg-orange-600', stage: 'appointment' },
+  { action: 'sale_made', label: 'Mark Sale', color: 'bg-emerald-600', stage: 'sale_made' },
+  { action: 'callback_received', label: 'Callback Received', color: 'bg-blue-600', stage: null } // Just adds tag
+];
 
 export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMoveStage, stages }: LeadSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'sms' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'sms' | 'analytics' | 'activity'>('overview');
   const [sessionData, setSessionData] = useState<any[]>([]);
   const [smsMessage, setSmsMessage] = useState('');
   const [editingSnippet, setEditingSnippet] = useState(false);
@@ -85,6 +73,22 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [ownerEmail, setOwnerEmail] = useState('');
   const [customizations, setCustomizations] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [activities, setActivities] = useState<Array<{
+    id: string;
+    action: string;
+    action_data: any;
+    created_at: string;
+    session_id?: string;
+    user_name: string;
+  }>>([]);
+  const [manualActionsOpen, setManualActionsOpen] = useState(false);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const [appointmentForm, setAppointmentForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    time: '14:00',
+    notes: ''
+  });
   const [analyticsData, setAnalyticsData] = useState<{
     visits: Array<{
       id: string;
@@ -140,6 +144,8 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       fetchCustomizations();
       fetchAnalyticsData();
       fetchOwnerName();
+      fetchActivities();
+      checkActiveSession();
       // Check if lead has progressed past new_lead stage (has initial contact)
       setHasInitialContact(lead.stage !== 'new_lead');
     }
@@ -305,6 +311,34 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   };
 
+  const fetchActivities = async () => {
+    if (!lead) return;
+    try {
+      const response = await fetch(`/api/activity/lead/${lead.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setActivities(data.activities || []);
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      setActivities([]);
+    }
+  };
+
+  const checkActiveSession = async () => {
+    try {
+      const response = await fetch(`/api/sessions?user=${currentUser}`);
+      if (response.ok) {
+        const data = await response.json();
+        const activeSession = data.sessions.find((s: any) => !s.end_time);
+        setHasActiveSession(!!activeSession);
+      }
+    } catch (error) {
+      console.error('Error checking active session:', error);
+      setHasActiveSession(false);
+    }
+  };
+
   const fetchSessionData = async () => {
     if (!lead) return;
     try {
@@ -461,6 +495,137 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   };
 
+  const handleUnsuccessfulCall = () => {
+    if (!lead) return;
+    
+    // Track unsuccessful call activity (this will auto-move to unsuccessful stage)
+    trackUserActivity(ACTIVITY_ACTIONS.UNSUCCESSFUL_CALL, {
+      company_name: lead.company.name,
+      previous_stage: lead.stage
+    });
+    
+    // Auto-add unsuccessful call note
+    const unsuccessfulNote = `❌ Unsuccessful call to ${lead.company.name} at ${new Date().toLocaleTimeString()} - marked as unsuccessful`;
+    saveNote(unsuccessfulNote);
+  };
+
+  const handleManualAction = async (action: typeof MANUAL_ACTIONS[0]) => {
+    if (!lead) return;
+
+    // Special handling for appointment - show calendar popup
+    if (action.action === 'appointment') {
+      setShowAppointmentForm(true);
+      return;
+    }
+
+    // Track the action first
+    const actionMap = {
+      'sale_made': 'sale_made',
+      'callback_received': 'callback_received'
+    };
+
+    await trackUserActivity(actionMap[action.action as keyof typeof actionMap], {
+      company_name: lead.company.name,
+      previous_stage: lead.stage
+    });
+
+    // Move to new stage if specified
+    if (action.stage) {
+      await onMoveStage(lead.id, action.stage);
+    }
+
+    // Auto-add note
+    const noteMap = {
+      'sale_made': `🎉 Sale made with ${lead.company.name} at ${new Date().toLocaleTimeString()}`,
+      'callback_received': `📞 Callback received from ${lead.company.name} at ${new Date().toLocaleTimeString()}`
+    };
+
+    saveNote(noteMap[action.action as keyof typeof noteMap]);
+  };
+
+  const handleAppointmentSubmit = async () => {
+    if (!lead) return;
+
+    try {
+      // Format date and time for display
+      const appointmentDate = new Date(appointmentForm.date).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      const appointmentTime = new Date(`1970-01-01T${appointmentForm.time}`).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+
+      // Track the appointment activity
+      await trackUserActivity('appointment_set', {
+        company_name: lead.company.name,
+        appointment_date: appointmentDate,
+        appointment_time: appointmentTime,
+        notes: appointmentForm.notes,
+        previous_stage: lead.stage
+      });
+
+      // Move to appointment stage
+      await onMoveStage(lead.id, 'appointment');
+
+      // Save appointment in database
+      await fetch('/api/calendar/book-appointment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: lead.company.name,
+          ownerName: ownerName || 'Business Owner',
+          ownerEmail: ownerEmail || lead.company.email_1 || '',
+          phoneNumber: lead.company.phone,
+          appointmentDate: appointmentForm.date,
+          appointmentTime: appointmentForm.time,
+          createdBy: currentUser,
+          notes: appointmentForm.notes
+        })
+      });
+
+      // Send confirmation email if we have email
+      if (ownerEmail || lead.company.email_1) {
+        await fetch('/api/send-appointment-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ownerEmail: ownerEmail || lead.company.email_1,
+            ownerName: ownerName || 'Business Owner',
+            companyName: lead.company.name,
+            appointmentDate,
+            appointmentTime,
+            phoneNumber: lead.company.phone,
+            setBy: currentUser
+          })
+        });
+      }
+
+      // Add note about the appointment
+      const appointmentNote = `📅 Appointment set for ${appointmentDate} at ${appointmentTime}${appointmentForm.notes ? `\n\nNotes: ${appointmentForm.notes}` : ''}`;
+      saveNote(appointmentNote);
+
+      // Reset form and close
+      setAppointmentForm({
+        date: new Date().toISOString().split('T')[0],
+        time: '14:00',
+        notes: ''
+      });
+      setShowAppointmentForm(false);
+
+      alert('✅ Appointment set and confirmation email sent!');
+
+    } catch (error) {
+      console.error('Error setting appointment:', error);
+      alert('❌ Failed to set appointment. Please try again.');
+    }
+  };
+
   const handleEmail = () => {
     if (!lead?.company.email_1) return;
     
@@ -591,8 +756,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
   if (!isOpen || !lead) return null;
 
-  const stageActions = STAGE_ACTIONS[lead.stage as keyof typeof STAGE_ACTIONS] || [];
-
   return (
     <>
       {/* Backdrop */}
@@ -665,9 +828,9 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
       {/* Quick Actions Bar - Always visible */}
       <div className="p-4 bg-gray-50 border-b">
         <div className="flex flex-col gap-3">
-          {/* Top Row: Phone + Stage Actions */}
+          {/* Top Row: Core Actions */}
           <div className="flex items-center gap-2">
-            {/* Phone Icon */}
+            {/* Call Icon - Always there */}
             {lead.company.phone && (
               <button
                 onClick={handleCall}
@@ -680,59 +843,80 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </button>
             )}
             
-            {/* Stage Actions */}
-            {stageActions.length > 0 && (
-              <>
-                <div className="h-6 w-px bg-gray-300"></div>
-                <div className="flex-1">
-                  <p className="text-xs text-gray-600 mb-1">Quick Stage Actions:</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {stageActions.map(action => (
-                      <button
-                        key={action.stage}
-                        onClick={() => onMoveStage(lead.id, action.stage)}
-                        className={`${action.color} text-white px-3 py-1 rounded text-xs font-medium hover:opacity-90`}
-                      >
-                        {action.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
+            {/* Unsuccessful Call Button - Only during active session */}
+            {hasActiveSession && (
+              <button
+                onClick={handleUnsuccessfulCall}
+                className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors"
+                title="Mark as unsuccessful call"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18 17M5.636 5.636L7 7m0 0a9 9 0 1012.728 12.728M7 7l5 5-5-5z" />
+                </svg>
+              </button>
             )}
-          </div>
-          
-          {/* Bottom Row: Preview Website + View Google Reviews */}
-          <div className="flex gap-2">
+
+            {/* Preview Website Button - Always there */}
             {lead.company.slug && (
               <button
                 onClick={() => {
                   trackUserActivity(ACTIVITY_ACTIONS.PREVIEW_WEBSITE);
                   window.open(`/t/moderntrust/${lead.company.slug}?preview=true`, '_blank');
                 }}
-                className="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
+                title="Preview website"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
-                Preview Website
               </button>
             )}
-            
+
+            {/* View Google Reviews Button - Always there */}
             {lead.company.reviews_link && (
               <button
                 onClick={() => {
                   trackUserActivity(ACTIVITY_ACTIONS.VIEW_GOOGLE_REVIEWS);
                   window.open(lead.company.reviews_link, '_blank');
                 }}
-                className="flex items-center gap-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded-lg transition-colors"
+                title="View Google Reviews"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                 </svg>
-                View Google Reviews
               </button>
             )}
+            
+            {/* Manual Actions Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setManualActionsOpen(!manualActionsOpen)}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
+              >
+                Actions
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {manualActionsOpen && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
+                  {MANUAL_ACTIONS.map(action => (
+                    <button
+                      key={action.action}
+                      onClick={() => {
+                        handleManualAction(action);
+                        setManualActionsOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -743,8 +927,9 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
           {[
             { key: 'overview', label: 'Overview', icon: '📊' },
             { key: 'notes', label: 'Notes', icon: '📝' },
+            { key: 'activity', label: 'Activity', icon: '🕒' },
             { key: 'sms', label: 'SMS', icon: '💬' },
-            { key: 'analytics', label: 'Analytics', icon: '📈' },
+            { key: 'analytics', label: 'Site Analytics', icon: '📈' },
             { key: 'template', label: 'Template', icon: '🎨' }
           ].map(tab => (
             <button
@@ -1104,6 +1289,131 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
           </div>
         )}
 
+        {/* Activity Tab */}
+        {activeTab === 'activity' && (
+          <div className="p-4 space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="font-semibold text-gray-900">Activity Timeline</h4>
+              <button
+                onClick={fetchActivities}
+                className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                ↻ Refresh
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {activities.length === 0 ? (
+                <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
+                  <div className="text-lg mb-2">🕒</div>
+                  <div className="text-sm">No activities yet</div>
+                  <div className="text-xs text-gray-400 mt-1">Actions will appear here as you work with this lead</div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {activities.map((activity) => {
+                    const getActivityIcon = (action: string) => {
+                      switch (action) {
+                        case 'preview_website': return '🌐';
+                        case 'view_google_reviews': return '⭐';
+                        case 'call_started': return '📞';
+                        case 'sms_answer_call_sent': return '💬';
+                        case 'sms_voicemail_1_sent': return '📝';
+                        case 'sms_voicemail_2_sent': return '🌐';
+                        case 'owner_name_added': return '👤';
+                        case 'owner_email_added': return '✅';
+                        case 'note_added': return '📝';
+                        case 'template_saved': return '🎨';
+                        case 'unsuccessful_call_marked': return '❌';
+                        case 'appointment_set': return '📅';
+                        case 'sale_made': return '💰';
+                        case 'callback_received': return '📞';
+                        case 'website_visited': return '👁️';
+                        case 'stage_moved': return '➡️';
+                        case 'tag_added': return '🏷️';
+                        case 'session_started': return '▶️';
+                        case 'session_ended': return '⏹️';
+                        default: return '📋';
+                      }
+                    };
+
+                    const getActivityLabel = (action: string) => {
+                      switch (action) {
+                        case 'preview_website': return 'Previewed Website';
+                        case 'view_google_reviews': return 'Viewed Google Reviews';
+                        case 'call_started': return 'Started Call';
+                        case 'sms_answer_call_sent': return 'Sent Answer Call SMS';
+                        case 'sms_voicemail_1_sent': return 'Sent Voicemail SMS Part 1';
+                        case 'sms_voicemail_2_sent': return 'Sent Voicemail SMS Part 2';
+                        case 'owner_name_added': return 'Added Owner Name';
+                        case 'owner_email_added': return 'Added Owner Email (Successful Call)';
+                        case 'note_added': return 'Added Note';
+                        case 'template_saved': return 'Saved Template Changes';
+                        case 'unsuccessful_call_marked': return 'Marked as Unsuccessful Call';
+                        case 'appointment_set': return 'Set Appointment';
+                        case 'sale_made': return 'Sale Made';
+                        case 'callback_received': return 'Callback Received';
+                        case 'website_visited': return 'Website Visited';
+                        case 'stage_moved': return 'Stage Changed';
+                        case 'tag_added': return 'Tag Added';
+                        case 'session_started': return 'Cold Call Session Started';
+                        case 'session_ended': return 'Cold Call Session Ended';
+                        default: return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                      }
+                    };
+
+                    return (
+                      <div key={activity.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-start gap-3">
+                          <span className="text-lg">{getActivityIcon(activity.action)}</span>
+                          <div className="flex-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {getActivityLabel(activity.action)}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {new Date(activity.created_at).toLocaleString()} • {activity.user_name}
+                              {activity.session_id && (
+                                <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
+                                  Session
+                                </span>
+                              )}
+                            </div>
+                            {activity.action_data && Object.keys(activity.action_data).length > 0 && (
+                              <div className="text-xs text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+                                {activity.action === 'appointment_set' && activity.action_data.appointment_date ? (
+                                  <div>
+                                    <strong>📅 {activity.action_data.appointment_date}</strong>
+                                    {activity.action_data.appointment_time && <span> at {activity.action_data.appointment_time}</span>}
+                                    {activity.action_data.phone_number && <div>📞 {activity.action_data.phone_number}</div>}
+                                  </div>
+                                ) : activity.action === 'owner_email_added' && activity.action_data.owner_email ? (
+                                  <div>📧 {activity.action_data.owner_email}</div>
+                                ) : activity.action === 'owner_name_added' && activity.action_data.owner_name ? (
+                                  <div>👤 {activity.action_data.owner_name}</div>
+                                ) : activity.action === 'note_added' && activity.action_data.note ? (
+                                  <div className="italic">"{activity.action_data.note}"</div>
+                                ) : activity.action === 'website_visited' && activity.action_data.previous_stage ? (
+                                  <div>📊 Auto-moved from {activity.action_data.previous_stage} → site_viewed</div>
+                                ) : activity.action === 'stage_moved' ? (
+                                  <div>➡️ {activity.action_data.from_stage} → {activity.action_data.to_stage}</div>
+                                ) : (
+                                  Object.entries(activity.action_data).map(([key, value]) => (
+                                    <div key={key}><strong>{key}:</strong> {String(value)}</div>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
           <div className="p-4 space-y-4">
@@ -1358,12 +1668,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     {isSaving ? 'Saving...' : 'Save Template'}
                   </button>
                   
-                  <button
-                    onClick={() => window.open(`/t/moderntrust/${lead.company.slug}`, '_blank')}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-medium"
-                  >
-                    🔍 Preview Website
-                  </button>
                   
                   {/* Domain Management Component */}
                   <div className="w-full">
@@ -1380,15 +1684,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     />
                   </div>
                   
-                  {lead.company.reviews_link && (
-                    <a
-                      href={lead.company.reviews_link}
-                      target="_blank"
-                      className="block w-full bg-orange-100 hover:bg-orange-200 text-orange-700 text-center py-2 rounded text-sm font-medium"
-                    >
-                      View Business Photos
-                    </a>
-                  )}
                 </div>
               </div>
             )}
@@ -1414,6 +1709,105 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
           </div>
         </div>
       </div>
+
+      {/* Appointment Form Popup */}
+      {showAppointmentForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">📅 Set Appointment</h2>
+                <button
+                  onClick={() => setShowAppointmentForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">{lead.company.name}</h3>
+                  <p className="text-sm text-gray-600">
+                    {ownerName || 'Business Owner'} • {ownerEmail || lead.company.email_1 || 'No email'} • {lead.company.phone || 'No phone'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={appointmentForm.date}
+                    onChange={(e) => setAppointmentForm({...appointmentForm, date: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Time *
+                  </label>
+                  <select
+                    required
+                    value={appointmentForm.time}
+                    onChange={(e) => setAppointmentForm({...appointmentForm, time: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {Array.from({ length: 17 }, (_, i) => {
+                      const hour = 9 + Math.floor(i / 2);
+                      const minute = i % 2 === 0 ? '00' : '30';
+                      const timeValue = `${hour.toString().padStart(2, '0')}:${minute}`;
+                      const timeLabel = new Date(`1970-01-01T${timeValue}`).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      });
+                      return (
+                        <option key={timeValue} value={timeValue}>
+                          {timeLabel}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={appointmentForm.notes}
+                    onChange={(e) => setAppointmentForm({...appointmentForm, notes: e.target.value})}
+                    placeholder="Any special notes for this appointment..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAppointmentForm(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAppointmentSubmit}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    📅 Set Appointment & Send Email
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
