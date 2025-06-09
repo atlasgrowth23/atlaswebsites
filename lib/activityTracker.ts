@@ -220,22 +220,50 @@ export async function autoAddTags(leadId: string, action: string, actionData?: R
       // return-visitor will be handled by website analytics
     }
 
-    // Add tags via API
+    // Add tags via direct database insert
     for (const tagType of tagsToAdd) {
       try {
-        const response = await fetch('/api/tags/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            leadId,
-            tagType,
-            createdBy: 'system',
-            metadata: { triggeredBy: action, actionData }
-          })
-        });
+        // Check if tag already exists
+        const { data: existingTag } = await supabaseAdmin
+          .from('lead_tags')
+          .select('id')
+          .eq('lead_id', leadId)
+          .eq('tag_type', tagType)
+          .single();
 
-        if (!response.ok) {
-          console.error(`Failed to add tag ${tagType}:`, await response.text());
+        if (existingTag) {
+          console.log(`Tag ${tagType} already exists for lead ${leadId}`);
+          continue;
+        }
+
+        // Get tag definition
+        const { data: tagDef } = await supabaseAdmin
+          .from('tag_definitions')
+          .select('*')
+          .eq('tag_type', tagType)
+          .single();
+
+        if (!tagDef) {
+          console.error(`Tag definition not found for ${tagType}`);
+          continue;
+        }
+
+        // Add tag directly
+        const { error: insertError } = await supabaseAdmin
+          .from('lead_tags')
+          .insert([{
+            lead_id: leadId,
+            tag_type: tagType,
+            tag_value: tagType,
+            is_auto_generated: tagDef.is_auto_tag,
+            created_by: 'system',
+            metadata: { triggeredBy: action, actionData }
+          }]);
+
+        if (insertError) {
+          console.error(`Failed to insert tag ${tagType}:`, insertError);
+        } else {
+          console.log(`✅ Auto-added tag: ${tagType} to lead ${leadId}`);
         }
       } catch (error) {
         console.error(`Error adding tag ${tagType}:`, error);

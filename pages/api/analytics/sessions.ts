@@ -21,6 +21,8 @@ interface Visit {
   referrer: string;
   is_return_visitor: boolean;
   visitor_id: string;
+  ip_address?: string;
+  browser_name?: string;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -41,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: views, error } = await supabaseAdmin
       .from('template_views')
-      .select('id, session_id, total_time_seconds, device_type, device_model, visit_start_time, visit_end_time, referrer_url, created_at, is_return_visitor, visitor_id')
+      .select('id, session_id, total_time_seconds, device_type, device_model, visit_start_time, visit_end_time, referrer_url, created_at, is_return_visitor, visitor_id, ip_address, browser_name')
       .eq('company_id', companyId)
       .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false });
@@ -71,7 +73,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       visit_end_time: view.visit_end_time,
       referrer: view.referrer_url || 'Direct SMS Link',
       is_return_visitor: view.is_return_visitor || false,
-      visitor_id: view.visitor_id
+      visitor_id: view.visitor_id,
+      ip_address: view.ip_address,
+      browser_name: view.browser_name
     }));
 
     // Calculate professional stats with 3-second bounce rate

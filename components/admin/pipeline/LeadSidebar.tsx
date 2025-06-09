@@ -107,6 +107,8 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       visit_end_time?: string;
       referrer: string;
       is_return_visitor: boolean;
+      ip_address?: string;
+      browser_name?: string;
     }>;
     summary: {
       total_visits: number;
@@ -1637,6 +1639,18 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                                   <span className="font-medium text-gray-600">Device:</span>
                                   <div className="text-gray-900">{visit.device_model}</div>
                                 </div>
+                                {visit.browser_name && (
+                                  <div>
+                                    <span className="font-medium text-gray-600">Browser:</span>
+                                    <div className="text-gray-900">{visit.browser_name}</div>
+                                  </div>
+                                )}
+                                {visit.ip_address && (
+                                  <div>
+                                    <span className="font-medium text-gray-600">IP Address:</span>
+                                    <div className="text-gray-900 font-mono text-xs">{visit.ip_address}</div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}

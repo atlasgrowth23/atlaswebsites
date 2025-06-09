@@ -323,14 +323,54 @@ async function autoUpdatePipelineStage(companyId: string) {
   }
 }
 
-// Function to add website visit tags based on previous stage
+// Function to add website visit tags based on previous stage and call activity
 async function addWebsiteVisitTags(leadId: string, previousStage: string) {
   try {
     const tagsToAdd: string[] = [];
 
-    // Determine which tags to add based on previous stage
+    // Get company_id for this lead
+    const { data: leadInfo } = await supabaseAdmin
+      .from('lead_pipeline')
+      .select('company_id')
+      .eq('id', leadId)
+      .single();
+
+    if (!leadInfo) {
+      console.error('Could not find lead info for tagging');
+      return;
+    }
+
+    // Enhanced logic for viewed-during-call
     if (previousStage === 'live_call') {
-      tagsToAdd.push('viewed-during-call');
+      // Check if there's an active call session for this lead
+      const recentCallActivity = await supabaseAdmin
+        .from('activity_log')
+        .select('created_at, action')
+        .eq('lead_id', leadId)
+        .in('action', ['call_started', 'sms_answer_call_sent', 'owner_name_added', 'owner_email_added', 'note_added'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (recentCallActivity.data) {
+        // Find the most recent call_started
+        const callStarted = recentCallActivity.data.find(a => a.action === 'call_started');
+        // Find the most recent answer call snippet
+        const answerCallSent = recentCallActivity.data.find(a => a.action === 'sms_answer_call_sent');
+        // Find any call ending activities after answer call snippet
+        const callEnded = recentCallActivity.data.find(a => 
+          ['owner_name_added', 'owner_email_added', 'note_added'].includes(a.action) &&
+          answerCallSent && new Date(a.created_at) > new Date(answerCallSent.created_at)
+        );
+
+        // Tag as viewed-during-call if:
+        // 1. Call was started
+        // 2. Answer call snippet was sent
+        // 3. No call ending activity has happened yet
+        if (callStarted && answerCallSent && !callEnded) {
+          tagsToAdd.push('viewed-during-call');
+          console.log(`🔥 Active call detected for lead ${leadId} - adding viewed-during-call tag`);
+        }
+      }
     } else if (previousStage === 'voicemail') {
       tagsToAdd.push('viewed-after-voicemail');
     }
@@ -339,37 +379,61 @@ async function addWebsiteVisitTags(leadId: string, previousStage: string) {
     const { data: previousVisits } = await supabaseAdmin
       .from('template_views')
       .select('id')
-      .eq('company_id', (await supabaseAdmin
-        .from('lead_pipeline')
-        .select('company_id')
-        .eq('id', leadId)
-        .single()).data?.company_id)
+      .eq('company_id', leadInfo.company_id)
       .limit(2);
 
     if (previousVisits && previousVisits.length > 1) {
       tagsToAdd.push('return-visitor');
     }
 
-    // Add tags via API
+    // Add tags via direct database insert
     for (const tagType of tagsToAdd) {
       try {
-        const response = await fetch('/api/tags/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            leadId,
-            tagType,
-            createdBy: 'system',
+        // Check if tag already exists
+        const { data: existingTag } = await supabaseAdmin
+          .from('lead_tags')
+          .select('id')
+          .eq('lead_id', leadId)
+          .eq('tag_type', tagType)
+          .single();
+
+        if (existingTag) {
+          console.log(`Website visit tag ${tagType} already exists for lead ${leadId}`);
+          continue;
+        }
+
+        // Get tag definition
+        const { data: tagDef } = await supabaseAdmin
+          .from('tag_definitions')
+          .select('*')
+          .eq('tag_type', tagType)
+          .single();
+
+        if (!tagDef) {
+          console.error(`Tag definition not found for ${tagType}`);
+          continue;
+        }
+
+        // Add tag directly
+        const { error: insertError } = await supabaseAdmin
+          .from('lead_tags')
+          .insert([{
+            lead_id: leadId,
+            tag_type: tagType,
+            tag_value: tagType,
+            is_auto_generated: tagDef.is_auto_tag,
+            created_by: 'system',
             metadata: { 
               triggeredBy: 'website_visit',
               previousStage,
               timestamp: new Date().toISOString()
             }
-          })
-        });
+          }]);
 
-        if (!response.ok) {
-          console.error(`Failed to add website visit tag ${tagType}:`, await response.text());
+        if (insertError) {
+          console.error(`Failed to insert website visit tag ${tagType}:`, insertError);
+        } else {
+          console.log(`✅ Auto-added website visit tag: ${tagType} to lead ${leadId}`);
         }
       } catch (error) {
         console.error(`Error adding website visit tag ${tagType}:`, error);
