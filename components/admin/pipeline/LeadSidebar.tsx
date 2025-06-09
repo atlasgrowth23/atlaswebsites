@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import DomainManagement from '@/components/DomainManagement';
+import { ACTIVITY_ACTIONS } from '@/lib/activityTracker';
 
 interface Company {
   id: string;
@@ -154,6 +155,27 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const currentUser = 'Nick'; // TODO: Get from auth context - 'Nick' or 'Jared'
   const isNick = currentUser === 'Nick';
 
+  // Activity tracking function
+  const trackUserActivity = async (action: string, actionData?: Record<string, any>) => {
+    if (!lead) return;
+    
+    try {
+      await fetch('/api/activity/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadId: lead.id,
+          companyId: lead.company_id,
+          userName: currentUser,
+          action,
+          actionData
+        })
+      });
+    } catch (error) {
+      console.error('Failed to track activity:', error);
+    }
+  };
+
   // Generate SMS snippets
   const generateAnswerCallSnippet = () => {
     if (!lead) return '';
@@ -179,6 +201,20 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   // Auto-send SMS function
   const sendSMSSnippet = (message: string, snippetType?: string) => {
     if (!lead?.company.phone || !message.trim()) return;
+    
+    // Track SMS activity based on snippet type
+    let activityAction = ACTIVITY_ACTIONS.SMS_ANSWER_CALL;
+    if (snippetType === 'Voicemail Part 1') {
+      activityAction = ACTIVITY_ACTIONS.SMS_VOICEMAIL_1;
+    } else if (snippetType === 'Voicemail Part 2') {
+      activityAction = ACTIVITY_ACTIONS.SMS_VOICEMAIL_2;
+    }
+    
+    trackUserActivity(activityAction, {
+      snippet_type: snippetType,
+      message_length: message.length,
+      contains_website_link: message.includes('atlasgrowth.ai')
+    });
     
     const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
     const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
@@ -307,6 +343,11 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead) return;
     
     try {
+      // Track owner name activity
+      trackUserActivity(ACTIVITY_ACTIONS.OWNER_NAME_ADDED, {
+        owner_name: ownerName.trim()
+      });
+      
       await fetch('/api/pipeline/owner-name', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -325,6 +366,11 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead || !ownerEmail.trim()) return;
     
     try {
+      // Track owner email activity (this marks call as successful)
+      trackUserActivity(ACTIVITY_ACTIONS.OWNER_EMAIL_ADDED, {
+        owner_email: ownerEmail.trim()
+      });
+      
       // Save to lead_pipeline first
       const pipelineResponse = await fetch('/api/pipeline/owner-name', {
         method: 'POST',
@@ -369,6 +415,12 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead || !noteContent.trim()) return;
 
     try {
+      // Track note activity
+      trackUserActivity(ACTIVITY_ACTIONS.NOTE_ADDED, {
+        note_length: noteContent.trim().length,
+        note_type: noteType
+      });
+      
       const response = await fetch('/api/pipeline/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -396,6 +448,12 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
 
   const handleCall = () => {
     if (lead?.company.phone) {
+      // Track call activity
+      trackUserActivity(ACTIVITY_ACTIONS.CALL_STARTED, {
+        phone: lead.company.phone,
+        company_name: lead.company.name
+      });
+      
       window.open(`tel:${lead.company.phone}`);
       // Auto-add call activity note
       const callNote = `📞 Called ${lead.company.name} at ${new Date().toLocaleTimeString()}`;
@@ -450,6 +508,14 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     setIsSaving(true);
     try {
       console.log('🚀 Saving customizations:', { companyId: lead.company_id, customizations });
+      
+      // Track template save activity
+      trackUserActivity(ACTIVITY_ACTIONS.TEMPLATE_SAVED, {
+        customizations_count: Object.keys(customizations).length,
+        has_hero_img: !!customizations.hero_img,
+        has_about_img: !!customizations.about_img,
+        has_logo_url: !!customizations.logo_url
+      });
       
       // Save all customizations directly - let the API handle image processing
       const saveResponse = await fetch('/api/template-customizations', {
@@ -639,31 +705,33 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
           {/* Bottom Row: Preview Website + View Google Reviews */}
           <div className="flex gap-2">
             {lead.company.slug && (
-              <a
-                href={`/t/moderntrust/${lead.company.slug}?preview=true`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => {
+                  trackUserActivity(ACTIVITY_ACTIONS.PREVIEW_WEBSITE);
+                  window.open(`/t/moderntrust/${lead.company.slug}?preview=true`, '_blank');
+                }}
                 className="flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
                 Preview Website
-              </a>
+              </button>
             )}
             
             {lead.company.reviews_link && (
-              <a
-                href={lead.company.reviews_link}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => {
+                  trackUserActivity(ACTIVITY_ACTIONS.VIEW_GOOGLE_REVIEWS);
+                  window.open(lead.company.reviews_link, '_blank');
+                }}
                 className="flex items-center gap-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-2 px-3 rounded-lg text-xs font-medium transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                 </svg>
                 View Google Reviews
-              </a>
+              </button>
             )}
           </div>
         </div>
