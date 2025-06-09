@@ -13,32 +13,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Lead ID is required' });
     }
 
-    // Get tags with definitions
+    // Get tags directly without join
     const { data: tags, error } = await supabaseAdmin
       .from('lead_tags')
-      .select(`
-        id,
-        tag_type,
-        tag_value,
-        is_auto_generated,
-        created_at,
-        created_by,
-        metadata,
-        tag_definitions!inner(
-          display_name,
-          color_class,
-          description
-        )
-      `)
+      .select('*')
       .eq('lead_id', leadId)
       .order('created_at', { ascending: false });
+
+    // Get tag definitions separately
+    const { data: tagDefs } = await supabaseAdmin
+      .from('tag_definitions')
+      .select('*');
+
+    const tagDefMap = new Map();
+    tagDefs?.forEach(def => {
+      tagDefMap.set(def.tag_type, def);
+    });
+
+    // Combine tags with definitions
+    const flattenedTags = tags?.map(tag => {
+      const def = tagDefMap.get(tag.tag_type);
+      return {
+        id: tag.id,
+        tag_type: tag.tag_type,
+        tag_value: tag.tag_value,
+        is_auto_generated: tag.is_auto_generated,
+        created_at: tag.created_at,
+        created_by: tag.created_by,
+        metadata: tag.metadata,
+        display_name: def?.display_name || tag.tag_type,
+        color: 'blue',
+        description: def?.description || ''
+      };
+    }) || [];
 
     if (error) {
       console.error('Error fetching tags:', error);
       return res.status(500).json({ error: 'Failed to fetch tags' });
     }
 
-    return res.status(200).json({ tags: tags || [] });
+    return res.status(200).json({ tags: flattenedTags });
 
   } catch (error) {
     console.error('Get tags API error:', error);
