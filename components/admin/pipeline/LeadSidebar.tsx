@@ -167,6 +167,15 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   }, [activeTab, lead, isOpen]);
 
+  // Auto-switch away from hidden mobile tabs
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      if (activeTab === 'template' || activeTab === 'activity') {
+        setActiveTab('overview');
+      }
+    }
+  }, [activeTab]);
+
   // Detect current user (you'll need to pass this from auth context)
   const currentUser = 'Nick'; // TODO: Get from auth context - 'Nick' or 'Jared'
   const isNick = currentUser === 'Nick';
@@ -990,10 +999,16 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             { key: 'overview', label: 'Overview', icon: '📊' },
             { key: 'sms', label: 'SMS', icon: '💬' },
             { key: 'notes', label: 'Notes', icon: '📝' },
-            { key: 'template', label: 'Template', icon: '🎨' },
+            { key: 'template', label: 'Template', icon: '🎨', hideOnMobile: true },
             { key: 'analytics', label: 'Site Analytics', icon: '📈' },
-            { key: 'activity', label: 'Activity', icon: '🕒' }
-          ].map(tab => (
+            { key: 'activity', label: 'Activity', icon: '🕒', hideOnMobile: true }
+          ].filter(tab => {
+            // Hide template and activity tabs on mobile (screens < 768px)
+            if (tab.hideOnMobile && typeof window !== 'undefined' && window.innerWidth < 768) {
+              return false;
+            }
+            return true;
+          }).map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
