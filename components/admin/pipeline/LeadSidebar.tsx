@@ -124,6 +124,10 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [sidebarWidth, setSidebarWidth] = useState(800); // Default to 800px for better desktop experience
   const [isResizing, setIsResizing] = useState(false);
   
+  // Voicemail tracking states
+  const [voicemailPart1Sent, setVoicemailPart1Sent] = useState(false);
+  const [voicemailPart2Sent, setVoicemailPart2Sent] = useState(false);
+  
   // Checklist states
   const [meetingSet, setMeetingSet] = useState(false);
   const [websitePermission, setWebsitePermission] = useState(''); // '', 'yes', 'no', 'hard_no'
@@ -146,6 +150,9 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       setWebsitePermission('');
       setSchedulingSoftware('');
       setIsPrivateNote(false);
+      // Reset voicemail states
+      setVoicemailPart1Sent(false);
+      setVoicemailPart2Sent(false);
       // Don't clear tags immediately - let them show until new ones load
       
       // Then fetch new data
@@ -177,7 +184,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   }, [activeTab]);
 
   // Detect current user (you'll need to pass this from auth context)
-  const currentUser = 'Nick'; // TODO: Get from auth context - 'Nick' or 'Jared'
+  const currentUser = 'Jared'; // TODO: Get from auth context - 'Nick' or 'Jared'
   const isNick = currentUser === 'Nick';
 
   // Activity tracking function
@@ -227,19 +234,30 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const sendSMSSnippet = (message: string, snippetType?: string) => {
     if (!lead?.company.phone || !message.trim()) return;
     
-    // Track SMS activity based on snippet type
-    let activityAction = ACTIVITY_ACTIONS.SMS_ANSWER_CALL;
+    // Handle voicemail workflow
     if (snippetType === 'Voicemail Part 1') {
-      activityAction = ACTIVITY_ACTIONS.SMS_VOICEMAIL_1;
+      setVoicemailPart1Sent(true);
+      // Don't track individual activity yet - wait for both parts
     } else if (snippetType === 'Voicemail Part 2') {
-      activityAction = ACTIVITY_ACTIONS.SMS_VOICEMAIL_2;
+      setVoicemailPart2Sent(true);
+      
+      // If both parts will be sent (part 1 already sent, part 2 being sent now), track "No Answer Call Texted"
+      if (voicemailPart1Sent) {
+        trackUserActivity(ACTIVITY_ACTIONS.NO_ANSWER_CALL_TEXTED, {
+          snippet_type: 'Complete Voicemail Sequence',
+          part1_sent: true,
+          part2_sent: true,
+          contains_website_link: message.includes('atlasgrowth.ai')
+        });
+      }
+    } else {
+      // Handle other SMS types (Answer Call, etc.)
+      trackUserActivity(ACTIVITY_ACTIONS.SMS_ANSWER_CALL, {
+        snippet_type: snippetType,
+        message_length: message.length,
+        contains_website_link: message.includes('atlasgrowth.ai')
+      });
     }
-    
-    trackUserActivity(activityAction, {
-      snippet_type: snippetType,
-      message_length: message.length,
-      contains_website_link: message.includes('atlasgrowth.ai')
-    });
     
     const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
     const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
@@ -258,7 +276,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       smsNote += `\n\n🔗 Website link sent via ${linkType} - tracking analytics for visitor activity`;
     }
     
-    saveNote(smsNote);
+    // Note: Removed auto-save to prevent unwanted "Added Note" activities
   };
 
   // Don't auto-populate message anymore - just clear it
@@ -416,10 +434,20 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead) return;
     
     try {
-      // Track owner name activity
-      trackUserActivity(ACTIVITY_ACTIONS.OWNER_NAME_ADDED, {
-        owner_name: ownerName.trim()
-      });
+      // During active session, this marks call as ended
+      if (hasActiveSession) {
+        trackUserActivity(ACTIVITY_ACTIONS.OWNER_EMAIL_ADDED, {
+          owner_name: ownerName.trim(),
+          owner_email: ownerEmail.trim() || 'Not provided',
+          call_outcome: 'successful',
+          trigger_action: 'owner_name_saved'
+        });
+      } else {
+        // Outside session, track as regular owner name addition
+        trackUserActivity(ACTIVITY_ACTIONS.OWNER_NAME_ADDED, {
+          owner_name: ownerName.trim()
+        });
+      }
       
       await fetch('/api/pipeline/owner-name', {
         method: 'POST',
@@ -439,9 +467,12 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead || !ownerEmail.trim()) return;
     
     try {
-      // Track owner email activity (this marks call as successful)
+      // Track consolidated "Call Ended" activity with both name and email
       trackUserActivity(ACTIVITY_ACTIONS.OWNER_EMAIL_ADDED, {
-        owner_email: ownerEmail.trim()
+        owner_email: ownerEmail.trim(),
+        owner_name: ownerName.trim() || 'Not provided',
+        call_outcome: 'successful',
+        trigger_action: 'owner_email_saved'
       });
       
       // Save to lead_pipeline first
@@ -488,10 +519,21 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead || !noteContent.trim()) return;
 
     try {
-      // Track note activity
-      trackUserActivity(ACTIVITY_ACTIONS.NOTE_ADDED, {
-        note_length: noteContent.trim().length
-      });
+      // During active session, this marks call as ended
+      if (hasActiveSession) {
+        trackUserActivity(ACTIVITY_ACTIONS.OWNER_EMAIL_ADDED, {
+          owner_name: ownerName.trim() || 'Not provided',
+          owner_email: ownerEmail.trim() || 'Not provided',
+          call_outcome: 'successful',
+          trigger_action: 'note_saved',
+          note_content: noteContent.trim()
+        });
+      } else {
+        // Outside session, track as regular note
+        trackUserActivity(ACTIVITY_ACTIONS.NOTE_ADDED, {
+          note_content: noteContent.trim()
+        });
+      }
       
       const response = await fetch('/api/pipeline/notes', {
         method: 'POST',
@@ -527,9 +569,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       });
       
       window.open(`tel:${lead.company.phone}`);
-      // Auto-add call activity note
-      const callNote = `📞 Called ${lead.company.name} at ${new Date().toLocaleTimeString()}`;
-      saveNote(callNote);
+      // Note: Removed auto-save to prevent unwanted "Added Note" activities
     }
   };
 
@@ -542,9 +582,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       previous_stage: lead.stage
     });
     
-    // Auto-add unsuccessful call note
-    const unsuccessfulNote = `❌ Unsuccessful call to ${lead.company.name} at ${new Date().toLocaleTimeString()} - marked as unsuccessful`;
-    saveNote(unsuccessfulNote);
+    // Note: Removed auto-save to prevent unwanted "Added Note" activities
   };
 
   const handleManualAction = async (action: typeof MANUAL_ACTIONS[0]) => {
@@ -578,7 +616,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       'callback_received': `📞 Callback received from ${lead.company.name} at ${new Date().toLocaleTimeString()}`
     };
 
-    saveNote(noteMap[action.action as keyof typeof noteMap]);
+    // Note: Removed auto-save to prevent unwanted "Added Note" activities
   };
 
   const handleAppointmentSubmit = async () => {
@@ -644,9 +682,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
         });
       }
 
-      // Add note about the appointment
-      const appointmentNote = `📅 Appointment set for ${appointmentDate} at ${appointmentTime}${appointmentForm.notes ? `\n\nNotes: ${appointmentForm.notes}` : ''}`;
-      saveNote(appointmentNote);
+      // Note: Removed auto-save to prevent unwanted "Added Note" activities
 
       // Reset form and close
       setAppointmentForm({
@@ -688,8 +724,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     const emailUrl = `mailto:${lead.company.email_1}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.open(emailUrl);
     
-    const emailNote = `✉️ Sent email to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}`;
-    saveNote(emailNote);
+    // Note: Removed auto-save to prevent unwanted "Added Note" activities
   };
 
   const handleSendSMS = () => {
@@ -699,10 +734,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(smsMessage)}`;
     window.open(smsUrl, '_self');
     
-    // Auto-add SMS activity note
-    const ownerNameToUse = ownerName || 'there';
-    const smsNote = `💬 Sent website SMS to ${ownerNameToUse} (${lead.company.name}) at ${new Date().toLocaleTimeString()}:\n\n${smsMessage}`;
-    saveNote(smsNote);
+    // Note: Removed auto-save to prevent unwanted "Added Note" activities
   };
 
   const saveCustomizations = async () => {
@@ -1397,6 +1429,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                         case 'sms_answer_call_sent': return '💬';
                         case 'sms_voicemail_1_sent': return '📝';
                         case 'sms_voicemail_2_sent': return '🌐';
+                        case 'no_answer_call_texted': return '📵';
                         case 'owner_name_added': return '👤';
                         case 'owner_email_added': return '✅';
                         case 'note_added': return '📝';
@@ -1419,11 +1452,12 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                         case 'preview_website': return 'Previewed Website';
                         case 'view_google_reviews': return 'Viewed Google Reviews';
                         case 'call_started': return 'Started Call';
-                        case 'sms_answer_call_sent': return 'Sent Answer Call SMS';
+                        case 'sms_answer_call_sent': return 'Call Answered';
                         case 'sms_voicemail_1_sent': return 'Sent Voicemail SMS Part 1';
                         case 'sms_voicemail_2_sent': return 'Sent Voicemail SMS Part 2';
+                        case 'no_answer_call_texted': return 'No Answer Call Texted';
                         case 'owner_name_added': return 'Added Owner Name';
-                        case 'owner_email_added': return 'Added Owner Email (Successful Call)';
+                        case 'owner_email_added': return 'Call Ended';
                         case 'note_added': return 'Added Note';
                         case 'template_saved': return 'Saved Template Changes';
                         case 'unsuccessful_call_marked': return 'Marked as Unsuccessful Call';
@@ -1464,20 +1498,31 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                                     {activity.action_data.phone_number && <div>📞 {activity.action_data.phone_number}</div>}
                                   </div>
                                 ) : activity.action === 'owner_email_added' && activity.action_data.owner_email ? (
-                                  <div>📧 {activity.action_data.owner_email}</div>
+                                  <div>
+                                    {activity.action_data.owner_email !== 'Not provided' && (
+                                      <div>📧 {activity.action_data.owner_email}</div>
+                                    )}
+                                    {activity.action_data.owner_name && activity.action_data.owner_name !== 'Not provided' && (
+                                      <div>👤 {activity.action_data.owner_name}</div>
+                                    )}
+                                    {activity.action_data.note_content && (
+                                      <div className="italic">📝 "{activity.action_data.note_content}"</div>
+                                    )}
+                                    {activity.action_data.trigger_action && (
+                                      <div className="text-xs text-gray-500 mt-1">
+                                        Triggered by: {activity.action_data.trigger_action.replace(/_/g, ' ')}
+                                      </div>
+                                    )}
+                                  </div>
                                 ) : activity.action === 'owner_name_added' && activity.action_data.owner_name ? (
                                   <div>👤 {activity.action_data.owner_name}</div>
-                                ) : activity.action === 'note_added' && activity.action_data.note ? (
-                                  <div className="italic">"{activity.action_data.note}"</div>
+                                ) : activity.action === 'note_added' && activity.action_data.note_content ? (
+                                  <div className="italic">📝 "{activity.action_data.note_content}"</div>
                                 ) : activity.action === 'website_visited' && activity.action_data.previous_stage ? (
                                   <div>📊 Auto-moved from {activity.action_data.previous_stage} → site_viewed</div>
                                 ) : activity.action === 'stage_moved' ? (
                                   <div>➡️ {activity.action_data.from_stage} → {activity.action_data.to_stage}</div>
-                                ) : (
-                                  Object.entries(activity.action_data).map(([key, value]) => (
-                                    <div key={key}><strong>{key}:</strong> {String(value)}</div>
-                                  ))
-                                )}
+                                ) : null}
                               </div>
                             )}
                           </div>

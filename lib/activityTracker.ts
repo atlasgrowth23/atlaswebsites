@@ -170,6 +170,13 @@ export async function autoUpdateLeadStage(leadId: string, action: string) {
         }
         break;
 
+      case ACTIVITY_ACTIONS.NO_ANSWER_CALL_TEXTED:
+        // No Answer Call Texted = Voicemail stage
+        if (lead.stage === 'new_lead' || lead.stage === 'live_call') {
+          newStage = 'voicemail';
+        }
+        break;
+
       case ACTIVITY_ACTIONS.UNSUCCESSFUL_CALL:
         // Mark as unsuccessful
         newStage = 'unsuccessful';
@@ -213,6 +220,11 @@ export async function autoAddTags(leadId: string, action: string, actionData?: R
         break;
       
       case ACTIVITY_ACTIONS.SMS_VOICEMAIL_1:
+        tagsToAdd.push('voicemail-left');
+        break;
+
+      case ACTIVITY_ACTIONS.NO_ANSWER_CALL_TEXTED:
+        tagsToAdd.push('no-answer');
         tagsToAdd.push('voicemail-left');
         break;
       
@@ -282,6 +294,7 @@ export const ACTIVITY_ACTIONS = {
   SMS_ANSWER_CALL: 'sms_answer_call_sent',
   SMS_VOICEMAIL_1: 'sms_voicemail_1_sent',
   SMS_VOICEMAIL_2: 'sms_voicemail_2_sent',
+  NO_ANSWER_CALL_TEXTED: 'no_answer_call_texted',
   OWNER_NAME_ADDED: 'owner_name_added',
   OWNER_EMAIL_ADDED: 'owner_email_added',
   NOTE_ADDED: 'note_added',
