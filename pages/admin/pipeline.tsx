@@ -492,8 +492,8 @@ export default function Pipeline({ companies }: PipelineProps) {
             )}
           </div>
           
-          {/* Search Bar for Overview */}
-          <div className="mt-4 flex gap-4">
+          {/* Search Bar and Controls for Overview */}
+          <div className="mt-4 flex flex-col sm:flex-row gap-4">
             <div className="flex-1 max-w-md">
               <input
                 type="text"
@@ -503,6 +503,18 @@ export default function Pipeline({ companies }: PipelineProps) {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            
+            {/* Session Start Button (moved here) */}
+            {!activeSession && (
+              <button
+                onClick={startSession}
+                disabled={sessionLoading}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
+              >
+                {sessionLoading ? 'Starting...' : '🎯 Start Session'}
+              </button>
+            )}
+            
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
@@ -514,82 +526,53 @@ export default function Pipeline({ companies }: PipelineProps) {
           </div>
         </div>
 
-        {/* Session Controls */}
-        <div className="mb-6">
-          {activeSession ? (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        {/* Compact Session Status (only when active) */}
+        {activeSession && (
+          <div className="mb-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                  <div>
-                    <h3 className="font-semibold text-green-800">Cold Call Session Active</h3>
-                    <p className="text-sm text-green-600">
-                      Started: {new Date(activeSession.start_time).toLocaleTimeString()} • 
-                      Duration: {formatSessionDuration(activeSession.start_time)}
-                    </p>
-                  </div>
-                </div>
                 <div className="flex items-center gap-3">
-                  <a 
-                    href="/admin/sessions" 
-                    className="text-green-700 hover:text-green-900 text-sm font-medium"
-                  >
-                    View Sessions →
-                  </a>
-                  <a 
-                    href="/admin/calendar" 
-                    className="text-blue-700 hover:text-blue-900 text-sm font-medium"
-                  >
-                    📅 Calendar →
-                  </a>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-green-800">
+                    Session Active • {formatSessionDuration(activeSession.start_time)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a href="/admin/calendar" className="text-blue-600 hover:text-blue-800 text-xs">📅</a>
                   <button
                     onClick={endSession}
                     disabled={sessionLoading}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
                   >
-                    {sessionLoading ? 'Ending...' : 'End Session'}
+                    {sessionLoading ? 'Ending...' : 'End'}
                   </button>
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-800">Cold Call Session</h3>
-                  <p className="text-sm text-gray-600">
-                    Start a session to track your call activities and pipeline progress
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <a 
-                    href="/admin/sessions" 
-                    className="text-gray-600 hover:text-gray-800 text-sm font-medium"
-                  >
-                    View Sessions →
-                  </a>
-                  <a 
-                    href="/admin/calendar" 
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    📅 Calendar →
-                  </a>
-                  <button
-                    onClick={startSession}
-                    disabled={sessionLoading}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                  >
-                    {sessionLoading ? 'Starting...' : 'Start Session'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Pipeline Selector */}
         <div className="mb-6">
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 bg-gray-100 p-2 rounded-lg">
+          {/* Mobile Dropdown */}
+          <div className="md:hidden mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Select Pipeline</label>
+            <select
+              value={selectedPipelineType}
+              onChange={(e) => setSelectedPipelineType(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="atlas_test_pipeline">🧪 Test Pipeline ({pipelineStats['atlas_test_pipeline'] || 0} leads)</option>
+              <option value="no_website_alabama">Alabama - No Website ({pipelineStats['no_website_alabama'] || 0} leads)</option>
+              <option value="no_website_arkansas">Arkansas - No Website ({pipelineStats['no_website_arkansas'] || 0} leads)</option>
+              <option value="has_website_alabama">Alabama - Has Website ({pipelineStats['has_website_alabama'] || 0} leads)</option>
+              <option value="has_website_arkansas">Arkansas - Has Website ({pipelineStats['has_website_arkansas'] || 0} leads)</option>
+              <option value="broken_websites">Broken Websites ({pipelineStats['broken_websites'] || 0} leads)</option>
+            </select>
+          </div>
+          
+          {/* Desktop Grid */}
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-2 bg-gray-100 p-2 rounded-lg">
             {[
               { key: 'atlas_test_pipeline', label: '🧪 Test Pipeline', count: pipelineStats['atlas_test_pipeline'] || 0, color: 'bg-green-50 border-green-200 text-green-700' },
               { key: 'no_website_alabama', label: 'Alabama - No Website', count: pipelineStats['no_website_alabama'] || 0 },

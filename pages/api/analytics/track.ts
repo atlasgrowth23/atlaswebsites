@@ -93,13 +93,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('⚠️ Could not fetch company slug:', error);
     }
 
-    // Get IP address
+    // Get IP address and user agent from headers
     const forwarded = req.headers['x-forwarded-for'];
     const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : req.socket.remoteAddress) || 'unknown';
+    const headerUserAgent = req.headers['user-agent'] || 'Unknown';
+    const referer = req.headers['referer'] || referrer || 'Direct';
 
     // Enhanced device and browser detection
-    const detectedDeviceType = deviceType || detectDeviceType(userAgent || 'Unknown');
-    const browserName = detectBrowserName(userAgent || 'Unknown');
+    const detectedDeviceType = deviceType || detectDeviceType(userAgent || headerUserAgent);
+    const browserName = detectBrowserName(userAgent || headerUserAgent);
 
     // Check if this is a return visitor
     const isReturnVisitor = await checkReturnVisitor(visitorId, companyId, sessionId);
@@ -121,7 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       template_key: templateKey,
       session_id: sessionId,
       visitor_id: visitorId,
-      user_agent: userAgent || 'Unknown',
+      user_agent: userAgent || headerUserAgent,
       referrer_url: referrer || null,
       ip_address: ip !== 'unknown' ? ip : null,
       device_type: detectedDeviceType,

@@ -81,6 +81,14 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     session_id?: string;
     user_name: string;
   }>>([]);
+  const [tags, setTags] = useState<Array<{
+    id: string;
+    tag_type: string;
+    display_name: string;
+    color: string;
+    created_at: string;
+  }>>([]);
+  const [loadingTags, setLoadingTags] = useState(false);
   const [manualActionsOpen, setManualActionsOpen] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
@@ -120,8 +128,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [schedulingSoftware, setSchedulingSoftware] = useState('');
   const [hasInitialContact, setHasInitialContact] = useState(false);
   
-  // Enhanced notes states
-  const [noteType, setNoteType] = useState('general');
+  // Enhanced notes states  
   const [isPrivateNote, setIsPrivateNote] = useState(false);
 
   useEffect(() => {
@@ -136,8 +143,8 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       setMeetingSet(false);
       setWebsitePermission('');
       setSchedulingSoftware('');
-      setNoteType('general');
       setIsPrivateNote(false);
+      setTags([]);
       
       // Then fetch new data
       fetchNotes();
@@ -145,6 +152,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       fetchAnalyticsData();
       fetchOwnerName();
       fetchActivities();
+      fetchLeadTags();
       checkActiveSession();
       // Check if lead has progressed past new_lead stage (has initial contact)
       setHasInitialContact(lead.stage !== 'new_lead');
@@ -325,6 +333,26 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     }
   };
 
+  const fetchLeadTags = async () => {
+    if (!lead) return;
+    setLoadingTags(true);
+    try {
+      const response = await fetch(`/api/tags/lead/${lead.id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setTags(data.tags || []);
+      } else {
+        console.log('No tags API or no tags found');
+        setTags([]);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      setTags([]);
+    } finally {
+      setLoadingTags(false);
+    }
+  };
+
   const checkActiveSession = async () => {
     try {
       const response = await fetch(`/api/sessions?user=${currentUser}`);
@@ -451,8 +479,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     try {
       // Track note activity
       trackUserActivity(ACTIVITY_ACTIONS.NOTE_ADDED, {
-        note_length: noteContent.trim().length,
-        note_type: noteType
+        note_length: noteContent.trim().length
       });
       
       const response = await fetch('/api/pipeline/notes', {
@@ -909,11 +936,43 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                         handleManualAction(action);
                         setManualActionsOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 first:rounded-t-lg last:rounded-b-lg"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       {action.label}
                     </button>
                   ))}
+                  
+                  {/* Reset Lead Button */}
+                  <div className="border-t border-gray-200 mt-1 pt-1">
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Reset ${lead?.company.name} back to "New Lead" stage?\n\nThis will clear all activity, tags, appointments, and website visits.`)) {
+                          try {
+                            const response = await fetch('/api/pipeline/reset-single-lead', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ leadId: lead?.id })
+                            });
+                            
+                            if (response.ok) {
+                              const data = await response.json();
+                              alert(`✅ ${data.message}`);
+                              window.location.reload(); // Refresh to show reset
+                            } else {
+                              const error = await response.json();
+                              alert(`❌ Failed to reset: ${error.error}`);
+                            }
+                          } catch (error) {
+                            alert('❌ Failed to reset lead');
+                          }
+                        }
+                        setManualActionsOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
+                    >
+                      🔄 Reset Lead to New
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -983,49 +1042,61 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
             </div>
 
-            {/* Review Analytics for Phone Calls */}
+            {/* Tags Section */}
+            <div className="border rounded-lg p-3 bg-yellow-50">
+              <h4 className="font-medium text-gray-900 mb-2 text-sm">🏷️ Tags</h4>
+              <div className="flex flex-wrap gap-1">
+                {loadingTags ? (
+                  <div className="text-xs text-gray-500">Loading tags...</div>
+                ) : tags.length > 0 ? (
+                  tags.map(tag => {
+                    const colorClasses = {
+                      'green': 'bg-green-100 text-green-800 border-green-200',
+                      'blue': 'bg-blue-100 text-blue-800 border-blue-200',
+                      'purple': 'bg-purple-100 text-purple-800 border-purple-200',
+                      'indigo': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+                      'orange': 'bg-orange-100 text-orange-800 border-orange-200',
+                      'red': 'bg-red-100 text-red-800 border-red-200',
+                      'yellow': 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                    };
+                    const colorClass = colorClasses[tag.color as keyof typeof colorClasses] || 'bg-gray-100 text-gray-800 border-gray-200';
+                    
+                    return (
+                      <span
+                        key={tag.id}
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${colorClass}`}
+                        title={`Added ${new Date(tag.created_at).toLocaleDateString()}`}
+                      >
+                        {tag.display_name}
+                      </span>
+                    );
+                  })
+                ) : (
+                  <div className="text-xs text-gray-500 italic">No tags yet</div>
+                )}
+              </div>
+            </div>
+
+            {/* Compact Review Analytics */}
             <div className="border rounded-lg p-3 bg-blue-50">
-              <h4 className="font-medium text-gray-900 mb-3 text-sm">Review Analytics (For Phone Conversations)</h4>
+              <h4 className="font-medium text-gray-900 mb-2 text-sm">📊 Reviews ({lead.company.reviews || 0} total • {lead.company.rating ? `${Number(lead.company.rating).toFixed(1)}★` : 'No rating'})</h4>
               
-              {/* Total Reviews and Rating */}
-              <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-4 gap-2 text-center">
                 <div className="bg-white p-2 rounded">
-                  <div className="text-xs text-gray-600">Total Reviews</div>
-                  <div className="text-sm font-medium">{lead.company.reviews || 0}</div>
+                  <div className="text-xs text-gray-600">30d</div>
+                  <div className="text-sm font-medium">{lead.company.r_30 || 0}</div>
                 </div>
                 <div className="bg-white p-2 rounded">
-                  <div className="text-xs text-gray-600">Rating</div>
-                  <div className="text-sm font-medium">
-                    {lead.company.rating ? `${Number(lead.company.rating).toFixed(1)} stars` : 'N/A'}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-2 rounded">
-                  <div className="text-xs text-gray-600">Last 30 Days</div>
-                  <div className="text-sm font-medium">{lead.company.r_30 || 0} reviews</div>
+                  <div className="text-xs text-gray-600">60d</div>
+                  <div className="text-sm font-medium">{lead.company.r_60 || 0}</div>
                 </div>
                 <div className="bg-white p-2 rounded">
-                  <div className="text-xs text-gray-600">Last 60 Days</div>
-                  <div className="text-sm font-medium">{lead.company.r_60 || 0} reviews</div>
+                  <div className="text-xs text-gray-600">90d</div>
+                  <div className="text-sm font-medium">{lead.company.r_90 || 0}</div>
                 </div>
                 <div className="bg-white p-2 rounded">
-                  <div className="text-xs text-gray-600">Last 90 Days</div>
-                  <div className="text-sm font-medium">{lead.company.r_90 || 0} reviews</div>
-                </div>
-                <div className="bg-white p-2 rounded">
-                  <div className="text-xs text-gray-600">Last Year</div>
-                  <div className="text-sm font-medium">{lead.company.r_365 || 0} reviews</div>
-                </div>
-              </div>
-              <div className="mt-3 bg-white p-2 rounded">
-                <div className="text-xs text-gray-600">First Review Date</div>
-                <div className="text-sm font-medium">
-                  {lead.company.first_review_date 
-                    ? new Date(lead.company.first_review_date).toLocaleDateString()
-                    : 'No reviews yet'
-                  }
+                  <div className="text-xs text-gray-600">1yr</div>
+                  <div className="text-sm font-medium">{lead.company.r_365 || 0}</div>
                 </div>
               </div>
             </div>
@@ -1070,7 +1141,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                 />
                 <button
                   onClick={saveOwnerEmail}
-                  className="px-3 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700"
+                  className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
                 >
                   Save
                 </button>
@@ -1079,20 +1150,9 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
             {/* New Note Input */}
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="mb-2">
                 <h4 className="font-medium text-gray-900">📝 Add Note</h4>
-                <select
-                  value={noteType}
-                  onChange={(e) => setNoteType(e.target.value)}
-                  className="text-xs border border-gray-300 rounded px-2 py-1"
-                >
-                  <option value="general">General Note</option>
-                  <option value="call">Phone Call</option>
-                  <option value="email">Email Sent</option>
-                  <option value="meeting">Meeting/Demo</option>
-                  <option value="follow_up">Follow-up Required</option>
-                  <option value="urgent">Urgent</option>
-                </select>
+                <p className="text-xs text-gray-500 mt-1">Notes auto-detect type (📞 calls, ✉️ emails, etc.)</p>
               </div>
               <div className="relative">
                 <textarea

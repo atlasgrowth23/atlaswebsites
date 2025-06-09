@@ -96,6 +96,96 @@ runDatabaseChanges().catch(console.error);
 ## For Replit AI Agent
 These same instructions apply to Replit's AI agent. Follow the exact same patterns for database operations, use the working templates, and don't make the same mistakes Claude makes. The PostgreSQL client approach works reliably - use it.
 
+---
+
+# SESSION CONTEXT FOR NEXT AGENT
+
+## Previous Session Summary (Latest)
+**Date:** Current session continuation from previous conversation that ran out of context
+**User:** Continued work on pipeline UI improvements and analytics enhancements
+
+### Key Completed Tasks in Previous Sessions:
+1. **Pipeline UI Mobile Improvements** ✅
+   - Added mobile dropdown for pipeline selection in `/pages/admin/pipeline.tsx`
+   - Made session controls more compact and mobile-friendly
+   - Added resize functionality to LeadSidebar component
+
+2. **Quick Lead Reset Functionality** ✅
+   - Created `/pages/api/pipeline/reset-single-lead.ts` for individual lead resets
+   - Added reset button in pipeline actions dropdown 
+   - User specifically tested with phone numbers: 205-500-5170 and 601-613-7813
+
+3. **Review Analytics Compacted** ✅
+   - Made review analytics section more compact in LeadSidebar
+   - Grid layout for 30d/60d/90d/1yr review counts
+
+4. **Tags System Fixed** ✅
+   - Fixed missing columns in tag_definitions table (color, is_auto_tag, description)
+   - Added auto-tagging functionality for website visits
+   - Scripts: `/scripts/fix-tags-table.js` and `/scripts/check-tags-system.js`
+
+5. **Analytics Enhancements** ✅
+   - Enhanced `/pages/api/analytics/track.ts` with:
+     - IP address tracking (from x-forwarded-for headers)
+     - User agent and browser detection 
+     - Referrer URL tracking
+     - Return visitor detection
+     - Device type detection
+   - **User specifically said: "dont f fuck up anything in our exxsiting modnertrust tracking our website trackign analytics working perfeclty"**
+
+6. **Calendar/Appointment System** ✅
+   - Full calendar system in `/pages/admin/calendar.tsx`
+   - Appointment booking with email confirmations via SendGrid
+   - Integration with pipeline manual actions
+
+### Current System Status:
+- **Phone calls**: Working fine (user corrected that these were never broken)
+- **ModernTrust template**: Tracking working perfectly, user said skip optimization
+- **Website analytics**: Working perfectly, enhanced but not broken
+- **Pipeline system**: Full functionality with activity tracking
+- **Tags system**: Fully operational with auto-tagging
+- **Cold call sessions**: Implemented with activity tracking
+
+### Important Technical Details:
+- Analytics tracking in `/pages/api/analytics/track.ts` has comprehensive data collection
+- Pipeline activity tracking via `/lib/activityTracker.ts` and ACTIVITY_ACTIONS constants
+- Session management for cold calling workflows
+- Auto-stage updates when leads visit websites
+- Template customization system working
+- Domain management system in place
+
+### User Preferences/Notes:
+- User wants mobile-friendly UI (completed)
+- User tests with specific phone numbers: 205-500-5170, 601-613-7813  
+- User values existing tracking systems - **DO NOT BREAK THEM**
+- User has working ModernTrust template - don't optimize images unless asked
+- User swears a lot but is focused on functionality
+
+### Next Agent Tasks:
+- **No specific pending tasks** - previous session completed the requested work
+- If user asks for new features, reference this context to avoid breaking existing systems
+- **CRITICAL**: Never modify analytics tracking without explicit permission - it's working perfectly
+- Always test changes with the phone numbers the user provided (205-500-5170, 601-613-7813)
+
+### Files Modified in Recent Sessions:
+- `/components/AdminLayout.tsx` - Mobile improvements
+- `/components/admin/pipeline/LeadSidebar.tsx` - Mobile UI, reset functionality  
+- `/lib/activityTracker.ts` - Activity tracking constants
+- `/pages/admin/pipeline.tsx` - Mobile dropdown, session controls
+- `/pages/admin/sessions.tsx` - Session management
+- `/pages/api/analytics/track.ts` - Enhanced analytics (USER SAYS WORKING PERFECTLY)
+- `/pages/api/pipeline/move-lead.ts` - Pipeline management
+- `/pages/template-editor.tsx` - Template editing
+- Various new API endpoints for calendar, appointments, tags
+
+### Database Schema Status:
+- All required tables exist and working
+- Tags system fully operational
+- Analytics tracking enhanced but stable
+- Calendar/appointments system in place
+- Activity logging working
+- Pipeline system stable
+
 Updated `Claude_Instructions.md`
 Here’s the revised file, incorporating DIRECT_URL for migrations, keeping your tone, and adding professional coding rules. Save it as supabase/Claude_Instructions.md or Claude_Instructions.md.
 # Claude Instructions for Atlas Websites Database and Coding
