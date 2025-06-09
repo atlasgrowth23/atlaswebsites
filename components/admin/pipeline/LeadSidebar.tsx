@@ -91,6 +91,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       device_type: string;
       device_model: string;
       visit_time: string;
+      visit_end_time?: string;
       referrer: string;
       is_return_visitor: boolean;
     }>;
@@ -103,6 +104,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     };
   } | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [expandedVisit, setExpandedVisit] = useState<string | null>(null);
   const [showCustomizationForm, setShowCustomizationForm] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(800); // Default to 800px for better desktop experience
   const [isResizing, setIsResizing] = useState(false);
@@ -1062,44 +1064,26 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
             ) : analyticsData ? (
               <>
-                {/* Enhanced Summary Cards */}
-                <div className="grid grid-cols-2 gap-2 mb-4">
-                  <div className="bg-white border-2 border-blue-200 p-3 rounded-lg text-center">
-                    <div className="text-xl font-bold text-blue-600">
-                      {analyticsData.summary.total_visits || 0}
+                {/* Clean Summary Stats */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">{analyticsData.summary.total_visits || 0}</div>
+                      <div className="text-xs text-gray-600">Total Visits</div>
                     </div>
-                    <div className="text-xs text-gray-600">Total Visits</div>
-                  </div>
-                  <div className="bg-white border-2 border-green-200 p-3 rounded-lg text-center">
-                    <div className="text-xl font-bold text-green-600">
-                      {analyticsData.summary.unique_visitors || 0}
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">{analyticsData.summary.unique_visitors || 0}</div>
+                      <div className="text-xs text-gray-600">Unique Visitors</div>
                     </div>
-                    <div className="text-xs text-gray-600">Unique Visitors</div>
-                  </div>
-                  <div className="bg-white border-2 border-orange-200 p-3 rounded-lg text-center">
-                    <div className="text-xl font-bold text-orange-600">
-                      {analyticsData.summary.return_visitors || 0}
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600">
+                        {analyticsData.summary.avg_time_on_site ? 
+                          `${Math.floor(analyticsData.summary.avg_time_on_site / 60)}:${String(analyticsData.summary.avg_time_on_site % 60).padStart(2, '0')}` : 
+                          '0:00'
+                        }
+                      </div>
+                      <div className="text-xs text-gray-600">Average Time</div>
                     </div>
-                    <div className="text-xs text-gray-600">Return Visitors</div>
-                  </div>
-                  <div className="bg-white border-2 border-red-200 p-3 rounded-lg text-center">
-                    <div className="text-xl font-bold text-red-600">
-                      {analyticsData.summary.bounce_rate || 0}%
-                    </div>
-                    <div className="text-xs text-gray-600">Bounce Rate</div>
-                  </div>
-                </div>
-                
-                {/* Time & Performance */}
-                <div className="grid grid-cols-1 gap-2 mb-4">
-                  <div className="bg-white border-2 border-purple-200 p-3 rounded-lg text-center">
-                    <div className="text-xl font-bold text-purple-600">
-                      {analyticsData.summary.avg_time_on_site ? 
-                        `${Math.floor(analyticsData.summary.avg_time_on_site / 60)}:${String(analyticsData.summary.avg_time_on_site % 60).padStart(2, '0')}` : 
-                        '0:00'
-                      }
-                    </div>
-                    <div className="text-xs text-gray-600">Average Time on Site</div>
                   </div>
                 </div>
 
@@ -1115,53 +1099,109 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   ) : (
                     <div className="space-y-2">
                       {analyticsData.visits.map((visit, index) => (
-                        <div key={visit.id} className={`border p-3 rounded-lg hover:shadow-sm transition-shadow ${
-                          visit.is_return_visitor ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'
-                        }`}>
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg">
-                                {visit.device_type === 'mobile' ? '📱' : 
-                                 visit.device_type === 'tablet' ? '📊' : '💻'}
-                              </span>
-                              <div className="flex flex-col">
-                                <span className="text-sm font-medium">{visit.device_model}</span>
-                                {visit.is_return_visitor && (
-                                  <span className="text-xs text-blue-600 font-medium">↩️ Return Visitor</span>
-                                )}
+                        <div key={visit.id}>
+                          <div 
+                            onClick={() => setExpandedVisit(expandedVisit === visit.id ? null : visit.id)}
+                            className={`border-l-4 p-3 rounded-r-lg bg-white border-gray-200 hover:shadow-sm transition-all cursor-pointer ${
+                              visit.is_return_visitor ? 'border-l-blue-500 bg-blue-50' : 
+                              visit.time_on_site <= 3 ? 'border-l-red-500' : 
+                              visit.time_on_site > 60 ? 'border-l-green-500' : 'border-l-gray-300'
+                            }`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg">
+                                    {visit.device_type === 'mobile' ? '📱' : 
+                                     visit.device_type === 'tablet' ? '📊' : '💻'}
+                                  </span>
+                                  <div>
+                                    <div className="text-sm font-medium text-gray-900">{visit.device_model}</div>
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <span className={visit.time_on_site <= 3 ? 'text-red-600 font-medium' : 
+                                                     visit.time_on_site > 60 ? 'text-green-600 font-medium' : 'text-gray-600'}>
+                                        {visit.time_on_site >= 60 ? 
+                                          `${Math.floor(visit.time_on_site / 60)}:${String(visit.time_on_site % 60).padStart(2, '0')}` : 
+                                          `0:${String(visit.time_on_site).padStart(2, '0')}`
+                                        }
+                                        {visit.time_on_site <= 3 && ' (Bounce)'}
+                                      </span>
+                                      <span className="text-gray-400">•</span>
+                                      <span className="text-gray-600">
+                                        {visit.referrer === 'Direct SMS Link' ? '📱 SMS' :
+                                         visit.referrer === 'Google Search' ? '🔍 Google' :
+                                         visit.referrer === 'Facebook' ? '📘 Facebook' :
+                                         visit.referrer === 'Internal Navigation' ? '🔗 Internal' :
+                                         `📧 ${visit.referrer.slice(0, 10)}`}
+                                      </span>
+                                      {visit.is_return_visitor && (
+                                        <>
+                                          <span className="text-gray-400">•</span>
+                                          <span className="text-blue-600 font-medium">↩️ Return</span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-right text-xs text-gray-500">
+                                  <div>{new Date(visit.visit_time).toLocaleDateString('en-US', { 
+                                    month: 'short', day: 'numeric' 
+                                  })}</div>
+                                  <div>{new Date(visit.visit_time).toLocaleTimeString([], {
+                                    hour: '2-digit', minute:'2-digit'
+                                  })}</div>
+                                </div>
+                                <span className={`text-xs transition-transform ${expandedVisit === visit.id ? 'rotate-180' : ''}`}>
+                                  ▼
+                                </span>
                               </div>
                             </div>
-                            <span className="text-xs text-gray-500 text-right">
-                              {new Date(visit.visit_time).toLocaleDateString('en-US', { 
-                                month: 'short', day: 'numeric' 
-                              })}
-                              <br />
-                              {new Date(visit.visit_time).toLocaleTimeString([], {
-                                hour: '2-digit', minute:'2-digit'
-                              })}
-                            </span>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm">
-                              <span className="text-gray-600">Time:</span>
-                              <span className={`font-semibold ml-1 ${
-                                visit.time_on_site < 10 ? 'text-red-600' : visit.time_on_site > 120 ? 'text-green-600' : 'text-gray-900'
-                              }`}>
-                                {visit.time_on_site >= 60 ? 
-                                  `${Math.floor(visit.time_on_site / 60)}:${String(visit.time_on_site % 60).padStart(2, '0')}` : 
-                                  `0:${String(visit.time_on_site).padStart(2, '0')}`
-                                }
-                              </span>
-                              {visit.time_on_site < 10 && <span className="text-xs text-red-500 ml-1">(Bounce)</span>}
+                          
+                          {/* Expanded Details */}
+                          {expandedVisit === visit.id && (
+                            <div className="ml-4 mt-2 p-3 bg-gray-50 rounded-lg border-l-2 border-gray-300">
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div>
+                                  <span className="font-medium text-gray-600">Session Start:</span>
+                                  <div className="text-gray-900">
+                                    {new Date(visit.visit_time).toLocaleString()}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-600">Session End:</span>
+                                  <div className="text-gray-900">
+                                    {visit.visit_end_time ? new Date(visit.visit_end_time).toLocaleString() : 'In progress'}
+                                  </div>
+                                </div>
+                                <div className="col-span-2">
+                                  <span className="font-medium text-gray-600">Total Time:</span>
+                                  <div className="text-gray-900">
+                                    {visit.time_on_site >= 60 ? 
+                                      `${Math.floor(visit.time_on_site / 60)} min ${visit.time_on_site % 60} sec` : 
+                                      `${visit.time_on_site} seconds`
+                                    }
+                                    {visit.time_on_site <= 3 && ' (Bounced - 3 seconds or less)'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-600">Referrer:</span>
+                                  <div className="text-gray-900">{visit.referrer}</div>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-600">Visitor Type:</span>
+                                  <div className="text-gray-900">
+                                    {visit.is_return_visitor ? 'Return Visitor' : 'New Visitor'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="font-medium text-gray-600">Device:</span>
+                                  <div className="text-gray-900">{visit.device_model}</div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-600">
-                              {visit.referrer === 'Direct SMS Link' ? '📱 SMS Link' :
-                               visit.referrer === 'Google Search' ? '🔍 Google' :
-                               visit.referrer === 'Facebook' ? '📘 Facebook' :
-                               visit.referrer === 'Internal Navigation' ? '🔗 Internal' :
-                               `📧 ${visit.referrer}`}
-                            </div>
-                          </div>
+                          )}
                         </div>
                       ))}
                     </div>

@@ -23,6 +23,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Handle both regular JSON and sendBeacon blob/text data
+    let requestBody;
+    if (typeof req.body === 'string') {
+      // sendBeacon blob or text
+      requestBody = JSON.parse(req.body);
+    } else if (req.body && typeof req.body === 'object') {
+      // Regular JSON request
+      requestBody = req.body;
+    } else {
+      throw new Error('Invalid request body format');
+    }
+    
     const { 
       companyId, 
       sessionId, 
@@ -37,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       pageUrl,
       pageTitle,
       isInitial 
-    } = req.body;
+    } = requestBody;
     
     // Debug logging for development
     if (process.env.NODE_ENV === 'development') {
@@ -90,7 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const browserName = detectBrowserName(userAgent || 'Unknown');
 
     // Check if this is a return visitor
-    const isReturnVisitor = await checkReturnVisitor(visitorId, companyId, fingerprint);
+    const isReturnVisitor = await checkReturnVisitor(visitorId, companyId, sessionId);
 
     // Check for existing session
     const { data: existingView } = await supabaseAdmin
@@ -115,18 +127,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       device_type: detectedDeviceType,
       device_model: deviceModel || null,
       browser_name: browserName,
-      screen_resolution: fingerprint?.screenResolution || null,
-      timezone: fingerprint?.timezone || null,
-      language: fingerprint?.language || null,
-      platform: fingerprint?.platform || null,
-      touch_support: fingerprint?.touchSupport || false,
       page_title: pageTitle || null,
       is_return_visitor: isReturnVisitor,
       total_time_seconds: Math.min(timeOnPage || 0, 1800), // Cap at 30 minutes
       page_interactions: 1 + (existingView?.page_interactions || 0),
       is_initial_visit: isInitialVisit,
       visit_start_time: isInitialVisit ? now : existingView?.visit_start_time || now,
-      visit_end_time: !isInitialVisit ? now : null,
+      visit_end_time: isInitialVisit ? null : now,
       updated_at: now
     };
 
@@ -162,21 +169,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       result = data;
       
       // Update daily analytics and pipeline stage for new sessions
-      updateDailyAnalytics(payload.companyId, deviceType).catch(console.error);
-      autoUpdatePipelineStage(payload.companyId).catch(console.error);
+      updateDailyAnalytics(companyId, deviceType).catch(console.error);
+      autoUpdatePipelineStage(companyId).catch(console.error);
     }
 
     return res.status(200).json({
       success: true,
-      sessionId: payload.sessionId,
+      sessionId: sessionId,
       timeRecorded: trackingData.total_time_seconds,
       isUpdate: !!existingView,
       trackingId: result.id,
-      templateKey: payload.templateKey
+      templateKey: templateKey
     });
 
   } catch (error) {
     console.error('Analytics tracking error:', error);
+    
+    // For sendBeacon requests, just return 200 even on error to avoid browser retries
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('text/plain') || contentType.includes('application/json') && typeof req.body === 'string') {
+      return res.status(200).json({ success: false, error: 'tracking failed' });
+    }
+    
     return res.status(500).json({
       error: 'Failed to track analytics',
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
@@ -240,38 +254,21 @@ async function updateDailyAnalytics(companyId: string, deviceType: string) {
   }
 }
 
-// Professional return visitor detection
-async function checkReturnVisitor(visitorId: string, companyId: string, fingerprint: any): Promise<boolean> {
-  if (!visitorId) return false;
+// Improved return visitor detection focused on visitor_id
+async function checkReturnVisitor(visitorId: string, companyId: string, currentSessionId: string): Promise<boolean> {
+  if (!visitorId || visitorId.startsWith('temp_')) return false;
   
   try {
-    // Check if visitor_id has visited this company before
+    // Check if this visitor_id has visited this company before (excluding current session)
     const { data: existingVisits } = await supabaseAdmin
       .from('template_views')
       .select('id')
       .eq('visitor_id', visitorId)
       .eq('company_id', companyId)
+      .neq('session_id', currentSessionId)
       .limit(1);
     
-    if (existingVisits && existingVisits.length > 0) {
-      return true;
-    }
-    
-    // Fallback: Check fingerprint match for visitors without cookies
-    if (fingerprint?.screenResolution && fingerprint?.timezone && fingerprint?.platform) {
-      const { data: fingerprintMatches } = await supabaseAdmin
-        .from('template_views')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('screen_resolution', fingerprint.screenResolution)
-        .eq('timezone', fingerprint.timezone)
-        .eq('platform', fingerprint.platform)
-        .limit(1);
-      
-      return fingerprintMatches && fingerprintMatches.length > 0;
-    }
-    
-    return false;
+    return existingVisits && existingVisits.length > 0;
   } catch (error) {
     console.error('Error checking return visitor:', error);
     return false;

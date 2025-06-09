@@ -17,6 +17,7 @@ interface Visit {
   device_type: string;
   device_model: string;
   visit_time: string;
+  visit_end_time?: string;
   referrer: string;
   is_return_visitor: boolean;
   visitor_id: string;
@@ -40,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const { data: views, error } = await supabaseAdmin
       .from('template_views')
-      .select('id, session_id, total_time_seconds, device_type, visit_start_time, referrer_url, created_at')
+      .select('id, session_id, total_time_seconds, device_type, device_model, visit_start_time, visit_end_time, referrer_url, created_at, is_return_visitor, visitor_id')
       .eq('company_id', companyId)
       .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false });
@@ -67,17 +68,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       device_type: view.device_type || 'desktop',
       device_model: view.device_model || view.device_type || 'Unknown',
       visit_time: view.visit_start_time || view.created_at,
+      visit_end_time: view.visit_end_time,
       referrer: view.referrer_url || 'Direct SMS Link',
       is_return_visitor: view.is_return_visitor || false,
       visitor_id: view.visitor_id
     }));
 
-    // Calculate professional stats
+    // Calculate professional stats with 3-second bounce rate
     const totalVisits = visits.length;
     const uniqueVisitors = new Set(views.map((v: any) => v.visitor_id).filter(Boolean)).size;
     const returnVisitors = visits.filter(v => v.is_return_visitor).length;
     const bounceRate = visits.length > 0 
-      ? Math.round((visits.filter(v => v.time_on_site < 10).length / visits.length) * 100)
+      ? Math.round((visits.filter(v => v.time_on_site <= 3).length / visits.length) * 100)
       : 0;
     const avgTimeOnSite = visits.length > 0 
       ? Math.round(visits.reduce((sum, v) => sum + v.time_on_site, 0) / visits.length)
