@@ -35,9 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Get the uploaded logo URL from Supabase Storage
-    const logoUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/email-assets/atlas-logo.jpeg`;
-
     // Personal contact info based on who set the appointment
     const personalInfo = setBy === 'jared' ? {
       name: 'Jared Thompson',
@@ -56,70 +53,64 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         <meta charset="utf-8">
         <title>Your Atlas Growth Consultation</title>
         <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
-            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; }
-            .logo { max-width: 150px; height: auto; margin-bottom: 20px; }
-            .header h1 { color: white; margin: 0; font-size: 24px; }
-            .content { padding: 30px; }
-            .appointment-box { background: #f8f9ff; border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0; }
-            .appointment-detail { margin: 10px 0; font-size: 16px; }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f9f9f9; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 4px; padding: 30px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .header h1 { color: #333; margin: 0; font-size: 24px; }
+            .company-name { color: #4a90e2; font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+            .appointment-box { background: #f8f9fa; border-left: 4px solid #4a90e2; padding: 20px; margin: 20px 0; }
+            .appointment-detail { margin: 8px 0; font-size: 16px; }
             .label { font-weight: bold; color: #333; }
-            .value { color: #667eea; font-weight: 600; }
-            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #666; }
-            .cta-button { background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; margin: 20px 0; font-weight: bold; }
+            .value { color: #4a90e2; font-weight: 600; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <img src="${logoUrl}" alt="Atlas Growth" class="logo">
-                <h1>Your Consultation is Confirmed!</h1>
+                <div class="company-name">ATLAS GROWTH</div>
+                <h1>Your Consultation is Confirmed</h1>
             </div>
             
-            <div class="content">
-                <p>Hi ${ownerName || 'there'},</p>
-                
-                <p>Thank you for scheduling a consultation with Atlas Growth! We're excited to help <strong>${companyName}</strong> grow its online presence and generate more leads.</p>
-                
-                <div class="appointment-box">
-                    <h3 style="margin-top: 0; color: #333;">📅 Appointment Details</h3>
-                    <div class="appointment-detail">
-                        <span class="label">Date:</span> 
-                        <span class="value">${appointmentDate}</span>
-                    </div>
-                    <div class="appointment-detail">
-                        <span class="label">Time:</span> 
-                        <span class="value">${appointmentTime}</span>
-                    </div>
-                    <div class="appointment-detail">
-                        <span class="label">Phone:</span> 
-                        <span class="value">${phoneNumber || 'We\'ll call you'}</span>
-                    </div>
+            <p>Hi ${ownerName || 'there'},</p>
+            
+            <p>Thank you for scheduling a consultation with Atlas Growth. We're looking forward to discussing how we can help <strong>${companyName}</strong> grow its online presence.</p>
+            
+            <div class="appointment-box">
+                <h3 style="margin-top: 0; color: #333;">Appointment Details</h3>
+                <div class="appointment-detail">
+                    <span class="label">Date:</span> 
+                    <span class="value">${appointmentDate}</span>
                 </div>
-                
-                <h3>What to Expect:</h3>
-                <ul>
-                    <li>📊 Free analysis of your current online presence</li>
-                    <li>🎯 Custom strategy to attract more customers</li>
-                    <li>💡 Website optimization recommendations</li>
-                    <li>📈 Lead generation opportunities specific to your business</li>
-                </ul>
-                
-                <p>Our team will call you at the scheduled time. Please have any questions about your business goals ready!</p>
-                
-                <a href="mailto:contact@atlasgrowth.ai" class="cta-button">Questions? Contact Us</a>
+                <div class="appointment-detail">
+                    <span class="label">Time:</span> 
+                    <span class="value">${appointmentTime}</span>
+                </div>
+                <div class="appointment-detail">
+                    <span class="label">Phone:</span> 
+                    <span class="value">${phoneNumber || 'We will call you'}</span>
+                </div>
             </div>
+            
+            <h3>What to Expect:</h3>
+            <ul>
+                <li>Free analysis of your current online presence</li>
+                <li>Custom strategy to attract more customers</li>
+                <li>Website optimization recommendations</li>
+                <li>Lead generation opportunities for your business</li>
+            </ul>
+            
+            <p>We will call you at the scheduled time. Please have any questions about your business goals ready.</p>
             
             <div class="footer">
                 <p><strong>Atlas Growth</strong><br>
                 Helping businesses grow through better websites and lead generation</p>
-                <p>📧 contact@atlasgrowth.ai | 🌐 atlasgrowth.ai</p>
+                <p>Contact: contact@atlasgrowth.ai</p>
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
                 <p><strong>Your consultation will be handled by:</strong><br>
                 ${personalInfo.name}<br>
-                📞 ${personalInfo.phone}<br>
-                📧 ${personalInfo.email}</p>
+                Phone: ${personalInfo.phone}<br>
+                Email: ${personalInfo.email}</p>
             </div>
         </div>
     </body>

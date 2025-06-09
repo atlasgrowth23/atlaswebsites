@@ -146,7 +146,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       setWebsitePermission('');
       setSchedulingSoftware('');
       setIsPrivateNote(false);
-      setTags([]);
+      // Don't clear tags immediately - let them show until new ones load
       
       // Then fetch new data
       fetchNotes();
@@ -843,10 +843,11 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             </div>
             <button 
               onClick={onClose}
-              className="text-blue-100 hover:text-white ml-2"
+              className="text-blue-100 hover:text-white ml-2 p-2 rounded-lg hover:bg-blue-600 transition-colors"
+              title="Close"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -987,11 +988,11 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         <div className="flex flex-1">
           {[
             { key: 'overview', label: 'Overview', icon: '📊' },
-            { key: 'notes', label: 'Notes', icon: '📝' },
-            { key: 'activity', label: 'Activity', icon: '🕒' },
             { key: 'sms', label: 'SMS', icon: '💬' },
+            { key: 'notes', label: 'Notes', icon: '📝' },
+            { key: 'template', label: 'Template', icon: '🎨' },
             { key: 'analytics', label: 'Site Analytics', icon: '📈' },
-            { key: 'template', label: 'Template', icon: '🎨' }
+            { key: 'activity', label: 'Activity', icon: '🕒' }
           ].map(tab => (
             <button
               key={tab.key}
@@ -1010,8 +1011,8 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         
         <button
           onClick={onClose}
-          className="px-3 py-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 border-b-2 border-transparent"
-          title="Close sidebar"
+          className="px-4 py-3 text-gray-600 hover:text-gray-800 hover:bg-gray-100 border-b-2 border-transparent text-lg font-bold"
+          title="Close"
         >
           ✕
         </button>
@@ -1118,7 +1119,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
                   onBlur={saveOwnerName}
-                  placeholder="Enter owner name for SMS/email"
+                  placeholder="Owner name"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
                 <button
@@ -1138,7 +1139,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   type="email"
                   value={ownerEmail}
                   onChange={(e) => setOwnerEmail(e.target.value)}
-                  placeholder="Enter owner email (e.g., john@icoalheating.com)"
+                  placeholder="Owner email"
                   className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
                 <button
@@ -1154,13 +1155,12 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             <div>
               <div className="mb-2">
                 <h4 className="font-medium text-gray-900">📝 Add Note</h4>
-                <p className="text-xs text-gray-500 mt-1">Notes auto-detect type (📞 calls, ✉️ emails, etc.)</p>
               </div>
               <div className="relative">
                 <textarea
                   value={newNote}
                   onChange={(e) => handleNoteChange(e.target.value)}
-                  placeholder="Type your note... (@ to mention team members)"
+                  placeholder="Type your note..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                   rows={3}
                 />
