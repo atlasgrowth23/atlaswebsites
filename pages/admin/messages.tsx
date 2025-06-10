@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import SimpleAdminLayout from '../../components/SimpleAdminLayout';
-import { useRouter } from 'next/router';
+import UnifiedAdminLayout from '../../components/UnifiedAdminLayout';
 import { supabase } from '../../lib/supabase';
 
 interface Thread {
@@ -31,7 +30,6 @@ interface Message {
 }
 
 export default function MessagesPage() {
-  const [user, setUser] = useState<User | null>(null);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -42,29 +40,16 @@ export default function MessagesPage() {
   const [showJaredInbox, setShowJaredInbox] = useState(false);
 
   useEffect(() => {
-    initializeAuth();
+    loadThreads();
   }, []);
-
-  const initializeAuth = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      if (!currentUser) {
-        await signInWithGoogle();
-        return;
-      }
-      setUser(currentUser);
-      await loadThreads();
-    } catch (error) {
-      console.error('Auth initialization error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadThreads = async () => {
     try {
       const { data: session } = await supabase.auth.getSession();
-      if (!session.session?.access_token) return;
+      if (!session.session?.access_token) {
+        setLoading(false);
+        return;
+      }
 
       const response = await fetch('/api/admin/messages/threads', {
         headers: {
@@ -78,6 +63,8 @@ export default function MessagesPage() {
       }
     } catch (error) {
       console.error('Error loading threads:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -144,31 +131,17 @@ export default function MessagesPage() {
 
   if (loading) {
     return (
-      <SimpleAdminLayout>
+      <UnifiedAdminLayout currentPage="messages">
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading...</div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="ml-3 text-lg">Loading messages...</div>
         </div>
-      </SimpleAdminLayout>
-    );
-  }
-
-  if (!user) {
-    return (
-      <SimpleAdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <button
-            onClick={signInWithGoogle}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Sign in with Google
-          </button>
-        </div>
-      </SimpleAdminLayout>
+      </UnifiedAdminLayout>
     );
   }
 
   return (
-    <SimpleAdminLayout>
+    <UnifiedAdminLayout currentPage="messages">
       <div className="h-full flex">
         {/* Sidebar */}
         <div className="w-40 bg-gray-50 p-4 border-r">
@@ -207,19 +180,17 @@ export default function MessagesPage() {
             </button>
           </div>
           
-          {user.role === 'super_admin' && (
-            <div className="mt-6 pt-4 border-t">
-              <label className="flex items-center text-sm">
-                <input
-                  type="checkbox"
-                  checked={showJaredInbox}
-                  onChange={(e) => setShowJaredInbox(e.target.checked)}
-                  className="mr-2"
-                />
-                👁 Show Jared's inbox
-              </label>
-            </div>
-          )}
+          <div className="mt-6 pt-4 border-t">
+            <label className="flex items-center text-sm">
+              <input
+                type="checkbox"
+                checked={showJaredInbox}
+                onChange={(e) => setShowJaredInbox(e.target.checked)}
+                className="mr-2"
+              />
+              👁 Show Jared's inbox
+            </label>
+          </div>
         </div>
 
         {/* Thread List */}
@@ -347,6 +318,6 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
-    </SimpleAdminLayout>
+    </UnifiedAdminLayout>
   );
 }
