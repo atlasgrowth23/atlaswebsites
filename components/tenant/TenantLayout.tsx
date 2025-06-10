@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTheme } from './ThemeProvider';
+import AtlasVoiceMic from '../voice/AtlasVoiceMic';
 import { 
   UsersIcon, 
   CalendarIcon, 
@@ -183,6 +184,20 @@ export default function TenantLayout({ children }: { children: React.ReactNode }
           ))}
         </nav>
       </div>
+
+      {/* Atlas Voice Assistant - floating mic */}
+      <AtlasVoiceMic 
+        onVoiceCommand={(result) => {
+          console.log('Atlas Voice Command:', result);
+          // Optionally refresh the page or update UI based on the command
+          if (result.success && (result.intent === 'create_contact' || result.intent === 'update_contact_field')) {
+            // Refresh current page to show changes
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+          }
+        }}
+      />
     </div>
   );
 }
