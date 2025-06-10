@@ -46,17 +46,17 @@ export default function PrivacyPolicy() {
                   When you opt in to SMS communications, you may receive the following types of messages:
                 </p>
                 <ul className="list-disc pl-6 mb-4">
-                  <li><strong>Appointment confirmations and reminders</strong> - Confirming your scheduled service</li>
-                  <li><strong>Service status updates</strong> - Technician en-route notifications, arrival times</li>
-                  <li><strong>Job completion notifications</strong> - Confirmation that work has been completed</li>
-                  <li><strong>Follow-up satisfaction checks</strong> - Brief surveys about your service experience</li>
-                  <li><strong>Review requests</strong> - Optional invitations to leave feedback (sent only once per job)</li>
+                  <li><strong>Account onboarding instructions</strong> - Setup and welcome messages</li>
+                  <li><strong>Password reset and security codes</strong> - Account security notifications</li>
+                  <li><strong>Appointment reminders for onboarding calls</strong> - Scheduled setup calls</li>
+                  <li><strong>Platform status alerts</strong> - System maintenance and service updates</li>
+                  <li><strong>Important service notifications</strong> - Critical account-related updates</li>
                 </ul>
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Message Frequency</h3>
                 <p className="mb-4">
-                  <strong>Message frequency may vary</strong> based on your service appointments and preferences. 
-                  Typically, you'll receive 2-4 messages per service appointment.
+                  <strong>Message frequency may vary</strong> based on your account activity and platform usage. 
+                  Typically limited to essential account and service notifications only.
                 </p>
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Costs</h3>
@@ -72,7 +72,7 @@ export default function PrivacyPolicy() {
                 <ul className="list-disc pl-6 mb-4">
                   <li><strong>Reply STOP</strong> to any message to unsubscribe from all future SMS communications</li>
                   <li>Contact the contractor directly to opt out</li>
-                  <li>Email us at support@atlasgrowth.ai</li>
+                  <li>Email us at nicholas@atlasgrowth.ai</li>
                 </ul>
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Help Instructions</h3>
@@ -81,8 +81,8 @@ export default function PrivacyPolicy() {
                 </p>
                 <ul className="list-disc pl-6 mb-4">
                   <li><strong>Reply HELP</strong> to any message for instructions and support contact information</li>
-                  <li>Call 601-555-0000 for direct support</li>
-                  <li>Email support@atlasgrowth.ai</li>
+                  <li>Call 205-500-5170 for direct support</li>
+                  <li>Email nicholas@atlasgrowth.ai</li>
                 </ul>
               </section>
 
@@ -90,9 +90,9 @@ export default function PrivacyPolicy() {
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">How We Use Your Information</h2>
                 <p className="mb-4">We use your information to:</p>
                 <ul className="list-disc pl-6 mb-4">
-                  <li>Facilitate service appointments between you and contractors</li>
-                  <li>Send appointment-related communications (if you opt in)</li>
-                  <li>Improve our services and customer experience</li>
+                  <li>Provide account management and onboarding support</li>
+                  <li>Send account and service-related communications (if you opt in)</li>
+                  <li>Improve our platform and customer experience</li>
                   <li>Comply with legal obligations</li>
                 </ul>
               </section>
@@ -104,8 +104,8 @@ export default function PrivacyPolicy() {
                   We may share information with:
                 </p>
                 <ul className="list-disc pl-6 mb-4">
-                  <li>The contractor you've chosen for service delivery</li>
-                  <li>Service providers who assist with our operations (under strict confidentiality agreements)</li>
+                  <li>Platform service providers who assist with our operations (under strict confidentiality agreements)</li>
+                  <li>Technical support and maintenance providers</li>
                   <li>Legal authorities when required by law</li>
                 </ul>
               </section>
@@ -124,9 +124,9 @@ export default function PrivacyPolicy() {
                   If you have questions about this Privacy Policy or our SMS messaging practices:
                 </p>
                 <ul className="list-none mb-4">
-                  <li>Email: support@atlasgrowth.ai</li>
-                  <li>Phone: 601-555-0000</li>
-                  <li>Address: Atlas Growth, Business Services Division</li>
+                  <li>Email: nicholas@atlasgrowth.ai</li>
+                  <li>Phone: 205-500-5170</li>
+                  <li>Address: 1000 Lane Park Court, Mount Brook, Alabama 35223</li>
                 </ul>
               </section>
 

@@ -29,7 +29,7 @@ export default function HomePage() {
           ...formData,
           timestamp: new Date().toISOString(),
           ipAddress: 'client-ip', // Would be captured server-side
-          optInText: 'I agree to receive account and service updates by SMS from Atlas Growth. Message & data rates may apply. Reply STOP to cancel, HELP for help.'
+          optInText: 'I agree to receive account and service updates by SMS from Atlas Growth. Message frequency may vary. Msg & Data rates may apply. Reply STOP to unsubscribe. Text HELP for support.'
         })
       });
     } catch (error) {
@@ -59,8 +59,8 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>Atlas Growth - Generate More Customers Without Paid Advertising</title>
-        <meta name="description" content="Get more customers through Google reviews and feedback. Professional strategies to grow your business organically without expensive advertising." />
+        <title>Atlas Growth - Professional Platform Management for Contractors</title>
+        <meta name="description" content="SaaS platform for licensed contractors and agency partners. Secure account management, onboarding support, and platform notifications." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -84,26 +84,26 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Headline */}
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Generate <span className="text-blue-400">More Customers</span> Without Paying for Advertising
+              Professional <span className="text-blue-400">Platform Management</span> for Contractors
             </h1>
             
             <h2 className="text-xl md:text-2xl text-blue-100 mb-8 font-medium">
-              Get more customers through Google reviews • Generate more feedback from customers • Grow your business organically
+              SaaS platform for licensed contractors and agency partners • Account management • Platform support
             </h2>
 
             {/* Social Proof */}
             <div className="flex flex-wrap justify-center gap-8 mb-12 text-blue-200">
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">500+</div>
-                <div className="text-sm">Businesses Helped</div>
+                <div className="text-sm">Contractors Served</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">95%</div>
-                <div className="text-sm">More Reviews</div>
+                <div className="text-2xl font-bold text-white">24/7</div>
+                <div className="text-sm">Platform Support</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">Zero</div>
-                <div className="text-sm">Ad Spend Required</div>
+                <div className="text-2xl font-bold text-white">Secure</div>
+                <div className="text-sm">Account Management</div>
               </div>
             </div>
 
@@ -111,10 +111,10 @@ export default function HomePage() {
             <div className="max-w-xl mx-auto">
               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
                 <h3 className="text-2xl font-bold text-white mb-4">
-                  Start Growing Your Business
+                  Access Your Platform Account
                 </h3>
                 <p className="text-blue-100 mb-6">
-                  Join 500+ contractors using Atlas Growth to get more customers through reviews and feedback
+                  Join 500+ contractors using Atlas Growth platform for professional account management
                 </p>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -153,7 +153,7 @@ export default function HomePage() {
                       className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                     <label htmlFor="sms-consent" className="text-xs text-blue-200">
-                      By signing up you agree to receive SMS updates from Atlas Growth. Msg & Data rates may apply. Reply STOP to cancel. See{' '}
+                      By signing up you agree to receive account and service updates by SMS from Atlas Growth. Message frequency may vary. Msg & Data rates may apply. Reply STOP to unsubscribe. Text HELP for support. See{' '}
                       <a href="/privacy" className="text-blue-300 underline hover:text-white">Privacy Policy</a>
                       {' '}and{' '}
                       <a href="/terms" className="text-blue-300 underline hover:text-white">Terms</a>.
@@ -173,26 +173,26 @@ export default function HomePage() {
             {/* Features */}
             <div className="grid md:grid-cols-3 gap-8 mt-16">
               <div className="text-center">
-                <div className="text-4xl mb-4">⭐</div>
-                <h3 className="text-xl font-bold text-white mb-2">More Google Reviews</h3>
+                <div className="text-4xl mb-4">🔐</div>
+                <h3 className="text-xl font-bold text-white mb-2">Secure Account Management</h3>
                 <p className="text-blue-200">
-                  Get systematic strategies to increase your Google reviews and improve your ranking
+                  Professional platform access with secure login and account protection
                 </p>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl mb-4">💬</div>
-                <h3 className="text-xl font-bold text-white mb-2">Customer Feedback</h3>
+                <div className="text-4xl mb-4">📱</div>
+                <h3 className="text-xl font-bold text-white mb-2">SMS Notifications</h3>
                 <p className="text-blue-200">
-                  Learn how to collect valuable feedback that improves your service and attracts new customers
+                  Receive important account updates, security alerts, and platform notifications
                 </p>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl mb-4">📈</div>
-                <h3 className="text-xl font-bold text-white mb-2">Organic Growth</h3>
+                <div className="text-4xl mb-4">🛠️</div>
+                <h3 className="text-xl font-bold text-white mb-2">Platform Support</h3>
                 <p className="text-blue-200">
-                  Build a sustainable customer base without expensive advertising or shared leads
+                  Get onboarding assistance and technical support for your Atlas Growth account
                 </p>
               </div>
             </div>

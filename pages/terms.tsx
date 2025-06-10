@@ -30,8 +30,8 @@ export default function TermsOfService() {
               <section className="mb-8">
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">Service Description</h2>
                 <p className="mb-4">
-                  Atlas Growth provides customer communication services for home service contractors, including 
-                  appointment scheduling, SMS notifications, and customer feedback collection.
+                  Atlas Growth provides a SaaS platform for licensed contractors and agency partners, including 
+                  account management, onboarding support, and essential platform notifications via SMS.
                 </p>
               </section>
 
@@ -55,15 +55,14 @@ export default function TermsOfService() {
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Message Types and Purpose</h3>
                 <p className="mb-4">
-                  Atlas Growth sends only transactional SMS messages related to your service appointments:
+                  Atlas Growth sends only customer care and account-related SMS messages:
                 </p>
                 <ul className="list-disc pl-6 mb-4">
-                  <li><strong>Appointment confirmations and reminders</strong></li>
-                  <li><strong>Technician en-route notifications</strong></li>
-                  <li><strong>Service status updates</strong></li>
-                  <li><strong>Job completion confirmations</strong></li>
-                  <li><strong>Post-service satisfaction surveys</strong> (optional)</li>
-                  <li><strong>Review requests</strong> (sent once per completed job)</li>
+                  <li><strong>Account onboarding instructions</strong></li>
+                  <li><strong>Password reset and security codes</strong></li>
+                  <li><strong>Appointment reminders for onboarding calls</strong></li>
+                  <li><strong>Platform status alerts and maintenance notifications</strong></li>
+                  <li><strong>Important service updates</strong></li>
                 </ul>
                 
                 <p className="mb-4 font-semibold">
@@ -72,8 +71,8 @@ export default function TermsOfService() {
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Message Frequency</h3>
                 <p className="mb-4">
-                  <strong>Message frequency may vary</strong> depending on your service appointments. 
-                  Typical frequency is 2-4 messages per service appointment over the duration of the customer relationship.
+                  <strong>Message frequency may vary</strong> depending on your account activity and platform usage. 
+                  Typical frequency is limited to essential account and service notifications only.
                 </p>
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Costs and Charges</h3>
@@ -88,8 +87,8 @@ export default function TermsOfService() {
                 </p>
                 <ul className="list-disc pl-6 mb-4">
                   <li><strong>Reply STOP</strong> to any SMS message to immediately unsubscribe</li>
-                  <li>Contact us at support@atlasgrowth.ai</li>
-                  <li>Call 601-555-0000</li>
+                  <li>Contact us at nicholas@atlasgrowth.ai</li>
+                  <li>Call 205-500-5170</li>
                   <li>Request opt-out through your contractor</li>
                 </ul>
                 <p className="mb-4">
@@ -102,8 +101,8 @@ export default function TermsOfService() {
                 </p>
                 <ul className="list-disc pl-6 mb-4">
                   <li><strong>Reply HELP</strong> to any message for assistance and contact information</li>
-                  <li>Call our support line: 601-555-0000</li>
-                  <li>Email: support@atlasgrowth.ai</li>
+                  <li>Call our support line: 205-500-5170</li>
+                  <li>Email: nicholas@atlasgrowth.ai</li>
                 </ul>
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Privacy and Data Protection</h3>
@@ -113,6 +112,14 @@ export default function TermsOfService() {
                   <li>All data handling complies with applicable privacy laws</li>
                   <li>See our Privacy Policy for complete details on data handling</li>
                 </ul>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">Privacy Policy</h2>
+                <p className="mb-4">
+                  For complete details on how we handle your personal information and SMS data, please review our{' '}
+                  <a href="/privacy" className="text-blue-600 hover:text-blue-800 underline">Privacy Policy</a>.
+                </p>
               </section>
 
               <section className="mb-8">
@@ -158,9 +165,9 @@ export default function TermsOfService() {
                   For questions about these Terms of Service or our SMS messaging:
                 </p>
                 <ul className="list-none mb-4">
-                  <li>Email: support@atlasgrowth.ai</li>
-                  <li>Phone: 601-555-0000</li>
-                  <li>Address: Atlas Growth, Business Services Division</li>
+                  <li>Email: nicholas@atlasgrowth.ai</li>
+                  <li>Phone: 205-500-5170</li>
+                  <li>Address: 1000 Lane Park Court, Mount Brook, Alabama 35223</li>
                 </ul>
               </section>
 
