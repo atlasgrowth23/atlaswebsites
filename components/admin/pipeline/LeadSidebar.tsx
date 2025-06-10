@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import DomainManagement from '@/components/DomainManagement';
 import { ACTIVITY_ACTIONS } from '@/lib/activityTracker';
 
+// 🆕 MODERNIZED LEAD SIDEBAR COMPONENT (Phase 3 Step 4)
+// Now uses embedded JSON notes and tags data from modernized APIs
+// Provides enhanced UI with note/tag counts and recent note previews
+
 interface Company {
   id: string;
   name: string;
@@ -31,7 +35,12 @@ interface PipelineLead {
   stage: string;
   last_contact_date?: string;
   next_follow_up_date?: string;
-  notes: string;
+  notes: string; // Legacy field for backward compatibility
+  notes_json?: Note[]; // 🆕 New JSON notes array
+  notes_count?: number; // 🆕 Quick count for UI
+  recent_note?: string; // 🆕 Preview of most recent note
+  tags?: Tag[]; // 🆕 Tags array
+  tags_count?: number; // 🆕 Quick count for UI
   created_at: string;
   updated_at: string;
   company: Company;
@@ -41,7 +50,18 @@ interface Note {
   id: string;
   content: string;
   created_at: string;
+  updated_at: string;
   is_private?: boolean;
+  created_by?: string;
+  type?: string;
+}
+
+interface Tag {
+  id: string;
+  tag_type: string;
+  display_name: string;
+  color: string;
+  created_at: string;
 }
 
 interface LeadSidebarProps {
@@ -153,15 +173,27 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       // Reset voicemail states
       setVoicemailPart1Sent(false);
       setVoicemailPart2Sent(false);
-      // Don't clear tags immediately - let them show until new ones load
       
-      // Then fetch new data
-      fetchNotes();
+      // 🆕 MODERNIZED: Use embedded notes and tags from lead data if available
+      if (lead.notes_json && lead.notes_json.length > 0) {
+        setNotes(lead.notes_json);
+      } else {
+        // Fallback to fetching notes if not embedded
+        fetchNotes();
+      }
+      
+      if (lead.tags && lead.tags.length > 0) {
+        setTags(lead.tags);
+      } else {
+        // Fallback to fetching tags if not embedded
+        fetchLeadTags();
+      }
+      
+      // Then fetch remaining data
       fetchCustomizations();
       fetchAnalyticsData();
       fetchOwnerName();
       fetchActivities();
-      fetchLeadTags();
       checkActiveSession();
       // Check if lead has progressed past new_lead stage (has initial contact)
       setHasInitialContact(lead.stage !== 'new_lead');
@@ -1092,14 +1124,21 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
             </div>
 
-            {/* Tags Section */}
+            {/* Tags Section - Enhanced with counts */}
             <div className="border rounded-lg p-3 bg-yellow-50">
-              <h4 className="font-medium text-gray-900 mb-2 text-sm">🏷️ Tags</h4>
+              <h4 className="font-medium text-gray-900 mb-2 text-sm">
+                🏷️ Tags 
+                {(lead.tags_count || tags.length) > 0 && (
+                  <span className="ml-2 bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full text-xs">
+                    {lead.tags_count || tags.length}
+                  </span>
+                )}
+              </h4>
               <div className="flex flex-wrap gap-1">
                 {loadingTags ? (
                   <div className="text-xs text-gray-500">Loading tags...</div>
-                ) : tags.length > 0 ? (
-                  tags.map(tag => {
+                ) : (lead.tags || tags).length > 0 ? (
+                  (lead.tags || tags).map(tag => {
                     const colorClasses = {
                       'green': 'bg-green-100 text-green-800 border-green-200',
                       'blue': 'bg-blue-100 text-blue-800 border-blue-200',
@@ -1242,11 +1281,24 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             </button>
 
 
-            {/* Notes History */}
+            {/* Notes History - Enhanced with counts */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">📚 Team Notes & Activity</h4>
+              <h4 className="font-medium text-gray-900 mb-2">
+                📚 Team Notes & Activity
+                {(lead.notes_count || notes.length) > 0 && (
+                  <span className="ml-2 bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full text-xs">
+                    {lead.notes_count || notes.length}
+                  </span>
+                )}
+              </h4>
+              {lead.recent_note && (
+                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-xs text-blue-600 font-medium mb-1">Most Recent:</div>
+                  <div className="text-sm text-gray-700 italic">"{lead.recent_note}..."</div>
+                </div>
+              )}
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {notes.map(note => {
+                {(lead.notes_json || notes).map(note => {
                   const noteTypeColors = {
                     general: 'border-gray-200 bg-gray-50',
                     call: 'border-blue-200 bg-blue-50',
@@ -1296,7 +1348,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     </div>
                   );
                 })}
-                {notes.length === 0 && (
+                {(lead.notes_json || notes).length === 0 && (
                   <div className="text-gray-500 text-sm italic text-center py-4">No notes yet</div>
                 )}
               </div>

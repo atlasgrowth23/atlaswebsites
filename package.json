@@ -19,6 +19,7 @@
   "description": "A comprehensive platform for HVAC contractors to manage their business website, customer contacts, and messaging.",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
+    "@heroicons/react": "^2.2.0",
     "@neondatabase/serverless": "^1.0.0",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
     "@radix-ui/react-avatar": "^1.1.10",
@@ -33,6 +34,7 @@
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-toast": "^1.2.14",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@react-google-maps/api": "^2.20.6",
     "@sendgrid/mail": "^8.1.5",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/auth-ui-shared": "^0.1.8",
@@ -68,6 +70,7 @@
     "memoizee": "^0.4.17",
     "next": "^15.3.3",
     "node-fetch": "^2.7.0",
+    "openai": "^5.2.0",
     "openid-client": "^6.5.0",
     "p-limit": "^6.2.0",
     "pdfkit": "^0.17.1",

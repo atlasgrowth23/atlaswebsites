@@ -1,61 +1,92 @@
-# Multi-Business Website Platform
+# Atlas - Multi-Business Platform
 
-A scalable platform for hosting professional websites for multiple businesses across various industries. Create beautiful, template-based websites with integrated customer engagement tools.
+A scalable platform for hosting professional websites for businesses and providing tenant SaaS functionality. Features admin CRM for lead management and tenant dashboard for customer management.
 
 ## Features
 
+### Business Websites
 - **Multi-tenant architecture**: Host unlimited business websites on one platform
-- **Professional templates**: Each business gets a modern, responsive website template
+- **Professional templates**: Modern, responsive website templates (ModernTrust, etc.)
 - **Custom domain support**: Businesses can use custom domains or branded subdomains
-- **Customer engagement**: Built-in chat widget and contact management
-- **Advanced analytics**: Professional visitor tracking with admin detection
-- **Business data integration**: Automatic integration with business listings and reviews
 - **SEO optimized**: Each site is optimized for search engines and social media sharing
+
+### Admin CRM
+- **Pipeline management**: Lead tracking with stages and activity logging
+- **Analytics dashboard**: Visitor tracking and session analytics
+- **Template management**: Control business website templates and customizations
+- **Custom domain management**: Configure and verify domains for businesses
+
+### Tenant Dashboard (Phase 1)
+- **Contact management**: HVAC customer database with equipment tracking
+- **Equipment details**: Model numbers, warranties, service history
+- **Voice notes**: Web Speech API integration for field notes
+- **Dark/light theme**: User preference toggle
 
 ## Technology Stack
 
 - **Frontend**: Next.js, React, TypeScript, and Tailwind CSS
-- **Backend**: Next.js API Routes, PostgreSQL database  
-- **Image Processing**: Sharp for logo optimization and social media previews
-- **Deployment**: Vercel optimized with static generation
+- **Backend**: Next.js API Routes, Supabase (PostgreSQL)
+- **UI Components**: Radix UI primitives with Tailwind
+- **Database**: Supabase with RLS (Row Level Security)
+- **Authentication**: Supabase Auth (future implementation)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 14+ and npm
-- PostgreSQL database (can use Replit database or external)
+- Supabase project with PostgreSQL database
 
 ### Installation
 
 1. Clone the repository
-   ```
-   git clone https://github.com/yourusername/hvac-platform.git
-   cd hvac-platform
+   ```bash
+   git clone https://github.com/atlasgrowth23/atlaswebsites.git
+   cd atlaswebsites
    ```
 
 2. Install dependencies
-   ```
+   ```bash
    npm install
    ```
 
 3. Set up environment variables
    Create a `.env.local` file with:
-   ```
-   DATABASE_URL=your_postgresql_connection_string
-   PRIMARY_DOMAIN=yourdomain.com
+   ```bash
+   DATABASE_URL=postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws-0-us-east-2.pooler.supabase.com:6543/postgres?pgbouncer=true
+   DIRECT_URL=postgresql://postgres.[PROJECT_ID]:[PASSWORD]@aws-0-us-east-2.pooler.supabase.com:5432/postgres
+   NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT_ID].supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   DEV_TENANT_ID=your_test_tenant_id
    ```
 
-4. Run database setup
-   ```
-   npx tsx scripts/create-hvac-tables.ts
-   npx tsx scripts/create-message-tables.ts
+4. Run Phase 1 migrations
+   ```bash
+   node scripts/run-phase1-migrations.js
    ```
 
 5. Start the development server
-   ```
+   ```bash
    npm run dev
    ```
+
+## Phase 1 Setup
+
+Atlas is being built in phases. Phase 1 includes:
+
+### Database Setup
+```bash
+# Run Phase 1 migrations (creates tenants and contacts tables)
+node scripts/run-phase1-migrations.js
+```
+
+### Access Points
+- **Admin CRM**: `http://localhost:3000/admin/pipeline`
+- **Tenant Dashboard**: `http://localhost:3000/contacts` (after running migrations)
+- **Dev Login**: `http://localhost:3000/login-dev` (auto-redirects to contacts)
+
+### Test Data
+The migration script creates a test tenant with sample contacts for development.
 
 ## Project Structure
 

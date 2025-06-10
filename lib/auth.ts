@@ -1,73 +1,72 @@
-import { supabaseAdmin } from './supabase';
+import { supabase, supabaseAdmin } from './supabase';
 
 export interface User {
   id: string;
   email: string;
-  role: 'admin' | 'viewer';
-  states: string[];
-  name: string;
+  role: 'admin' | 'super_admin';
+  name?: string;
 }
 
-// Simple user management - later we can move this to database
-const USERS: Record<string, Omit<User, 'id'>> = {
-  // We'll add your email and Jared's email here once you provide them
-};
-
-export async function authenticateUser(email: string, password: string): Promise<User | null> {
+export async function getCurrentUser(): Promise<User | null> {
   try {
-    // Use Supabase auth
-    const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password
-    });
-
+    const { data, error } = await supabase.auth.getUser();
+    
     if (error || !data.user) {
       return null;
     }
 
-    // Get user profile from our user mapping
-    const userProfile = USERS[email];
-    if (!userProfile) {
-      return null;
-    }
-
+    // Get role from JWT claims or user metadata
+    const role = data.user.user_metadata?.role || data.user.role || 'admin';
+    
     return {
       id: data.user.id,
-      ...userProfile,
-      email: data.user.email!
+      email: data.user.email!,
+      role: role as 'admin' | 'super_admin',
+      name: data.user.user_metadata?.name || data.user.email
     };
   } catch (error) {
-    console.error('Auth error:', error);
+    console.error('Get current user error:', error);
     return null;
   }
 }
 
-export async function createUser(email: string, password: string, role: 'admin' | 'viewer', states: string[], name: string) {
+export async function signInWithGoogle() {
   try {
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/admin/messages`,
+        scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar'
+      }
     });
 
     if (error) {
       throw error;
     }
 
-    // Add to our user mapping
-    USERS[email] = { email, role, states, name };
-    
-    return data.user;
+    return data;
   } catch (error) {
-    console.error('Create user error:', error);
+    console.error('Google sign in error:', error);
     throw error;
   }
 }
 
-export function getUserStates(user: User): string[] {
-  return user.states;
+export async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error('Sign out error:', error);
+    throw error;
+  }
 }
 
-export function canAccessState(user: User, state: string): boolean {
-  return user.states.includes(state);
+export async function isAdmin(user: User): boolean {
+  return user.role === 'admin' || user.role === 'super_admin';
+}
+
+export async function isSuperAdmin(user: User): boolean {
+  return user.role === 'super_admin';
 }
