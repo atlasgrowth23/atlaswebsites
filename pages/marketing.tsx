@@ -1,21 +1,23 @@
 import { useState } from 'react';
 import Head from 'next/head';
 
-export default function HomePage() {
-  const [phone, setPhone] = useState('');
+export default function MarketingPage() {
+  const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Here you'd integrate with your email service (ConvertKit, Mailchimp, etc.)
+    // For now, just show success
     setIsSubmitted(true);
     
-    // Send to your backend for SMS opt-in
+    // Optional: Send to your backend
     try {
-      await fetch('/api/marketing/sms-subscribe', {
+      await fetch('/api/marketing/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
+        body: JSON.stringify({ email })
       });
     } catch (error) {
       console.error('Subscription error:', error);
@@ -27,10 +29,10 @@ export default function HomePage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
-            <div className="text-6xl mb-4">📱</div>
-            <h1 className="text-3xl font-bold text-white mb-4">Thank You!</h1>
+            <div className="text-6xl mb-4">🎉</div>
+            <h1 className="text-3xl font-bold text-white mb-4">You're In!</h1>
             <p className="text-blue-100 text-lg">
-              You'll receive helpful tips on generating more customers through Google reviews and feedback.
+              Check your email for exclusive HVAC lead generation strategies that are making businesses $10K+ per month.
             </p>
           </div>
         </div>
@@ -41,8 +43,8 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>Atlas Growth - Generate More Customers Without Paid Advertising</title>
-        <meta name="description" content="Get more customers through Google reviews and feedback. Professional strategies to grow your business organically without expensive advertising." />
+        <title>Atlas Growth - HVAC Lead Generation That Actually Works</title>
+        <meta name="description" content="Generate high-quality HVAC leads that convert to $5K+ customers. Professional website templates, lead tracking, and proven systems used by successful HVAC businesses." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -52,12 +54,7 @@ export default function HomePage() {
         <header className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center">
             <div className="text-2xl font-bold text-white">Atlas Growth</div>
-            <div className="flex items-center gap-4">
-              <div className="text-blue-200">Business Growth Solutions</div>
-              <a href="/admin/pipeline" className="text-xs text-blue-300 hover:text-white opacity-50 hover:opacity-100">
-                Admin
-              </a>
-            </div>
+            <div className="text-blue-200">HVAC Lead Generation</div>
           </div>
         </header>
 
@@ -66,45 +63,45 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center">
             {/* Headline */}
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Generate <span className="text-blue-400">More Customers</span> Without Paying for Advertising
+              Generate <span className="text-blue-400">$10K+</span> Monthly in HVAC Leads
             </h1>
             
             <h2 className="text-xl md:text-2xl text-blue-100 mb-8 font-medium">
-              Get more customers through Google reviews • Generate more feedback from customers • Grow your business organically
+              Professional websites + proven lead systems = HVAC businesses booking $5K+ customers every week
             </h2>
 
             {/* Social Proof */}
             <div className="flex flex-wrap justify-center gap-8 mb-12 text-blue-200">
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">500+</div>
-                <div className="text-sm">Businesses Helped</div>
+                <div className="text-2xl font-bold text-white">563</div>
+                <div className="text-sm">Active Leads</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">95%</div>
-                <div className="text-sm">More Reviews</div>
+                <div className="text-2xl font-bold text-white">$47K</div>
+                <div className="text-sm">Generated This Month</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">Zero</div>
-                <div className="text-sm">Ad Spend Required</div>
+                <div className="text-2xl font-bold text-white">94%</div>
+                <div className="text-sm">Lead Quality</div>
               </div>
             </div>
 
-            {/* SMS Opt-in Form */}
+            {/* Opt-in Form */}
             <div className="max-w-xl mx-auto">
               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
                 <h3 className="text-2xl font-bold text-white mb-4">
-                  Get Free Growth Tips
+                  Get The Exact System We Use
                 </h3>
                 <p className="text-blue-100 mb-6">
-                  Learn how to get more Google reviews and customer feedback to grow your business
+                  Free case study: How Arkansas HVAC companies are generating 40+ qualified leads per month
                 </p>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter your phone number"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email address"
                     required
                     className="w-full px-4 py-3 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
@@ -112,44 +109,39 @@ export default function HomePage() {
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-200"
                   >
-                    Send Me Growth Tips
+                    Send Me The Free Case Study
                   </button>
                 </form>
                 
-                <div className="text-xs text-blue-200 mt-4 space-y-2">
-                  <p>
-                    <strong>Opt-in:</strong> By providing your phone number, you consent to receive text messages from Atlas Growth with business growth tips and strategies. Message frequency varies.
-                  </p>
-                  <p>
-                    <strong>Opt-out:</strong> Reply STOP to any message to unsubscribe. Message and data rates may apply.
-                  </p>
-                </div>
+                <p className="text-xs text-blue-200 mt-4">
+                  No spam. Unsubscribe anytime. Real results from real HVAC businesses.
+                </p>
               </div>
             </div>
 
             {/* Features */}
             <div className="grid md:grid-cols-3 gap-8 mt-16">
               <div className="text-center">
-                <div className="text-4xl mb-4">⭐</div>
-                <h3 className="text-xl font-bold text-white mb-2">More Google Reviews</h3>
+                <div className="text-4xl mb-4">🎯</div>
+                <h3 className="text-xl font-bold text-white mb-2">Targeted Lead Generation</h3>
                 <p className="text-blue-200">
-                  Get systematic strategies to increase your Google reviews and improve your ranking
+                  Professional websites that convert visitors into $5K+ HVAC customers
                 </p>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl mb-4">💬</div>
-                <h3 className="text-xl font-bold text-white mb-2">Customer Feedback</h3>
+                <div className="text-4xl mb-4">📊</div>
+                <h3 className="text-xl font-bold text-white mb-2">Complete Tracking</h3>
                 <p className="text-blue-200">
-                  Learn how to collect valuable feedback that improves your service and attracts new customers
+                  See exactly which leads become customers and track your ROI
                 </p>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl mb-4">📈</div>
-                <h3 className="text-xl font-bold text-white mb-2">Organic Growth</h3>
+                <div className="text-4xl mb-4">💰</div>
+                <h3 className="text-xl font-bold text-white mb-2">Proven Results</h3>
                 <p className="text-blue-200">
-                  Build a sustainable customer base without expensive advertising or shared leads
+                  Arkansas & Alabama HVAC businesses using this exact system
                 </p>
               </div>
             </div>
@@ -158,10 +150,8 @@ export default function HomePage() {
 
         {/* Footer */}
         <footer className="container mx-auto px-4 py-8 border-t border-white/20">
-          <div className="text-center text-blue-200 space-y-2">
-            <p>&copy; 2025 Atlas Growth • Atlas Reach Solutions LLC</p>
-            <p>1000 Lane Park Court, Mount Brook, Alabama 35223</p>
-            <p>Contact: nicholas@atlasgrowth.ai | 205-500-5170</p>
+          <div className="text-center text-blue-200">
+            <p>&copy; 2025 Atlas Growth. Helping HVAC businesses grow with proven lead generation.</p>
           </div>
         </footer>
       </div>
