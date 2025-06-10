@@ -2,23 +2,38 @@ import { useState } from 'react';
 import Head from 'next/head';
 
 export default function HomePage() {
-  const [phone, setPhone] = useState('');
+  const [formData, setFormData] = useState({
+    companyName: '',
+    email: '',
+    phone: '',
+    smsConsent: false
+  });
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.smsConsent) {
+      alert('Please agree to receive SMS updates to continue');
+      return;
+    }
+    
     setIsSubmitted(true);
     
-    // Send to your backend for SMS opt-in
+    // Send to your backend for contractor signup
     try {
       await fetch('/api/marketing/sms-subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone })
+        body: JSON.stringify({
+          ...formData,
+          timestamp: new Date().toISOString(),
+          ipAddress: 'client-ip', // Would be captured server-side
+          optInText: 'I agree to receive account and service updates by SMS from Atlas Growth. Message & data rates may apply. Reply STOP to cancel, HELP for help.'
+        })
       });
     } catch (error) {
-      console.error('Subscription error:', error);
+      console.error('Signup error:', error);
     }
   };
 
@@ -27,10 +42,13 @@ export default function HomePage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center px-4">
         <div className="max-w-md w-full text-center">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
-            <div className="text-6xl mb-4">📱</div>
-            <h1 className="text-3xl font-bold text-white mb-4">Thank You!</h1>
+            <div className="text-6xl mb-4">🚀</div>
+            <h1 className="text-3xl font-bold text-white mb-4">Welcome to Atlas Growth!</h1>
             <p className="text-blue-100 text-lg">
-              You'll receive helpful tips on generating more customers through Google reviews and feedback.
+              Your account is being set up. You'll receive SMS confirmations and updates about your service setup.
+            </p>
+            <p className="text-blue-200 text-sm mt-4">
+              Check your email for next steps and login instructions.
             </p>
           </div>
         </div>
@@ -89,41 +107,66 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* SMS Opt-in Form */}
+            {/* Contractor Signup Form */}
             <div className="max-w-xl mx-auto">
               <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20">
                 <h3 className="text-2xl font-bold text-white mb-4">
-                  Get Free Growth Tips
+                  Start Growing Your Business
                 </h3>
                 <p className="text-blue-100 mb-6">
-                  Learn how to get more Google reviews and customer feedback to grow your business
+                  Join 500+ contractors using Atlas Growth to get more customers through reviews and feedback
                 </p>
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Enter your phone number"
+                    type="text"
+                    placeholder="Company Name"
+                    value={formData.companyName}
+                    onChange={(e) => setFormData({...formData, companyName: e.target.value})}
                     required
                     className="w-full px-4 py-3 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
+                  <input
+                    type="email"
+                    placeholder="Business Email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    required
+                    className="w-full px-4 py-3 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Business Phone Number"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    required
+                    className="w-full px-4 py-3 rounded-lg text-gray-900 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  />
+                  
+                  <div className="flex items-start space-x-3 mt-4">
+                    <input
+                      type="checkbox"
+                      id="sms-consent"
+                      checked={formData.smsConsent}
+                      onChange={(e) => setFormData({...formData, smsConsent: e.target.checked})}
+                      required
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="sms-consent" className="text-xs text-blue-200">
+                      By signing up you agree to receive SMS updates from Atlas Growth. Msg & Data rates may apply. Reply STOP to cancel. See{' '}
+                      <a href="/privacy" className="text-blue-300 underline hover:text-white">Privacy Policy</a>
+                      {' '}and{' '}
+                      <a href="/terms" className="text-blue-300 underline hover:text-white">Terms</a>.
+                    </label>
+                  </div>
+                  
                   <button
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-200"
                   >
-                    Send Me Growth Tips
+                    Create Account
                   </button>
                 </form>
-                
-                <div className="text-xs text-blue-200 mt-4 space-y-2">
-                  <p>
-                    <strong>Opt-in:</strong> By providing your phone number, you consent to receive text messages from Atlas Growth with business growth tips and strategies. Message frequency varies.
-                  </p>
-                  <p>
-                    <strong>Opt-out:</strong> Reply STOP to any message to unsubscribe. Message and data rates may apply.
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -162,6 +205,10 @@ export default function HomePage() {
             <p>&copy; 2025 Atlas Growth • Atlas Reach Solutions LLC</p>
             <p>1000 Lane Park Court, Mount Brook, Alabama 35223</p>
             <p>Contact: nicholas@atlasgrowth.ai | 205-500-5170</p>
+            <div className="flex justify-center gap-4 mt-4">
+              <a href="/privacy" className="text-blue-300 hover:text-white underline">Privacy Policy</a>
+              <a href="/terms" className="text-blue-300 hover:text-white underline">Terms of Service</a>
+            </div>
           </div>
         </footer>
       </div>
