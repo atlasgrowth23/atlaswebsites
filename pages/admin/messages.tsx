@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SimpleAdminLayout from '../../components/SimpleAdminLayout';
-import { getCurrentUser, signInWithGoogle, User } from '../../lib/auth';
+import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabase';
 
 interface Thread {

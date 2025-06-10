@@ -9,6 +9,27 @@ export interface User {
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
+    // First check session storage for admin user
+    if (typeof window !== 'undefined') {
+      const adminData = sessionStorage.getItem('atlas_admin');
+      if (adminData) {
+        const admin = JSON.parse(adminData);
+        // Check if session is still valid (24 hours)
+        if (admin.login_time && (Date.now() - admin.login_time) < (24 * 60 * 60 * 1000)) {
+          return {
+            id: admin.email, // Use email as ID for admin users
+            email: admin.email,
+            role: admin.role as 'admin' | 'super_admin',
+            name: admin.name
+          };
+        } else {
+          // Session expired, clear it
+          sessionStorage.removeItem('atlas_admin');
+        }
+      }
+    }
+
+    // Fallback to Supabase auth
     const { data, error } = await supabase.auth.getUser();
     
     if (error || !data.user) {
@@ -35,8 +56,15 @@ export async function signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/admin/messages`,
-        scopes: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar'
+        redirectTo: `${window.location.origin}/auth/callback`,
+        scopes: [
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/gmail.send', 
+          'https://www.googleapis.com/auth/gmail.compose',
+          'https://www.googleapis.com/auth/calendar',
+          'https://www.googleapis.com/auth/calendar.events',
+          'https://www.googleapis.com/auth/admin.directory.user.readonly'
+        ].join(' ')
       }
     });
 

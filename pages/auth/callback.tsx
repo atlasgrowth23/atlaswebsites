@@ -22,19 +22,60 @@ export default function AuthCallback() {
           return;
         }
 
-        if (data.session?.user?.email) {
-          // Get the slug that was stored during login
+        if (data.session) {
+          // Check if this is an admin user (nicholas@atlasgrowth.ai or jared@atlasgrowth.ai)
+          const email = data.session.user.email;
+          const isAdmin = email === 'nicholas@atlasgrowth.ai' || email === 'jared@atlasgrowth.ai';
+          
+          if (isAdmin) {
+            // Store Google tokens for API access
+            const tokens = data.session.provider_token && data.session.provider_refresh_token ? {
+              access_token: data.session.provider_token,
+              refresh_token: data.session.provider_refresh_token,
+              user_id: data.session.user.id,
+              expires_at: Date.now() + (3600 * 1000) // 1 hour
+            } : null;
+
+            if (tokens) {
+              // Store tokens for Google API access
+              await fetch('/api/admin/google-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tokens)
+              });
+            }
+
+            // Set role in user metadata
+            const role = email === 'nicholas@atlasgrowth.ai' ? 'super_admin' : 'admin';
+            
+            // Store admin session info
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('atlas_admin', JSON.stringify({
+                email: email,
+                name: data.session.user.user_metadata?.full_name || email.split('@')[0],
+                role: role,
+                authenticated: true,
+                login_time: Date.now()
+              }));
+            }
+
+            // Redirect to admin dashboard
+            router.push('/admin/messages');
+            return;
+          }
+          
+          // Regular user flow (existing company login)
           const loginSlug = typeof window !== 'undefined' ? sessionStorage.getItem('atlas_login_slug') : null;
           
           if (loginSlug) {
-            // Find company by slug instead of email
+            // Find company by slug
             const companyResponse = await fetch(`/api/auth/lookup-company?slug=${encodeURIComponent(loginSlug)}`);
             
             if (companyResponse.ok) {
               const companyData = await companyResponse.json();
               
               if (companyData.company) {
-                // Create NEW user record using Google data only
+                // Create user record
                 const googleName = data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || 'Business Owner';
                 
                 const createUserResponse = await fetch('/api/auth/create-user-by-company', {
@@ -51,11 +92,11 @@ export default function AuthCallback() {
                 });
 
                 if (createUserResponse.ok) {
-                  // Store user info with company data in sessionStorage as backup
+                  // Store user info
                   if (typeof window !== 'undefined') {
                     sessionStorage.setItem('atlas_user', JSON.stringify({
                       email: data.session.user.email,
-                      name: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name,
+                      name: googleName,
                       provider: 'google',
                       provider_id: data.session.user.id,
                       avatar_url: data.session.user.user_metadata?.avatar_url,
@@ -66,24 +107,16 @@ export default function AuthCallback() {
                       login_time: Date.now()
                     }));
                     
-                    // Clean up the stored slug
                     sessionStorage.removeItem('atlas_login_slug');
                   }
 
-                  // Redirect to dashboard
                   router.push('/dashboard');
-                  return;
-                } else {
-                  console.error('Failed to create user record');
-                  router.push('/login?error=user_creation_failed');
                   return;
                 }
               }
             }
           }
           
-          // If no slug or company not found, redirect with error
-          console.error('No company found for slug:', loginSlug);
           router.push('/login?error=company_not_found');
         } else {
           router.push('/login?error=no_user');

@@ -57,11 +57,11 @@ function findContact(spokenName: string, contacts: any[]): any | null {
   return matches[0]?.similarity > 0.7 ? matches[0].contact : null;
 }
 
-async function classifyIntent(transcript: string) {
+async function classifyIntent(transcript: string, tenantId: string) {
   // Pre-process transcript to handle "Hey Atlas" wake words
   const cleanTranscript = transcript
-    .replace(/^(hey\s+)?atlas[,\s]*/i, '')
-    .replace(/^(hey\s+)?atlas$/i, 'help')
+    .replace(/^(hey\s+|sup\s+)?atlas[,\s]*/i, '')
+    .replace(/^(hey\s+|sup\s+)?atlas$/i, 'help')
     .trim();
 
   if (!cleanTranscript || cleanTranscript.length < 3) {
@@ -69,38 +69,54 @@ async function classifyIntent(transcript: string) {
       intent: 'help',
       confidence: 0.95,
       data: {},
-      message: 'I\'m here! Try: "Add contact...", "Update [name]\'s...", "Note for [name]...", or "How far to [name]?"'
+      message: 'Sup! I can help with contacts, equipment, notes, and directions. What do you need?'
     };
   }
 
+  // Get current contacts for context
+  const { data: contacts } = await supabaseAdmin
+    .from('contacts')
+    .select('first_name, last_name, phone, equip_type, serial_number, model_number')
+    .eq('tenant_id', tenantId)
+    .limit(10);
+
+  const contactNames = contacts?.map(c => `${c.first_name} ${c.last_name}`).join(', ') || 'none';
+
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini', // Faster model
+    model: 'gpt-4o-mini',
     messages: [
       {
         role: 'system',
-        content: `Classify HVAC voice commands. Return JSON only:
+        content: `You're Atlas, an HVAC voice assistant. Classify conversational commands into intents and extract data. Be natural and flexible.
+
+CURRENT CONTACTS: ${contactNames}
 
 INTENTS:
-- create_contact: "add contact [name] [phone] [email] [equipment]"
-- update_contact_field: "update [name]'s [field] to [value]" 
-- add_note: "note for [name]: [text]"
-- distance_to_contact: "how far to [name]" or "distance to [name]"
-- help: greetings, unclear commands
+- create_contact: Creating new customer records
+- update_contact_field: Changing existing customer data  
+- add_note: Adding notes to customers
+- distance_to_contact: Getting directions/distance to customers
+- lookup_contact: Finding/viewing customer information
+- help: Greetings, unclear requests
 
-EXAMPLES:
-"add contact Mark Brown 601-555-1212" → {"intent":"create_contact","confidence":0.95,"data":{"name":"Mark Brown","phone":"601-555-1212"}}
-"update Judith's serial to 3D-29F-88" → {"intent":"update_contact_field","confidence":0.90,"data":{"contact_name":"Judith","field_name":"serial_number","field_value":"3D-29F-88"}}
-"note for Sandy: morning appointments" → {"intent":"add_note","confidence":0.88,"data":{"contact_name":"Sandy","note_text":"morning appointments"}}
-"how far to Laney Sanders" → {"intent":"distance_to_contact","confidence":0.92,"data":{"contact_name":"Laney Sanders"}}
-"help" → {"intent":"help","confidence":0.95,"data":{}}`
+NATURAL EXAMPLES:
+"sup atlas" → {"intent":"help","confidence":0.95,"data":{}}
+"create a contact for James Smith" → {"intent":"create_contact","confidence":0.95,"data":{"name":"James Smith"}}
+"do you see the contact named Sandy Sanders?" → {"intent":"lookup_contact","confidence":0.92,"data":{"contact_name":"Sandy Sanders"}}
+"what's James Smith's serial number?" → {"intent":"lookup_contact","confidence":0.90,"data":{"contact_name":"James Smith","field_requested":"serial_number"}}
+"can we change it to AB-99999?" → {"intent":"update_contact_field","confidence":0.85,"data":{"field_name":"serial_number","field_value":"AB-99999"}}
+"note for Sandy: customer called about noise" → {"intent":"add_note","confidence":0.88,"data":{"contact_name":"Sandy","note_text":"customer called about noise"}}
+"how far to Sandy's place?" → {"intent":"distance_to_contact","confidence":0.90,"data":{"contact_name":"Sandy Sanders"}}
+
+Return JSON only. Be flexible with name variations and context.`
       },
       {
         role: 'user',
         content: cleanTranscript
       }
     ],
-    temperature: 0.0,
-    max_tokens: 150
+    temperature: 0.1,
+    max_tokens: 200
   });
 
   try {
@@ -148,18 +164,21 @@ async function executeCommand(classification: any, tenantId: string) {
       case 'distance_to_contact':
         return await handleDistanceToContact(data, tenantId);
       
+      case 'lookup_contact':
+        return await handleLookupContact(data, tenantId);
+      
       case 'help':
         return {
           success: true,
           data: {},
-          response: classification.message || 'I can help with: Add contact, Update contact fields, Add notes, or Get directions to contacts.'
+          response: classification.message || 'Sup! I can create contacts, update info, add notes, lookup customers, or get directions. What do you need?'
         };
       
       default:
         return {
           success: false,
           error: `Unknown intent: ${intent}`,
-          response: 'Try: "Add contact [name]", "Update [name]\'s [field]", "Note for [name]", or "How far to [name]?"'
+          response: 'I didn\'t catch that. Try: "Create contact for...", "What\'s [name]\'s info?", "Update [name]\'s...", or "How far to [name]?"'
         };
     }
   } catch (error) {
@@ -373,6 +392,89 @@ async function calculateDistance(userLat: number, userLng: number, contactLat: n
   }
 }
 
+async function handleLookupContact(data: any, tenantId: string) {
+  const { contact_name, field_requested } = data;
+
+  if (!contact_name) {
+    return {
+      success: false,
+      error: 'Missing contact name',
+      response: 'Which customer are you looking for?'
+    };
+  }
+
+  // Find contact
+  const { data: contacts } = await supabaseAdmin
+    .from('contacts')
+    .select('*')
+    .eq('tenant_id', tenantId);
+
+  const contact = findContact(contact_name, contacts || []);
+  
+  if (!contact) {
+    return {
+      success: false,
+      error: 'Contact not found',
+      response: `I don't see a customer named ${contact_name}. Want me to create them?`
+    };
+  }
+
+  // If asking for specific field
+  if (field_requested) {
+    const fieldMap: { [key: string]: string } = {
+      'serial number': 'serial_number',
+      'serial': 'serial_number',
+      'model number': 'model_number',
+      'model': 'model_number',
+      'filter size': 'filter_size',
+      'filter': 'filter_size',
+      'phone': 'phone',
+      'email': 'email',
+      'address': 'address',
+      'equipment': 'equip_type'
+    };
+
+    const dbField = fieldMap[field_requested.toLowerCase()] || field_requested.toLowerCase();
+    const value = contact[dbField];
+
+    if (!value) {
+      return {
+        success: true,
+        data: { contact, field: dbField },
+        response: `${contact.first_name} ${contact.last_name} doesn't have a ${field_requested} set yet.`
+      };
+    }
+
+    return {
+      success: true,
+      data: { contact, field: dbField, value },
+      response: `${contact.first_name} ${contact.last_name}'s ${field_requested} is ${value}.`
+    };
+  }
+
+  // General contact info
+  const info = [];
+  if (contact.phone) info.push(`phone ${contact.phone}`);
+  if (contact.address?.formatted) info.push(`located at ${contact.address.formatted}`);
+  if (contact.equip_type && contact.serial_number) {
+    info.push(`has a ${contact.equip_type.replace('_', ' ')} with serial ${contact.serial_number}`);
+  }
+  if (contact.notes) {
+    const shortNotes = contact.notes.substring(0, 50);
+    info.push(`notes: ${shortNotes}${contact.notes.length > 50 ? '...' : ''}`);
+  }
+
+  const response = info.length > 0 
+    ? `Yes, ${contact.first_name} ${contact.last_name} - ${info.join(', ')}.`
+    : `Yes, I have ${contact.first_name} ${contact.last_name} but no details yet.`;
+
+  return {
+    success: true,
+    data: { contact },
+    response
+  };
+}
+
 async function handleDistanceToContact(data: any, tenantId: string) {
   const { contact_name, user_location } = data;
 
@@ -515,11 +617,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Classify intent with GPT-4o
-    const classification = await classifyIntent(transcript);
+    const tenantId = process.env.DEV_TENANT_ID || 'fb8681ab-f3e3-46c4-85b2-ea4aa0816adf';
+    const classification = await classifyIntent(transcript, tenantId);
     console.log('Atlas Voice Classification:', classification);
 
     // Execute command with user location context
-    const tenantId = process.env.DEV_TENANT_ID || 'fb8681ab-f3e3-46c4-85b2-ea4aa0816adf';
     
     // Add user location to classification data for distance calculations
     if (userLocation && classification.intent === 'distance_to_contact') {
