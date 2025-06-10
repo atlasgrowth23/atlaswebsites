@@ -17,23 +17,21 @@ export default function SimpleAdminLayout({ children }: SimpleAdminLayoutProps) 
             </div>
             <nav className="flex space-x-8">
               <Link
-                href="/admin/messages"
-                className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Messages
-              </Link>
-              <Link
-                href="/admin/calendar"
-                className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Calendar
-              </Link>
-              <Link
                 href="/admin/pipeline"
-                className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium bg-blue-50"
               >
                 Pipeline
               </Link>
+              <button
+                onClick={() => {
+                  document.cookie = 'admin-token=; Max-Age=0; path=/';
+                  document.cookie = 'admin-session=; Max-Age=0; path=/';
+                  window.location.href = '/admin/simple-login';
+                }}
+                className="text-red-500 hover:text-red-700 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Logout
+              </button>
             </nav>
           </div>
         </div>
