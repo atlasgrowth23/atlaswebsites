@@ -257,7 +257,8 @@ export default function AtlasVoiceMic({ onVoiceCommand, className = '' }: AtlasV
   };
 
   const getButtonClass = () => {
-    const baseClass = 'fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-50 focus:outline-none focus:ring-4 focus:ring-offset-2';
+    // Position above mobile nav on small screens (mobile nav is ~60px tall)
+    const baseClass = 'fixed bottom-20 right-4 md:bottom-6 md:right-6 w-14 h-14 rounded-full shadow-lg transition-all duration-200 flex items-center justify-center z-50 focus:outline-none focus:ring-4 focus:ring-offset-2';
     
     switch (voiceState) {
       case 'listening':
@@ -309,7 +310,7 @@ export default function AtlasVoiceMic({ onVoiceCommand, className = '' }: AtlasV
 
       {/* Status overlay for mobile */}
       {voiceState !== 'idle' && (
-        <div className="fixed bottom-24 right-6 bg-gray-900 dark:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm shadow-lg z-40 max-w-xs">
+        <div className="fixed bottom-36 right-4 md:bottom-24 md:right-6 bg-gray-900 dark:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm shadow-lg z-40 max-w-xs">
           {voiceState === 'listening' && (
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
