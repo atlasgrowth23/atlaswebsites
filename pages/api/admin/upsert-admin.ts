@@ -18,9 +18,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Upsert admin user record
+    // Upsert admin user record in admin_profiles table
     const { data, error } = await supabase
-      .from('admin_users')
+      .from('admin_profiles')
       .upsert({
         id,
         email,

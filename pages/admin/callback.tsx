@@ -28,23 +28,48 @@ export default function AdminCallback() {
           // Set role in user metadata
           const role = email === 'nicholas@atlasgrowth.ai' ? 'super_admin' : 'admin';
           
+          // Create/update admin profile
+          try {
+            await fetch('/api/admin/upsert-admin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: session.user.id,
+                email: session.user.email,
+                name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+                role: role
+              })
+            });
+          } catch (profileError) {
+            console.error('Error creating admin profile:', profileError);
+          }
+          
           // Store admin tokens for Google API access if available
           if (session.provider_token && session.provider_refresh_token) {
             try {
-              await fetch('/api/admin/google-auth', {
+              const tokenResponse = await fetch('/api/admin/google-auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   user_id: session.user.id,
                   access_token: session.provider_token,
                   refresh_token: session.provider_refresh_token,
-                  expires_at: Date.now() + (3600 * 1000) // 1 hour
+                  expires_at: Math.floor(Date.now() / 1000) + 3600 // Unix timestamp + 1 hour
                 })
               });
+              
+              if (!tokenResponse.ok) {
+                const errorText = await tokenResponse.text();
+                console.error('Token storage failed:', errorText);
+              } else {
+                console.log('✓ Google tokens stored successfully');
+              }
             } catch (tokenError) {
               console.error('Error storing tokens:', tokenError);
               // Continue anyway - basic admin access still works
             }
+          } else {
+            console.log('No Google tokens available to store');
           }
 
           // Redirect to admin dashboard
