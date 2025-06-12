@@ -66,7 +66,11 @@ export default function AdminLogin() {
             'https://www.googleapis.com/auth/gmail.compose',
             'https://www.googleapis.com/auth/calendar',
             'https://www.googleapis.com/auth/calendar.events'
-          ].join(' ')
+          ].join(' '),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
         }
       });
 
