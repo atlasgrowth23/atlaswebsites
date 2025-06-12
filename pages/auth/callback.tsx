@@ -48,6 +48,18 @@ export default function AuthCallback() {
             // Set role in user metadata
             const role = email === 'nicholas@atlasgrowth.ai' ? 'super_admin' : 'admin';
             
+            // Create/update admin user record in database
+            const adminResponse = await fetch('/api/admin/upsert-admin', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: data.session.user.id,
+                email: email,
+                name: data.session.user.user_metadata?.full_name || email.split('@')[0],
+                role: role
+              })
+            });
+            
             // Store admin session info
             if (typeof window !== 'undefined') {
               sessionStorage.setItem('atlas_admin', JSON.stringify({
