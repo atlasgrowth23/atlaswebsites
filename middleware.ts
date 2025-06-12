@@ -31,10 +31,14 @@ export async function middleware(request: NextRequest) {
       }
       
       if (!user?.email) {
+        // Log for debugging
+        console.log('Middleware: No user found, cookies:', Object.fromEntries(request.cookies.entries()));
         const url = request.nextUrl.clone();
         url.pathname = '/admin/login';
         return NextResponse.redirect(url);
       }
+      
+      console.log('Middleware: User found:', user.email);
 
       // Check against admin_users table instead of hardcoded emails
       const serviceSupabase = createClient(
