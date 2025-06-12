@@ -31,8 +31,12 @@ export async function middleware(request: NextRequest) {
       }
       
       if (!user?.email) {
-        // Log for debugging
-        console.log('Middleware: No user found, cookies:', Object.fromEntries(request.cookies.entries()));
+        // Log for debugging - Fixed for Edge Runtime compatibility
+        const cookieEntries: { [key: string]: string } = {};
+        request.cookies.getAll().forEach(cookie => {
+          cookieEntries[cookie.name] = cookie.value;
+        });
+        console.log('Middleware: No user found, cookies:', cookieEntries);
         const url = request.nextUrl.clone();
         url.pathname = '/admin/login';
         return NextResponse.redirect(url);

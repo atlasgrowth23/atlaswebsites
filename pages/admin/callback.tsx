@@ -11,6 +11,9 @@ export default function AdminCallback() {
 
   const handleAuthCallback = async () => {
     try {
+      // Debug: Log cookie headers
+      console.log('Admin callback - Cookie header:', document.cookie);
+      
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {
