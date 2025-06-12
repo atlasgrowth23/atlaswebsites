@@ -13,19 +13,24 @@ export async function middleware(request: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      // Get user from session with proper token
-      const token = request.cookies.get('sb-access-token')?.value || 
-                   request.cookies.get('supabase-auth-token')?.value;
+      // Try multiple cookie names for Supabase session
+      const authToken = request.cookies.get('sb-access-token')?.value || 
+                       request.cookies.get('supabase-auth-token')?.value ||
+                       request.cookies.get('sb-access-token')?.value ||
+                       request.cookies.get('supabase.auth.token')?.value;
       
-      if (!token) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin/login';
-        return NextResponse.redirect(url);
+      let user = null;
+      
+      if (authToken) {
+        try {
+          const { data: { user: authUser } } = await supabase.auth.getUser(authToken);
+          user = authUser;
+        } catch (error) {
+          console.error('Auth token validation failed:', error);
+        }
       }
       
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      
-      if (error || !user?.email) {
+      if (!user?.email) {
         const url = request.nextUrl.clone();
         url.pathname = '/admin/login';
         return NextResponse.redirect(url);
