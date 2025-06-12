@@ -55,7 +55,8 @@ async function createAdminTables() {
         refresh_token TEXT,
         access_token TEXT,
         expires_at TIMESTAMPTZ,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, provider)
       );
     `);
     
