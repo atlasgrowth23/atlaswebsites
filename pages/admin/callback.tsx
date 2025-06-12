@@ -75,6 +75,11 @@ export default function AdminCallback() {
             console.log('No Google tokens available to store');
           }
 
+          // Set auth cookie for middleware to read
+          if (session.access_token) {
+            document.cookie = `sb-access-token=${session.access_token}; path=/; domain=.atlasgrowth.ai; secure; samesite=lax; max-age=${60 * 60 * 24 * 7}`; // 7 days
+          }
+          
           // Redirect to admin dashboard
           router.push('/admin/pipeline');
         } else {

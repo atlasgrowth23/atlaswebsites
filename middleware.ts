@@ -16,8 +16,8 @@ export async function middleware(request: NextRequest) {
       // Try multiple cookie names for Supabase session
       const authToken = request.cookies.get('sb-access-token')?.value || 
                        request.cookies.get('supabase-auth-token')?.value ||
-                       request.cookies.get('sb-access-token')?.value ||
-                       request.cookies.get('supabase.auth.token')?.value;
+                       request.cookies.get('supabase.auth.token')?.value ||
+                       request.cookies.get('sb-atlasgrowth-auth-token')?.value;
       
       let user = null;
       
