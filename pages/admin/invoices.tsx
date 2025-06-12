@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '../../components/AdminLayout';
+import RoleGuard from '../../components/RoleGuard';
 
 interface Invoice {
   id: string;
@@ -96,17 +97,20 @@ export default function Invoices() {
 
   if (loading && invoices.length === 0) {
     return (
-      <AdminLayout currentPage="pipeline">
+      <RoleGuard requiredRole="super_admin">
+        <AdminLayout currentPage="pipeline">
         <div className="flex items-center justify-center min-h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="ml-2">Loading invoices...</span>
         </div>
-      </AdminLayout>
+        </AdminLayout>
+      </RoleGuard>
     );
   }
 
   return (
-    <AdminLayout currentPage="invoices">
+    <RoleGuard requiredRole="super_admin">
+      <AdminLayout currentPage="invoices">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -320,6 +324,7 @@ export default function Invoices() {
           </div>
         )}
       </div>
-    </AdminLayout>
+      </AdminLayout>
+    </RoleGuard>
   );
 }

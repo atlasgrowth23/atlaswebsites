@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import AdminLayout from '@/components/AdminLayout';
+import RoleGuard from '@/components/RoleGuard';
 import { supabaseAdmin } from '@/lib/supabase';
 
 interface Session {
@@ -198,10 +199,11 @@ export default function SessionsPage({ initialSessions, currentUser }: SessionsP
     if (!session) return <div>Session not found</div>;
 
     return (
-      <AdminLayout currentPage="sessions">
-        <Head>
-          <title>Session Details - Cold Call Sessions</title>
-        </Head>
+      <RoleGuard requiredRole="super_admin">
+        <AdminLayout currentPage="sessions">
+          <Head>
+            <title>Session Details - Cold Call Sessions</title>
+          </Head>
         <div className="container mx-auto px-4 py-8">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -270,15 +272,17 @@ export default function SessionsPage({ initialSessions, currentUser }: SessionsP
             </div>
           </div>
         </div>
-      </AdminLayout>
+        </AdminLayout>
+      </RoleGuard>
     );
   }
 
   return (
-    <AdminLayout currentPage="sessions">
-      <Head>
-        <title>Cold Call Sessions - HVAC Lead Management</title>
-      </Head>
+    <RoleGuard requiredRole="super_admin">
+      <AdminLayout currentPage="sessions">
+        <Head>
+          <title>Cold Call Sessions - HVAC Lead Management</title>
+        </Head>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">Cold Call Sessions</h1>
@@ -380,6 +384,7 @@ export default function SessionsPage({ initialSessions, currentUser }: SessionsP
           </div>
         </div>
       </div>
-    </AdminLayout>
+      </AdminLayout>
+    </RoleGuard>
   );
 }

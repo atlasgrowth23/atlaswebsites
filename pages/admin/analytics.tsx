@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { GetServerSideProps } from 'next';
 import AdminLayout from '@/components/AdminLayout';
+import RoleGuard from '@/components/RoleGuard';
 
 interface AnalyticsData {
   summary: {
@@ -102,11 +103,12 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
     });
 
   return (
-    <AdminLayout currentPage="analytics">
-      <Head>
-        <title>Analytics - Admin Dashboard</title>
-        <meta name="description" content="Website analytics and performance tracking" />
-      </Head>
+    <RoleGuard requiredRole="super_admin">
+      <AdminLayout currentPage="analytics">
+        <Head>
+          <title>Analytics - Admin Dashboard</title>
+          <meta name="description" content="Website analytics and performance tracking" />
+        </Head>
 
       <div className="space-y-6">
         {/* Header */}
@@ -316,7 +318,8 @@ export default function AdminAnalytics({ data }: AdminAnalyticsProps) {
           </div>
         </div>
       </div>
-    </AdminLayout>
+      </AdminLayout>
+    </RoleGuard>
   );
 }
 

@@ -1,34 +1,62 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '../../../../lib/supabase';
+import { getCalendarClient } from '../../../../lib/googleClient';
 
-// Mock Google Calendar API - replace with actual Google Calendar integration
-const mockGoogleCalendarAPI = {
-  async getEvents(accessToken: string, calendarId: string, timeMin: string, timeMax: string) {
-    // TODO: Implement actual Google Calendar API calls
-    return {
-      items: [
-        {
-          id: 'mock-event-1',
-          summary: 'Team Meeting',
-          start: { dateTime: '2024-06-11T10:00:00Z' },
-          end: { dateTime: '2024-06-11T11:00:00Z' },
-          attendees: [
-            { email: 'nicholas@atlasgrowth.ai' },
-            { email: 'jared@atlasgrowth.ai' }
-          ]
-        }
-      ]
-    };
-  },
+async function ensureTeamCalendar(userId: string) {
+  // Check if team calendar exists in settings
+  const { data: settings } = await supabase
+    .from('admin_settings')
+    .select('value')
+    .eq('key', 'team_calendar_id')
+    .single();
 
-  async createEvent(accessToken: string, calendarId: string, event: any) {
-    // TODO: Implement actual Google Calendar API calls
-    return {
-      id: 'new-event-' + Date.now(),
-      ...event
-    };
+  let teamCalendarId = settings?.value;
+  
+  if (!teamCalendarId || teamCalendarId === 'null') {
+    // Create the shared calendar
+    const calendar = await getCalendarClient(userId);
+    
+    const { data: newCalendar } = await calendar.calendars.insert({
+      requestBody: {
+        summary: 'Atlas Shared',
+        description: 'Shared calendar for Atlas team',
+        timeZone: 'America/New_York'
+      }
+    });
+    
+    teamCalendarId = newCalendar.id;
+    
+    // Share with team members
+    const teamEmails = ['nicholas@atlasgrowth.ai', 'jared@atlasgrowth.ai'];
+    
+    for (const email of teamEmails) {
+      try {
+        await calendar.acl.insert({
+          calendarId: teamCalendarId,
+          requestBody: {
+            role: 'writer',
+            scope: {
+              type: 'user',
+              value: email
+            }
+          }
+        });
+      } catch (error) {
+        console.error(`Failed to share calendar with ${email}:`, error);
+      }
+    }
+    
+    // Store in settings
+    await supabase
+      .from('admin_settings')
+      .upsert({
+        key: 'team_calendar_id',
+        value: teamCalendarId
+      });
   }
-};
+  
+  return teamCalendarId;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -51,46 +79,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let events = [];
 
       if (tab === 'my' || tab === 'all') {
-        // Get user's Google Calendar events
-        const { data: tokens } = await supabase
-          .from('admin_user_tokens')
-          .select('access_token')
-          .eq('user_id', user.id)
-          .eq('provider', 'google')
-          .single();
-
-        if (tokens?.access_token) {
-          const googleEvents = await mockGoogleCalendarAPI.getEvents(
-            tokens.access_token,
-            'primary',
-            timeMin as string,
-            timeMax as string
-          );
-          events.push(...googleEvents.items.map((event: any) => ({
-            ...event,
-            source: 'google',
-            type: 'my'
-          })));
+        // Get user's primary calendar events
+        try {
+          const calendar = await getCalendarClient(user.id);
+          
+          const { data: googleEvents } = await calendar.events.list({
+            calendarId: 'primary',
+            timeMin: timeMin as string,
+            timeMax: timeMax as string,
+            singleEvents: true,
+            orderBy: 'startTime'
+          });
+          
+          if (googleEvents.items) {
+            events.push(...googleEvents.items.map((event: any) => ({
+              ...event,
+              source: 'google',
+              type: 'my'
+            })));
+          }
+        } catch (error) {
+          console.error('Error fetching my calendar events:', error);
         }
       }
 
       if (tab === 'shared' || tab === 'all') {
-        // Get shared calendar events (mock for now)
-        const sharedEvents = [
-          {
-            id: 'shared-1',
-            summary: 'Client Call - HVAC Consultation',
-            start: { dateTime: '2024-06-12T14:00:00Z' },
-            end: { dateTime: '2024-06-12T15:00:00Z' },
-            attendees: [
-              { email: 'nicholas@atlasgrowth.ai' },
-              { email: 'jared@atlasgrowth.ai' }
-            ],
-            source: 'shared',
-            type: 'shared'
+        // Get shared calendar events
+        try {
+          const teamCalendarId = await ensureTeamCalendar(user.id);
+          const calendar = await getCalendarClient(user.id);
+          
+          const { data: sharedEvents } = await calendar.events.list({
+            calendarId: teamCalendarId,
+            timeMin: timeMin as string,
+            timeMax: timeMax as string,
+            singleEvents: true,
+            orderBy: 'startTime'
+          });
+          
+          if (sharedEvents.items) {
+            events.push(...sharedEvents.items.map((event: any) => ({
+              ...event,
+              source: 'shared',
+              type: 'shared'
+            })));
           }
-        ];
-        events.push(...sharedEvents);
+        } catch (error) {
+          console.error('Error fetching shared calendar events:', error);
+        }
       }
 
       if (tab === 'all' && user.email !== 'nicholas@atlasgrowth.ai') {
@@ -132,22 +168,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (calendarType === 'shared') {
         // Create in shared calendar
-        const { data: tokens } = await supabase
-          .from('admin_user_tokens')
-          .select('access_token')
-          .eq('user_id', user.id)
-          .eq('provider', 'google')
-          .single();
-
-        if (tokens?.access_token) {
-          const createdEvent = await mockGoogleCalendarAPI.createEvent(
-            tokens.access_token,
-            'atlas-shared', // Shared calendar ID
-            newEvent
-          );
+        try {
+          const teamCalendarId = await ensureTeamCalendar(user.id);
+          const calendar = await getCalendarClient(user.id);
+          
+          const { data: createdEvent } = await calendar.events.insert({
+            calendarId: teamCalendarId,
+            requestBody: newEvent
+          });
+          
           res.status(201).json({ event: createdEvent });
-        } else {
-          res.status(400).json({ error: 'No Google Calendar access token found' });
+        } catch (error) {
+          console.error('Error creating shared calendar event:', error);
+          res.status(500).json({ error: 'Failed to create calendar event' });
+        }
+      } else if (calendarType === 'my') {
+        // Create in user's primary calendar
+        try {
+          const calendar = await getCalendarClient(user.id);
+          
+          const { data: createdEvent } = await calendar.events.insert({
+            calendarId: 'primary',
+            requestBody: newEvent
+          });
+          
+          res.status(201).json({ event: createdEvent });
+        } catch (error) {
+          console.error('Error creating personal calendar event:', error);
+          res.status(500).json({ error: 'Failed to create calendar event' });
         }
       } else {
         res.status(400).json({ error: 'Invalid calendar type' });

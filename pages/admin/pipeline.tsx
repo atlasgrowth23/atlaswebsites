@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import SimpleAdminLayout from '@/components/SimpleAdminLayout';
+import UnifiedAdminLayout from '@/components/UnifiedAdminLayout';
 import LeadSidebar from '@/components/admin/pipeline/LeadSidebar';
 import { getAllCompanies } from '@/lib/supabase-db';
 import { getActiveSession } from '@/lib/activityTracker';
@@ -286,11 +286,11 @@ export default function Pipeline({ companies }: PipelineProps) {
 
   if (loading) {
     return (
-      <SimpleAdminLayout>
+      <UnifiedAdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
-      </SimpleAdminLayout>
+      </UnifiedAdminLayout>
     );
   }
 
@@ -452,7 +452,7 @@ export default function Pipeline({ companies }: PipelineProps) {
 
   // Main pipeline overview
   return (
-    <SimpleAdminLayout>
+    <UnifiedAdminLayout currentPage="pipeline">
       <Head>
         <title>Lead Pipeline - HVAC Lead Management</title>
       </Head>
@@ -660,7 +660,7 @@ export default function Pipeline({ companies }: PipelineProps) {
         </div>
       </div>
       
-    </SimpleAdminLayout>
+    </UnifiedAdminLayout>
   );
 }
 

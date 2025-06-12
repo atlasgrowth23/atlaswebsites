@@ -155,46 +155,31 @@ export const cacheHelpers = {
     return cache.getOrSet(
       cacheKey,
       async () => {
-        const { query } = await import('./db');
+        const { supabaseAdmin } = await import('./supabase');
         const offset = (page - 1) * limit;
         
-        let whereClause = "WHERE (c.state = 'Alabama' OR c.state = 'Arkansas')";
-        const params: any[] = [limit, offset];
+        let query = supabaseAdmin
+          .from('companies')
+          .select('*')
+          .range(offset, offset + limit - 1)
+          .order('state')
+          .order('city')
+          .order('name');
         
         if (stateFilter && stateFilter !== 'all') {
-          whereClause = "WHERE c.state = $3";
-          params.push(stateFilter);
+          query = query.eq('state', stateFilter);
+        } else {
+          query = query.in('state', ['Alabama', 'Arkansas']);
         }
 
-        const result = await query(`
-          SELECT 
-            c.id, c.name, c.slug, c.city, c.state, c.phone, c.email_1, c.custom_domain,
-            c.hours, c.saturday_hours, c.sunday_hours, c.emergency_service, c.reviews_link, c.location_reviews_link,
-            main_track.tracking_enabled,
-            main_track.total_views,
-            main_track.last_viewed_at,
-            -- Include frame data as JSON object
-            json_build_object(
-              'hero_img', hero_frames.url,
-              'hero_img_2', hero2_frames.url,
-              'about_img', about_frames.url,
-              'logo_url', logo_frames.url
-            ) as frames
-          FROM companies c
-          LEFT JOIN (
-            SELECT company_id, tracking_enabled, total_views, last_viewed_at 
-            FROM enhanced_tracking WHERE session_id IS NULL
-          ) main_track ON c.id = main_track.company_id
-          LEFT JOIN company_frames hero_frames ON c.id = hero_frames.company_id AND hero_frames.slug = 'hero_img'
-          LEFT JOIN company_frames hero2_frames ON c.id = hero2_frames.company_id AND hero2_frames.slug = 'hero_img_2'
-          LEFT JOIN company_frames about_frames ON c.id = about_frames.company_id AND about_frames.slug = 'about_img'
-          LEFT JOIN company_frames logo_frames ON c.id = logo_frames.company_id AND logo_frames.slug = 'logo_url'
-          ${whereClause}
-          ORDER BY c.state, c.city, c.name
-          LIMIT $1 OFFSET $2
-        `, params);
+        const { data, error } = await query;
 
-        return result.rows;
+        if (error) {
+          console.error('Cache getBusinessList error:', error);
+          return [];
+        }
+
+        return data || [];
       },
       15 // Cache for 15 minutes
     );

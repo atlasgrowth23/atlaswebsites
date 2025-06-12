@@ -5,14 +5,53 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host');
   const pathname = request.nextUrl.pathname;
   
-  // Admin route protection with simple auth
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/simple-login')) {
-    const adminToken = request.cookies.get('admin-token')?.value;
-    const adminSession = request.cookies.get('admin-session')?.value;
-    
-    if (!adminToken || !adminSession || adminSession !== 'authenticated') {
+  // Admin route protection with Google OAuth only
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/callback')) {
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const token = request.cookies.get('sb-access-token')?.value || 
+                   request.cookies.get('supabase-auth-token')?.value;
+      
+      if (!token) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin/login';
+        return NextResponse.redirect(url);
+      }
+
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      
+      if (error || !user?.email) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin/login';
+        return NextResponse.redirect(url);
+      }
+
+      // Check against admin_users table instead of hardcoded emails
+      const serviceSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      
+      const { data: adminUser } = await serviceSupabase
+        .from('admin_users')
+        .select('role, is_active')
+        .eq('email', user.email)
+        .eq('is_active', true)
+        .single();
+      
+      if (!adminUser) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin/login';
+        return NextResponse.redirect(url);
+      }
+    } catch (error) {
+      console.error('Admin auth error:', error);
       const url = request.nextUrl.clone();
-      url.pathname = '/admin/simple-login';
+      url.pathname = '/admin/login';
       return NextResponse.redirect(url);
     }
   }
