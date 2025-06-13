@@ -1,77 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getAdminSession } from '@/lib/auth-google';
 
-export async function middleware(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host');
   const pathname = request.nextUrl.pathname;
   
-  // Admin route protection with Google OAuth only
-  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login') && !pathname.startsWith('/admin/callback')) {
+  // Handle admin authentication
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
+    const sessionToken = request.cookies.get('admin_session')?.value;
+    
+    console.log(`🔐 Auth check for ${pathname}: Token=${sessionToken ? 'present' : 'missing'}`);
+    
+    if (!sessionToken) {
+      console.log('❌ No session token, redirecting to login');
+      const loginUrl = new URL('/admin/login', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+    
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-
-      // Try multiple cookie names for Supabase session
-      const authToken = request.cookies.get('sb-access-token')?.value || 
-                       request.cookies.get('supabase-auth-token')?.value ||
-                       request.cookies.get('supabase.auth.token')?.value ||
-                       request.cookies.get('sb-atlasgrowth-auth-token')?.value;
-      
-      let user = null;
-      
-      if (authToken) {
-        try {
-          const { data: { user: authUser } } = await supabase.auth.getUser(authToken);
-          user = authUser;
-        } catch (error) {
-          console.error('Auth token validation failed:', error);
-        }
+      const session = await getAdminSession(sessionToken);
+      if (!session) {
+        console.log('❌ Invalid session token, redirecting to login');
+        const loginUrl = new URL('/admin/login', request.url);
+        return NextResponse.redirect(loginUrl);
       }
       
-      if (!user?.email) {
-        // Log for debugging - Fixed for Edge Runtime compatibility
-        const cookieEntries: { [key: string]: string } = {};
-        request.cookies.getAll().forEach(cookie => {
-          cookieEntries[cookie.name] = cookie.value;
-        });
-        console.log('Middleware: No user found, cookies:', cookieEntries);
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin/login';
-        return NextResponse.redirect(url);
-      }
+      console.log(`✅ Valid session for ${session.email} (${session.role})`);
       
-      console.log('Middleware: User found:', user.email);
-
-      // Check against admin_users table instead of hardcoded emails
-      const serviceSupabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      );
+      // Add user info to headers for the request
+      const response = NextResponse.next();
+      response.headers.set('x-admin-email', session.email);
+      response.headers.set('x-admin-role', session.role);
+      response.headers.set('x-admin-name', session.name || '');
       
-      const { data: adminUser } = await serviceSupabase
-        .from('admin_users')
-        .select('role, is_active')
-        .eq('email', user.email)
-        .eq('is_active', true)
-        .single();
-      
-      if (!adminUser) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/admin/login';
-        return NextResponse.redirect(url);
-      }
+      return response;
     } catch (error) {
-      console.error('Admin auth error:', error);
-      const url = request.nextUrl.clone();
-      url.pathname = '/admin/login';
-      return NextResponse.redirect(url);
+      console.error('❌ Session validation error:', error);
+      const loginUrl = new URL('/admin/login', request.url);
+      return NextResponse.redirect(loginUrl);
     }
   }
-  
-  // Skip custom domain handling for main domain
-  if (!hostname || 
+
+  // Skip custom domain handling for admin routes and main domain
+  if (pathname.startsWith('/admin') || 
+      pathname.startsWith('/api/auth') ||
+      !hostname || 
       hostname.includes('localhost') ||
       hostname.includes('vercel.app') ||
       hostname === 'atlasgrowth.ai') {
@@ -81,6 +54,7 @@ export async function middleware(request: NextRequest) {
   try {
     // Only do custom domain lookup if we have the required env vars
     if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -102,12 +76,12 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware error:', error);
   }
 
-  // No custom domain found, continue normally
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|logos|stock|api).*)',
+    '/admin/:path*',
+    '/((?!_next/static|_next/image|favicon.ico|logos|stock|api/auth).*)',
   ],
 };

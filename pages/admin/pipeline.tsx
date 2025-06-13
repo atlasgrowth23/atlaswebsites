@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import UnifiedAdminLayout from '@/components/UnifiedAdminLayout';
 import LeadSidebar from '@/components/admin/pipeline/LeadSidebar';
+import UpcomingAppointments from '@/components/admin/calendar/UpcomingAppointments';
 import { getAllCompanies } from '@/lib/supabase-db';
-import { getActiveSession } from '@/lib/activityTracker';
 
 interface Company {
   id: string;
@@ -65,140 +66,22 @@ export default function Pipeline({ companies }: PipelineProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [pipelineStats, setPipelineStats] = useState<Record<string, number>>({});
   
-  // Session management state
-  const [activeSession, setActiveSession] = useState<any>(null);
   const [sessionLoading, setSessionLoading] = useState(false);
-  const currentUser = 'Nick'; // TODO: Get from auth context
+  const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     fetchPipelineData();
-    checkActiveSession();
     
     // Auto-refresh pipeline data every 30 seconds to catch auto-stage updates
     const refreshInterval = setInterval(() => {
       fetchPipelineData();
-      checkActiveSession();
     }, 30000);
     
     return () => clearInterval(refreshInterval);
   }, [selectedPipelineType]);
 
-  // Real-time session duration updates
-  useEffect(() => {
-    if (!activeSession) return;
-    
-    const updateInterval = setInterval(() => {
-      // Force re-render to update duration display
-      setActiveSession(prev => ({ ...prev }));
-    }, 1000);
-    
-    return () => clearInterval(updateInterval);
-  }, [activeSession]);
 
-  // Check for active session
-  const checkActiveSession = async () => {
-    try {
-      const response = await fetch('/api/sessions?user=' + currentUser);
-      if (response.ok) {
-        const data = await response.json();
-        const active = data.sessions.find((s: any) => !s.end_time);
-        setActiveSession(active || null);
-      }
-    } catch (error) {
-      console.error('Failed to check active session:', error);
-    }
-  };
-
-  // Start new session
-  const startSession = async () => {
-    setSessionLoading(true);
-    try {
-      const response = await fetch('/api/sessions/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userName: currentUser })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setActiveSession(data.session);
-      } else {
-        const error = await response.json();
-        alert(`Failed to start session: ${error.error}`);
-      }
-    } catch (error) {
-      console.error('Failed to start session:', error);
-      alert('Failed to start session. Please try again.');
-    } finally {
-      setSessionLoading(false);
-    }
-  };
-
-  // End active session
-  const endSession = async () => {
-    if (!activeSession) return;
-    
-    setSessionLoading(true);
-    try {
-      const response = await fetch('/api/sessions/end', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userName: currentUser })
-      });
-
-      if (response.ok) {
-        setActiveSession(null);
-      } else {
-        const error = await response.json();
-        alert(`Failed to end session: ${error.error}`);
-      }
-    } catch (error) {
-      console.error('Failed to end session:', error);
-      alert('Failed to end session. Please try again.');
-    } finally {
-      setSessionLoading(false);
-    }
-  };
-
-  // Format session duration
-  const formatSessionDuration = (startTime: string) => {
-    const start = new Date(startTime);
-    const now = new Date();
-    const durationMs = now.getTime() - start.getTime();
-    const hours = Math.floor(durationMs / (1000 * 60 * 60));
-    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((durationMs % (1000 * 60)) / 1000);
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  };
-
-  // Reset test pipeline
-  const resetTestPipeline = async () => {
-    if (!confirm('🔄 Reset Test Pipeline?\n\nThis will:\n• Move all test leads back to "New Lead" stage\n• Clear all activity logs\n• Remove all tags\n• Clear appointments\n• Remove website visits\n\nThis cannot be undone. Continue?')) {
-      return;
-    }
-
-    setSessionLoading(true);
-    try {
-      const response = await fetch('/api/pipeline/reset-test-pipeline', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        alert(`✅ Success!\n\nReset ${data.leadsReset} test leads back to "New Lead" stage.\n\nAll activity logs, tags, and appointments have been cleared.\n\nReady for fresh testing!`);
-        await fetchPipelineData(); // Refresh the pipeline data
-      } else {
-        const error = await response.json();
-        alert(`❌ Reset failed: ${error.error}`);
-      }
-    } catch (error) {
-      console.error('Failed to reset test pipeline:', error);
-      alert('❌ Failed to reset test pipeline. Please try again.');
-    } finally {
-      setSessionLoading(false);
-    }
-  };
 
   const fetchPipelineData = async () => {
     try {
@@ -313,7 +196,7 @@ export default function Pipeline({ companies }: PipelineProps) {
     });
     
     return (
-      <SimpleAdminLayout>
+      <UnifiedAdminLayout currentPage="pipeline">
         <Head>
           <title>{stageInfo?.title} - Lead Pipeline</title>
         </Head>
@@ -446,7 +329,7 @@ export default function Pipeline({ companies }: PipelineProps) {
             stages={STAGES}
           />
         </div>
-      </SimpleAdminLayout>
+      </UnifiedAdminLayout>
     );
   }
 
@@ -464,32 +347,10 @@ export default function Pipeline({ companies }: PipelineProps) {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Lead Pipeline</h2>
               <p className="text-gray-600">
-                {selectedPipelineType === 'atlas_test_pipeline' 
-                  ? '🧪 Test environment with realistic HVAC businesses' 
-                  : 'HVAC contractors without existing websites'
-                }
+                HVAC contractors in Alabama and Arkansas
               </p>
             </div>
             
-            {/* Reset Button for Test Pipeline */}
-            {selectedPipelineType === 'atlas_test_pipeline' && (
-              <button
-                onClick={resetTestPipeline}
-                disabled={sessionLoading}
-                className="bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm flex items-center gap-2"
-              >
-                {sessionLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Resetting...
-                  </>
-                ) : (
-                  <>
-                    🔄 Reset Test Pipeline
-                  </>
-                )}
-              </button>
-            )}
           </div>
           
           {/* Search Bar and Controls for Overview */}
@@ -504,17 +365,6 @@ export default function Pipeline({ companies }: PipelineProps) {
               />
             </div>
             
-            {/* Session Start Button (moved here) */}
-            {!activeSession && (
-              <button
-                onClick={startSession}
-                disabled={sessionLoading}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap"
-              >
-                {sessionLoading ? 'Starting...' : '🎯 Start Session'}
-              </button>
-            )}
-            
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
@@ -526,32 +376,6 @@ export default function Pipeline({ companies }: PipelineProps) {
           </div>
         </div>
 
-        {/* Compact Session Status (only when active) */}
-        {activeSession && (
-          <div className="mb-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-green-800">
-                    Session Active • {formatSessionDuration(activeSession.start_time)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <a href="/admin/calendar" className="text-blue-600 hover:text-blue-800 text-xs">📅</a>
-                  <button
-                    onClick={endSession}
-                    disabled={sessionLoading}
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
-                  >
-                    {sessionLoading ? 'Ending...' : 'End'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Pipeline Selector */}
         <div className="mb-6">
           {/* Mobile Dropdown */}
@@ -562,40 +386,28 @@ export default function Pipeline({ companies }: PipelineProps) {
               onChange={(e) => setSelectedPipelineType(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="atlas_test_pipeline">🧪 Test Pipeline ({pipelineStats['atlas_test_pipeline'] || 0} leads)</option>
               <option value="no_website_alabama">Alabama - No Website ({pipelineStats['no_website_alabama'] || 0} leads)</option>
               <option value="no_website_arkansas">Arkansas - No Website ({pipelineStats['no_website_arkansas'] || 0} leads)</option>
               <option value="has_website_alabama">Alabama - Has Website ({pipelineStats['has_website_alabama'] || 0} leads)</option>
               <option value="has_website_arkansas">Arkansas - Has Website ({pipelineStats['has_website_arkansas'] || 0} leads)</option>
-              <option value="broken_websites">Broken Websites ({pipelineStats['broken_websites'] || 0} leads)</option>
             </select>
           </div>
           
           {/* Desktop Grid */}
-          <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-2 bg-gray-100 p-2 rounded-lg">
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-2 bg-gray-100 p-2 rounded-lg">
             {[
-              { key: 'atlas_test_pipeline', label: '🧪 Test Pipeline', count: pipelineStats['atlas_test_pipeline'] || 0, color: 'bg-green-50 border-green-200 text-green-700' },
               { key: 'no_website_alabama', label: 'Alabama - No Website', count: pipelineStats['no_website_alabama'] || 0 },
               { key: 'no_website_arkansas', label: 'Arkansas - No Website', count: pipelineStats['no_website_arkansas'] || 0 },
               { key: 'has_website_alabama', label: 'Alabama - Has Website', count: pipelineStats['has_website_alabama'] || 0 },
-              { key: 'has_website_arkansas', label: 'Arkansas - Has Website', count: pipelineStats['has_website_arkansas'] || 0 },
-              { key: 'broken_websites', label: 'Broken Websites', count: pipelineStats['broken_websites'] || 0, color: 'bg-red-50 border-red-200 text-red-700' }
+              { key: 'has_website_arkansas', label: 'Arkansas - Has Website', count: pipelineStats['has_website_arkansas'] || 0 }
             ].map(pipeline => (
               <button
                 key={pipeline.key}
                 onClick={() => setSelectedPipelineType(pipeline.key)}
                 className={`p-3 rounded-md font-medium transition-colors text-sm ${
                   selectedPipelineType === pipeline.key
-                    ? pipeline.key === 'broken_websites'
-                      ? 'bg-white text-red-600 shadow-lg border-2 border-red-500'
-                      : pipeline.key === 'atlas_test_pipeline'
-                        ? 'bg-white text-green-600 shadow-lg border-2 border-green-500'
-                        : 'bg-white text-blue-600 shadow-lg border-2 border-blue-500'
-                    : pipeline.key === 'broken_websites'
-                      ? 'bg-red-50 text-red-700 hover:bg-red-100 hover:shadow-md border border-red-200'
-                      : pipeline.key === 'atlas_test_pipeline'
-                        ? 'bg-green-50 text-green-700 hover:bg-green-100 hover:shadow-md border border-green-200'
-                        : 'bg-white/50 text-gray-700 hover:bg-white hover:shadow-md'
+                    ? 'bg-white text-blue-600 shadow-lg border-2 border-blue-500'
+                    : 'bg-white/50 text-gray-700 hover:bg-white hover:shadow-md'
                 }`}
               >
                 <div className="font-semibold">{pipeline.label}</div>
@@ -607,7 +419,7 @@ export default function Pipeline({ companies }: PipelineProps) {
 
         {/* Pipeline Stats */}
         <div className="mb-8">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="text-2xl font-bold text-gray-900">{totalLeads}</div>
               <div className="text-gray-600">Total Leads</div>
@@ -624,6 +436,9 @@ export default function Pipeline({ companies }: PipelineProps) {
               </div>
               <div className="text-gray-600">Sales Closed</div>
               <div className="text-sm text-gray-500">Won deals</div>
+            </div>
+            <div className="lg:row-span-2">
+              <UpcomingAppointments maxEvents={3} className="h-full" />
             </div>
           </div>
         </div>

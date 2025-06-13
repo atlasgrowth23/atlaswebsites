@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
-import AdminLayout from '@/components/AdminLayout';
-import RoleGuard from '@/components/RoleGuard';
+import UnifiedAdminLayout from '@/components/UnifiedAdminLayout';
 import DomainManagement from '@/components/DomainManagement';
 import { getAllCompanies } from '@/lib/supabase-db';
 
@@ -110,8 +109,7 @@ export default function Templates({ companies }: TemplatesProps) {
   };
 
   return (
-    <RoleGuard requiredRole="super_admin">
-      <AdminLayout currentPage="templates">
+      <UnifiedAdminLayout currentPage="templates">
       <Head>
         <title>Templates - Lead Management</title>
       </Head>
@@ -298,8 +296,7 @@ export default function Templates({ companies }: TemplatesProps) {
           )}
         </div>
       </div>
-      </AdminLayout>
-    </RoleGuard>
+      </UnifiedAdminLayout>
   );
 }
 

@@ -1,4 +1,3 @@
-
 {
   "name": "workspace",
   "version": "1.0.0",
@@ -20,6 +19,8 @@
   "description": "A comprehensive platform for HVAC contractors to manage their business website, customer contacts, and messaging.",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
+    "@auth/pg-adapter": "^1.9.1",
+    "@google-cloud/local-auth": "^3.0.1",
     "@heroicons/react": "^2.2.0",
     "@neondatabase/serverless": "^1.0.0",
     "@radix-ui/react-aspect-ratio": "^1.1.7",
@@ -42,6 +43,7 @@
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.50.0",
     "@tailwindcss/postcss": "^4.1.5",
+    "@types/bcrypt": "^5.0.2",
     "@types/formidable": "^3.4.5",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/memoizee": "^0.4.12",
@@ -54,6 +56,7 @@
     "@vercel/edge-config": "^1.4.0",
     "autoprefixer": "^10.4.21",
     "axios": "^1.9.0",
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -71,6 +74,7 @@
     "lucide-react": "^0.507.0",
     "memoizee": "^0.4.17",
     "next": "^15.3.3",
+    "next-auth": "^4.24.11",
     "node-fetch": "^2.7.0",
     "openai": "^5.2.0",
     "openid-client": "^6.5.0",

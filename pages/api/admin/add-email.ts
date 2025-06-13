@@ -1,10 +1,10 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { Pool } from 'pg';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -28,65 +28,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Invalid email format' });
     }
 
-    // Check if record already exists in tk_contacts
-    const { data: existingContact, error: checkError } = await supabase
-      .from('tk_contacts')
-      .select('*')
-      .eq('company_id', company_id)
-      .single();
+    const client = await pool.connect();
+    
+    try {
+      // Update the companies table with owner information
+      const result = await client.query(`
+        UPDATE companies 
+        SET 
+          owner_name = COALESCE($2, owner_name),
+          owner_email = $3,
+          updated_at = NOW()
+        WHERE id = $1
+        RETURNING *
+      `, [company_id, owner_name, owner_email]);
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
-      console.error('Error checking existing contact:', checkError);
-      return res.status(500).json({ error: 'Failed to check existing contact' });
-    }
-
-    if (existingContact) {
-      // Update existing record
-      const { data, error } = await supabase
-        .from('tk_contacts')
-        .update({
-          owner_name: owner_name || existingContact.owner_name,
-          owner_email: owner_email,
-          updated_at: new Date().toISOString()
-        })
-        .eq('company_id', company_id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating tk_contacts:', error);
-        return res.status(500).json({ error: 'Failed to update contact' });
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Company not found' });
       }
+
+      console.log(`✅ Updated contact in companies table: ${owner_email} for company: ${company_id}`);
 
       return res.status(200).json({
         success: true,
-        message: 'Contact updated successfully',
-        contact: data
+        message: 'Contact updated successfully in companies table',
+        contact: {
+          company_id: result.rows[0].id,
+          company_name: result.rows[0].name,
+          owner_name: result.rows[0].owner_name,
+          owner_email: result.rows[0].owner_email
+        }
       });
-    } else {
-      // Create new record
-      const { data, error } = await supabase
-        .from('tk_contacts')
-        .insert({
-          company_id: company_id,
-          owner_name: owner_name || null,
-          owner_email: owner_email,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
 
-      if (error) {
-        console.error('Error creating tk_contacts:', error);
-        return res.status(500).json({ error: 'Failed to create contact' });
-      }
-
-      return res.status(201).json({
-        success: true,
-        message: 'Contact created successfully',
-        contact: data
-      });
+    } finally {
+      client.release();
     }
 
   } catch (error) {

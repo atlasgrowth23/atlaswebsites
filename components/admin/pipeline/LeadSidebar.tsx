@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import DomainManagement from '@/components/DomainManagement';
-import { ACTIVITY_ACTIONS } from '@/lib/activityTracker';
 
 // 🆕 MODERNIZED LEAD SIDEBAR COMPONENT (Phase 3 Step 4)
 // Now uses embedded JSON notes and tags data from modernized APIs
@@ -74,18 +73,10 @@ interface LeadSidebarProps {
 }
 
 
-// Manual action buttons - no automatic stage transitions from these
-const MANUAL_ACTIONS = [
-  { action: 'appointment', label: 'Set Appointment', color: 'bg-orange-600', stage: 'appointment' },
-  { action: 'sale_made', label: 'Mark Sale', color: 'bg-emerald-600', stage: 'sale_made' },
-  { action: 'callback_received', label: 'Callback Received', color: 'bg-blue-600', stage: null } // Just adds tag
-];
 
 export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMoveStage, stages }: LeadSidebarProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'sms' | 'analytics' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'notes' | 'template' | 'analytics'>('overview');
   const [sessionData, setSessionData] = useState<any[]>([]);
-  const [smsMessage, setSmsMessage] = useState('');
-  const [editingSnippet, setEditingSnippet] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [newNote, setNewNote] = useState('');
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -93,24 +84,9 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [ownerEmail, setOwnerEmail] = useState('');
   const [customizations, setCustomizations] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [activities, setActivities] = useState<Array<{
-    id: string;
-    action: string;
-    action_data: any;
-    created_at: string;
-    session_id?: string;
-    user_name: string;
-  }>>([]);
-  const [tags, setTags] = useState<Array<{
-    id: string;
-    tag_type: string;
-    display_name: string;
-    color: string;
-    created_at: string;
-  }>>([]);
-  const [loadingTags, setLoadingTags] = useState(false);
-  const [manualActionsOpen, setManualActionsOpen] = useState(false);
-  const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [isCreatingContact, setIsCreatingContact] = useState(false);
+  const hasActiveSession = false; // Sessions functionality removed
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [appointmentForm, setAppointmentForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -144,6 +120,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [sidebarWidth, setSidebarWidth] = useState(800); // Default to 800px for better desktop experience
   const [isResizing, setIsResizing] = useState(false);
   
+  
   // Voicemail tracking states
   const [voicemailPart1Sent, setVoicemailPart1Sent] = useState(false);
   const [voicemailPart2Sent, setVoicemailPart2Sent] = useState(false);
@@ -156,6 +133,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   
   // Enhanced notes states  
   const [isPrivateNote, setIsPrivateNote] = useState(false);
+
 
   useEffect(() => {
     if (lead && isOpen) {
@@ -174,27 +152,15 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       setVoicemailPart1Sent(false);
       setVoicemailPart2Sent(false);
       
-      // 🆕 MODERNIZED: Use embedded notes and tags from lead data if available
-      if (lead.notes_json && lead.notes_json.length > 0) {
-        setNotes(lead.notes_json);
-      } else {
-        // Fallback to fetching notes if not embedded
-        fetchNotes();
-      }
+      // Fetch notes from companies table
+      fetchNotes();
       
-      if (lead.tags && lead.tags.length > 0) {
-        setTags(lead.tags);
-      } else {
-        // Fallback to fetching tags if not embedded
-        fetchLeadTags();
-      }
       
       // Then fetch remaining data
       fetchCustomizations();
       fetchAnalyticsData();
       fetchOwnerName();
-      fetchActivities();
-      checkActiveSession();
+      // Activities functionality removed
       // Check if lead has progressed past new_lead stage (has initial contact)
       setHasInitialContact(lead.stage !== 'new_lead');
     }
@@ -209,7 +175,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   // Auto-switch away from hidden mobile tabs
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      if (activeTab === 'template' || activeTab === 'activity') {
+      if (activeTab === 'template') {
         setActiveTab('overview');
       }
     }
@@ -219,105 +185,9 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const currentUser = 'Jared'; // TODO: Get from auth context - 'Nick' or 'Jared'
   const isNick = currentUser === 'Nick';
 
-  // Activity tracking function
-  const trackUserActivity = async (action: string, actionData?: Record<string, any>) => {
-    if (!lead) return;
-    
-    try {
-      await fetch('/api/activity/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadId: lead.id,
-          companyId: lead.company_id,
-          userName: currentUser,
-          action,
-          actionData
-        })
-      });
-    } catch (error) {
-      console.error('Failed to track activity:', error);
-    }
-  };
+  // Activity tracking removed
 
-  // Generate SMS snippets
-  const generateAnswerCallSnippet = () => {
-    if (!lead) return '';
-    const sender = isNick ? 'Nick' : 'Jared';
-    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}\n\n${sender}\nAtlas Growth`;
-  };
 
-  const generateVoicemailSnippetPart1 = () => {
-    if (!lead) return '';
-    
-    const ownerGreeting = ownerName.trim() ? `What's up ${ownerName}` : 'What\'s up man';
-    const sender = isNick ? 'Nick' : 'Jared';
-    const location = isNick ? 'from Birmingham' : 'from Little Rock';
-    
-    return `${ownerGreeting}, this is ${sender} with Atlas Growth ${location}. I just left you a voicemail with some details. Please feel free to text or call me at any time if you have any questions. Thank you.\n-${sender}\nAtlas Growth`;
-  };
-
-  const generateVoicemailSnippetPart2 = () => {
-    if (!lead) return '';
-    return `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
-  };
-
-  // Auto-send SMS function
-  const sendSMSSnippet = (message: string, snippetType?: string) => {
-    if (!lead?.company.phone || !message.trim()) return;
-    
-    // Handle voicemail workflow
-    if (snippetType === 'Voicemail Part 1') {
-      setVoicemailPart1Sent(true);
-      // Don't track individual activity yet - wait for both parts
-    } else if (snippetType === 'Voicemail Part 2') {
-      setVoicemailPart2Sent(true);
-      
-      // If both parts will be sent (part 1 already sent, part 2 being sent now), track "No Answer Call Texted"
-      if (voicemailPart1Sent) {
-        trackUserActivity(ACTIVITY_ACTIONS.NO_ANSWER_CALL_TEXTED, {
-          snippet_type: 'Complete Voicemail Sequence',
-          part1_sent: true,
-          part2_sent: true,
-          contains_website_link: message.includes('atlasgrowth.ai')
-        });
-      }
-    } else {
-      // Handle other SMS types (Answer Call, etc.)
-      trackUserActivity(ACTIVITY_ACTIONS.SMS_ANSWER_CALL, {
-        snippet_type: snippetType,
-        message_length: message.length,
-        contains_website_link: message.includes('atlasgrowth.ai')
-      });
-    }
-    
-    const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
-    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
-    window.open(smsUrl, '_self');
-    
-    // Auto-add SMS activity note with link tracking
-    const ownerNameToUse = ownerName || 'there';
-    const timestamp = new Date().toLocaleTimeString();
-    const websiteUrl = `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
-    
-    let smsNote = `💬 Sent SMS to ${ownerNameToUse} (${lead.company.name}) at ${timestamp}:\n\n${message}`;
-    
-    // Add link sent tracking if message contains website URL
-    if (message.includes(websiteUrl)) {
-      const linkType = snippetType || 'custom message';
-      smsNote += `\n\n🔗 Website link sent via ${linkType} - tracking analytics for visitor activity`;
-    }
-    
-    // Note: Removed auto-save to prevent unwanted "Added Note" activities
-  };
-
-  // Don't auto-populate message anymore - just clear it
-  useEffect(() => {
-    if (lead) {
-      setSmsMessage('');
-      setEditingSnippet(false);
-    }
-  }, [lead, ownerName]);
 
 
   const fetchNotes = async () => {
@@ -358,89 +228,25 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead) return;
     setLoadingAnalytics(true);
     try {
-      const response = await fetch(`/api/analytics/sessions?companyId=${lead.company_id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setAnalyticsData(data);
-      } else {
-        console.error('Analytics API error:', response.status, response.statusText);
-        setAnalyticsData({
-          visits: [],
-          summary: { total_visits: 0, unique_visitors: 0, avg_time_on_site: 0 }
-        });
-      }
+      // Analytics API removed - return empty data
+      setAnalyticsData({
+        visits: [],
+        summary: { total_visits: 0, unique_visitors: 0, return_visitors: 0, bounce_rate: 0, avg_time_on_site: 0 }
+      });
     } catch (error) {
       console.error('Error fetching analytics:', error);
       setAnalyticsData({
         visits: [],
-        summary: { total_visits: 0, unique_visitors: 0, avg_time_on_site: 0 }
+        summary: { total_visits: 0, unique_visitors: 0, return_visitors: 0, bounce_rate: 0, avg_time_on_site: 0 }
       });
     } finally {
       setLoadingAnalytics(false);
     }
   };
 
-  const fetchActivities = async () => {
-    if (!lead) return;
-    try {
-      const response = await fetch(`/api/activity/lead/${lead.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setActivities(data.activities || []);
-      }
-    } catch (error) {
-      console.error('Error fetching activities:', error);
-      setActivities([]);
-    }
-  };
 
-  const fetchLeadTags = async () => {
-    if (!lead) return;
-    setLoadingTags(true);
-    try {
-      const response = await fetch(`/api/tags/lead/${lead.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTags(data.tags || []);
-      } else {
-        console.log('No tags API or no tags found');
-        setTags([]);
-      }
-    } catch (error) {
-      console.error('Error fetching tags:', error);
-      setTags([]);
-    } finally {
-      setLoadingTags(false);
-    }
-  };
 
-  const checkActiveSession = async () => {
-    try {
-      const response = await fetch(`/api/sessions?user=${currentUser}`);
-      if (response.ok) {
-        const data = await response.json();
-        const activeSession = data.sessions.find((s: any) => !s.end_time);
-        setHasActiveSession(!!activeSession);
-      }
-    } catch (error) {
-      console.error('Error checking active session:', error);
-      setHasActiveSession(false);
-    }
-  };
 
-  const fetchSessionData = async () => {
-    if (!lead) return;
-    try {
-      const response = await fetch(`/api/analytics/sessions?companyId=${lead.company_id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSessionData(data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching session data:', error);
-      setSessionData([]);
-    }
-  };
 
   const fetchOwnerName = async () => {
     if (!lead) return;
@@ -462,144 +268,123 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     setNewNote(value);
   };
 
-  const saveOwnerName = async () => {
+
+
+  // Consolidated save function for all fields
+  const saveAllData = async () => {
     if (!lead) return;
     
-    try {
-      // During active session, this marks call as ended
-      if (hasActiveSession) {
-        trackUserActivity(ACTIVITY_ACTIONS.OWNER_EMAIL_ADDED, {
-          owner_name: ownerName.trim(),
-          owner_email: ownerEmail.trim() || 'Not provided',
-          call_outcome: 'successful',
-          trigger_action: 'owner_name_saved'
-        });
-      } else {
-        // Outside session, track as regular owner name addition
-        trackUserActivity(ACTIVITY_ACTIONS.OWNER_NAME_ADDED, {
-          owner_name: ownerName.trim()
-        });
-      }
-      
-      await fetch('/api/pipeline/owner-name', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: lead.id,
-          owner_name: ownerName.trim()
-        })
-      });
-      console.log(`✅ Saved owner name: ${ownerName} for lead: ${lead.id}`);
-    } catch (error) {
-      console.error('Error saving owner name:', error);
-    }
-  };
-
-  const saveOwnerEmail = async () => {
-    if (!lead || !ownerEmail.trim()) return;
+    setIsSaving(true);
     
     try {
-      // Track consolidated "Call Ended" activity with both name and email
-      trackUserActivity(ACTIVITY_ACTIONS.OWNER_EMAIL_ADDED, {
-        owner_email: ownerEmail.trim(),
-        owner_name: ownerName.trim() || 'Not provided',
-        call_outcome: 'successful',
-        trigger_action: 'owner_email_saved'
-      });
-      
-      // Save to lead_pipeline first
-      const pipelineResponse = await fetch('/api/pipeline/owner-name', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: lead.id,
-          owner_email: ownerEmail.trim()
-        })
-      });
-      
-      if (pipelineResponse.ok) {
-        console.log(`✅ Saved owner email to pipeline: ${ownerEmail} for lead: ${lead.id}`);
-        
-        // Also save to tk_contacts for master record
-        const contactResponse = await fetch('/api/admin/add-email', {
+      // Save owner name and email
+      if (ownerName.trim() || ownerEmail.trim()) {
+        const ownerResponse = await fetch('/api/pipeline/owner-name', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            company_id: lead.company_id,
-            owner_name: ownerName.trim() || null,
-            owner_email: ownerEmail.trim()
+            lead_id: lead.id,
+            owner_name: ownerName.trim() || undefined,
+            owner_email: ownerEmail.trim() || undefined
           })
         });
         
-        if (contactResponse.ok) {
-          console.log(`✅ Saved owner email to tk_contacts: ${ownerEmail} for company: ${lead.company_id}`);
-        } else {
-          console.log('⚠️ Failed to save to tk_contacts, but pipeline save succeeded');
+        if (ownerResponse.ok) {
+          console.log(`✅ Saved owner info: ${ownerName} / ${ownerEmail} for lead: ${lead.id}`);
+          
+          // If we have both name and email, create contacts
+          if (ownerName.trim() && ownerEmail.trim()) {
+            console.log('📞 Creating contacts since both name and email are provided...');
+            
+            try {
+              // Create contact in our CRM
+              const contactResponse = await fetch('/api/admin/add-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  company_id: lead.company_id,
+                  owner_name: ownerName.trim(),
+                  owner_email: ownerEmail.trim()
+                })
+              });
+              
+              if (contactResponse.ok) {
+                console.log(`✅ Created contact in CRM: ${ownerEmail} for company: ${lead.company_id}`);
+                
+                // Also try to create Google contact
+                try {
+                  const googleResponse = await fetch('/api/google/create-contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      ownerName: ownerName.trim(),
+                      ownerEmail: ownerEmail.trim(),
+                      companyName: lead.company.name,
+                      phone: lead.company.phone,
+                      notes: `Pipeline lead from ${lead.company.city}, ${lead.company.state}`
+                    })
+                  });
+                  
+                  if (googleResponse.ok) {
+                    console.log('✅ Created Google contact successfully');
+                  } else {
+                    console.log('⚠️ Google contact creation failed');
+                  }
+                } catch (googleError) {
+                  console.error('Google contact creation error:', googleError);
+                }
+              }
+            } catch (contactError) {
+              console.error('Contact creation error:', contactError);
+            }
+          }
         }
-      } else {
-        const errorData = await pipelineResponse.json();
-        console.error('❌ Failed to save owner email to pipeline:', errorData.error);
-        alert(`Failed to save owner email: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Error saving owner email:', error);
-      alert('Error saving owner email. Please try again.');
-    }
-  };
-
-  const saveNote = async (noteContent: string = newNote) => {
-    if (!lead || !noteContent.trim()) return;
-
-    try {
-      // During active session, this marks call as ended
-      if (hasActiveSession) {
-        trackUserActivity(ACTIVITY_ACTIONS.OWNER_EMAIL_ADDED, {
-          owner_name: ownerName.trim() || 'Not provided',
-          owner_email: ownerEmail.trim() || 'Not provided',
-          call_outcome: 'successful',
-          trigger_action: 'note_saved',
-          note_content: noteContent.trim()
-        });
-      } else {
-        // Outside session, track as regular note
-        trackUserActivity(ACTIVITY_ACTIONS.NOTE_ADDED, {
-          note_content: noteContent.trim()
-        });
       }
       
-      const response = await fetch('/api/pipeline/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead_id: lead.id,
-          content: noteContent.trim(),
-          is_private: false,
-          created_by: ownerName || 'Unknown'
-        })
-      });
+      // Save note if provided
+      if (newNote.trim()) {
+        const noteResponse = await fetch('/api/pipeline/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lead_id: lead.id,
+            content: newNote.trim(),
+            is_private: false,
+            created_by: ownerName || 'admin'
+          })
+        });
 
-      if (response.ok) {
-        setNewNote('');
-        fetchNotes();
-      } else {
-        const errorData = await response.text();
-        console.error('❌ Failed to save note:', errorData);
-        alert(`Failed to save note: ${response.status} - ${errorData}`);
+        if (noteResponse.ok) {
+          setNewNote('');
+          fetchNotes();
+          console.log('✅ Note saved successfully');
+        } else {
+          console.error('❌ Failed to save note');
+        }
       }
+      
+      // Show success message
+      const savedItems = [];
+      if (ownerName.trim()) savedItems.push('Owner Name');
+      if (ownerEmail.trim()) savedItems.push('Owner Email');
+      if (newNote.trim()) savedItems.push('Note');
+      
+      if (savedItems.length > 0) {
+        alert(`✅ Saved: ${savedItems.join(', ')}`);
+      }
+      
     } catch (error) {
-      console.error('❌ Error saving note:', error);
+      console.error('Error saving data:', error);
+      alert('Error saving data. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
 
   const handleCall = () => {
     if (lead?.company.phone) {
-      // Track call activity
-      trackUserActivity(ACTIVITY_ACTIONS.CALL_STARTED, {
-        phone: lead.company.phone,
-        company_name: lead.company.name
-      });
-      
+      // Activity tracking removed
       window.open(`tel:${lead.company.phone}`);
       // Note: Removed auto-save to prevent unwanted "Added Note" activities
     }
@@ -608,11 +393,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const handleUnsuccessfulCall = () => {
     if (!lead) return;
     
-    // Track unsuccessful call activity (this will auto-move to unsuccessful stage)
-    trackUserActivity(ACTIVITY_ACTIONS.UNSUCCESSFUL_CALL, {
-      company_name: lead.company.name,
-      previous_stage: lead.stage
-    });
+    // Activity tracking removed
     
     // Note: Removed auto-save to prevent unwanted "Added Note" activities
   };
@@ -632,10 +413,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       'callback_received': 'callback_received'
     };
 
-    await trackUserActivity(actionMap[action.action as keyof typeof actionMap], {
-      company_name: lead.company.name,
-      previous_stage: lead.stage
-    });
+    // Activity tracking removed
 
     // Move to new stage if specified
     if (action.stage) {
@@ -669,17 +447,40 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
         hour12: true
       });
 
-      // Track the appointment activity
-      await trackUserActivity('appointment_set', {
-        company_name: lead.company.name,
-        appointment_date: appointmentDate,
-        appointment_time: appointmentTime,
-        notes: appointmentForm.notes,
-        previous_stage: lead.stage
-      });
+      // Activity tracking removed
 
       // Move to appointment stage
       await onMoveStage(lead.id, 'appointment');
+
+      // Create Google Calendar event
+      const startDateTime = `${appointmentForm.date}T${appointmentForm.time}:00`;
+      const endDateTime = new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString().slice(0, 19); // 1 hour later
+
+      try {
+        await fetch('/api/admin/calendar/pipeline-appointment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadData: {
+              companyName: lead.company.name,
+              contactEmail: ownerEmail || lead.company.email_1,
+              contactPhone: lead.company.phone,
+              address: `${lead.company.city}, ${lead.company.state}`,
+              notes: appointmentForm.notes
+            },
+            appointmentData: {
+              title: 'Sales Appointment',
+              startTime: startDateTime,
+              endTime: endDateTime,
+              timeZone: 'America/Chicago'
+            }
+          })
+        });
+        console.log('✅ Google Calendar event created');
+      } catch (calendarError) {
+        console.warn('⚠️ Google Calendar event creation failed:', calendarError);
+        // Continue with appointment creation even if calendar fails
+      }
 
       // Save appointment in database
       await fetch('/api/calendar/book-appointment', {
@@ -724,7 +525,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
       });
       setShowAppointmentForm(false);
 
-      alert('✅ Appointment set and confirmation email sent!');
+      alert('✅ Appointment set, Google Calendar event created, and confirmation email sent!');
 
     } catch (error) {
       console.error('Error setting appointment:', error);
@@ -776,13 +577,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     try {
       console.log('🚀 Saving customizations:', { companyId: lead.company_id, customizations });
       
-      // Track template save activity
-      trackUserActivity(ACTIVITY_ACTIONS.TEMPLATE_SAVED, {
-        customizations_count: Object.keys(customizations).length,
-        has_hero_img: !!customizations.hero_img,
-        has_about_img: !!customizations.about_img,
-        has_logo_url: !!customizations.logo_url
-      });
+      // Activity tracking removed
       
       // Save all customizations directly - let the API handle image processing
       const saveResponse = await fetch('/api/template-customizations', {
@@ -963,7 +758,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             {lead.company.slug && (
               <button
                 onClick={() => {
-                  trackUserActivity(ACTIVITY_ACTIONS.PREVIEW_WEBSITE);
                   window.open(`/t/moderntrust/${lead.company.slug}?preview=true`, '_blank');
                 }}
                 className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg transition-colors"
@@ -975,11 +769,21 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </button>
             )}
 
+            {/* Contact Button - Always there */}
+            <button
+              onClick={() => setShowContactModal(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition-colors"
+              title="Manage Contact"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </button>
+
             {/* View Google Reviews Button - Always there */}
             {lead.company.reviews_link && (
               <button
                 onClick={() => {
-                  trackUserActivity(ACTIVITY_ACTIONS.VIEW_GOOGLE_REVIEWS);
                   window.open(lead.company.reviews_link, '_blank');
                 }}
                 className="bg-yellow-600 hover:bg-yellow-700 text-white p-2 rounded-lg transition-colors"
@@ -991,67 +795,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </button>
             )}
             
-            {/* Manual Actions Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setManualActionsOpen(!manualActionsOpen)}
-                className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
-              >
-                Actions
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              {manualActionsOpen && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-48">
-                  {MANUAL_ACTIONS.map(action => (
-                    <button
-                      key={action.action}
-                      onClick={() => {
-                        handleManualAction(action);
-                        setManualActionsOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                  
-                  {/* Reset Lead Button */}
-                  <div className="border-t border-gray-200 mt-1 pt-1">
-                    <button
-                      onClick={async () => {
-                        if (confirm(`Reset ${lead?.company.name} back to "New Lead" stage?\n\nThis will clear all activity, tags, appointments, and website visits.`)) {
-                          try {
-                            const response = await fetch('/api/pipeline/reset-single-lead', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ leadId: lead?.id })
-                            });
-                            
-                            if (response.ok) {
-                              const data = await response.json();
-                              alert(`✅ ${data.message}`);
-                              window.location.reload(); // Refresh to show reset
-                            } else {
-                              const error = await response.json();
-                              alert(`❌ Failed to reset: ${error.error}`);
-                            }
-                          } catch (error) {
-                            alert('❌ Failed to reset lead');
-                          }
-                        }
-                        setManualActionsOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-lg"
-                    >
-                      🔄 Reset Lead to New
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -1061,11 +804,9 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         <div className="flex flex-1">
           {[
             { key: 'overview', label: 'Overview', icon: '📊' },
-            { key: 'sms', label: 'SMS', icon: '💬' },
             { key: 'notes', label: 'Notes', icon: '📝' },
             { key: 'template', label: 'Template', icon: '🎨', hideOnMobile: true },
             { key: 'analytics', label: 'Site Analytics', icon: '📈' },
-            { key: 'activity', label: 'Activity', icon: '🕒', hideOnMobile: true }
           ].filter(tab => {
             // Hide template and activity tabs on mobile (screens < 768px)
             if (tab.hideOnMobile && typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -1124,47 +865,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
               </div>
             </div>
 
-            {/* Tags Section - Enhanced with counts */}
-            <div className="border rounded-lg p-3 bg-yellow-50">
-              <h4 className="font-medium text-gray-900 mb-2 text-sm">
-                🏷️ Tags 
-                {(lead.tags_count || tags.length) > 0 && (
-                  <span className="ml-2 bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full text-xs">
-                    {lead.tags_count || tags.length}
-                  </span>
-                )}
-              </h4>
-              <div className="flex flex-wrap gap-1">
-                {loadingTags ? (
-                  <div className="text-xs text-gray-500">Loading tags...</div>
-                ) : (lead.tags || tags).length > 0 ? (
-                  (lead.tags || tags).map(tag => {
-                    const colorClasses = {
-                      'green': 'bg-green-100 text-green-800 border-green-200',
-                      'blue': 'bg-blue-100 text-blue-800 border-blue-200',
-                      'purple': 'bg-purple-100 text-purple-800 border-purple-200',
-                      'indigo': 'bg-indigo-100 text-indigo-800 border-indigo-200',
-                      'orange': 'bg-orange-100 text-orange-800 border-orange-200',
-                      'red': 'bg-red-100 text-red-800 border-red-200',
-                      'yellow': 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                    };
-                    const colorClass = colorClasses[tag.color as keyof typeof colorClasses] || 'bg-gray-100 text-gray-800 border-gray-200';
-                    
-                    return (
-                      <span
-                        key={tag.id}
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${colorClass}`}
-                        title={`Added ${new Date(tag.created_at).toLocaleDateString()}`}
-                      >
-                        {tag.display_name}
-                      </span>
-                    );
-                  })
-                ) : (
-                  <div className="text-xs text-gray-500 italic">No tags yet</div>
-                )}
-              </div>
-            </div>
+
 
             {/* Compact Review Analytics */}
             <div className="border rounded-lg p-3 bg-blue-50">
@@ -1196,46 +897,6 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         {/* Notes Tab */}
         {activeTab === 'notes' && (
           <div className="p-4 space-y-4">
-            {/* Owner Name Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Owner Name</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={ownerName}
-                  onChange={(e) => setOwnerName(e.target.value)}
-                  onBlur={saveOwnerName}
-                  placeholder="Owner name"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <button
-                  onClick={saveOwnerName}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-
-            {/* Owner Email Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Owner Email</label>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  value={ownerEmail}
-                  onChange={(e) => setOwnerEmail(e.target.value)}
-                  placeholder="Owner email"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <button
-                  onClick={saveOwnerEmail}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
 
             {/* New Note Input */}
             <div>
@@ -1250,34 +911,18 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                   rows={3}
                 />
-                <div className="flex items-center justify-end mt-2">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleNoteChange(newNote + '\n\n@Jared - ')}
-                      className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded"
-                    >
-                      @Jared
-                    </button>
-                    <button
-                      onClick={() => handleNoteChange(newNote + '\n\nFOLLOW UP: ')}
-                      className="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-2 py-1 rounded"
-                    >
-                      + Follow-up
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
 
 
 
-            {/* Save Button */}
+            {/* Consolidated Save Button */}
             <button
-              onClick={() => saveNote()}
-              disabled={!newNote.trim()}
+              onClick={saveAllData}
+              disabled={isSaving || (!ownerName.trim() && !ownerEmail.trim() && !newNote.trim())}
               className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-3 rounded-md text-sm font-medium"
             >
-              💾 Save Note
+              {isSaving ? '💾 Saving...' : '💾 Save All'}
             </button>
 
 
@@ -1356,237 +1001,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
           </div>
         )}
 
-        {/* SMS Tab */}
-        {activeTab === 'sms' && (
-          <div className="p-3 sm:p-4 space-y-4">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-              <h4 className="font-medium text-purple-900 mb-2 text-sm sm:text-base">💬 SMS Snippets</h4>
-              <div className="text-sm text-purple-700 mb-3 break-all">
-                To: {lead?.company?.phone || 'No phone number found'}
-              </div>
-              
-              {/* Snippet Buttons */}
-              <div className="space-y-2 mb-3">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => sendSMSSnippet(generateAnswerCallSnippet(), 'Answer Call Snippet')}
-                    disabled={!lead?.company?.phone}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
-                  >
-                    📞 Answer Call Snippet
-                  </button>
-                  {isNick && (
-                    <button
-                      onClick={() => setEditingSnippet(true)}
-                      className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-md text-sm font-medium"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart1(), 'Voicemail Part 1')}
-                    disabled={!lead?.company?.phone}
-                    className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
-                  >
-                    📝 Voicemail Part 1
-                  </button>
-                  <button
-                    onClick={() => sendSMSSnippet(generateVoicemailSnippetPart2(), 'Voicemail Part 2')}
-                    disabled={!lead?.company?.phone}
-                    className="flex-1 bg-green-700 hover:bg-green-800 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
-                  >
-                    🌐 Voicemail Part 2
-                  </button>
-                </div>
-              </div>
-              
-              {/* Only show message editor when in edit mode */}
-              {editingSnippet && (
-                <>
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Edit Custom Message:
-                    </label>
-                    <textarea
-                      value={smsMessage}
-                      onChange={(e) => setSmsMessage(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white resize-none"
-                      rows={4}
-                      style={{minHeight: '100px'}}
-                      placeholder="Type your custom SMS message..."
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      onClick={() => sendSMSSnippet(smsMessage, 'Custom Message')}
-                      disabled={!lead?.company?.phone || !smsMessage.trim()}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white py-2 px-3 rounded-md text-sm font-medium"
-                    >
-                      💬 Send Custom SMS
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingSnippet(false);
-                        setSmsMessage('');
-                      }}
-                      className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-3 rounded-md text-sm font-medium"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </>
-              )}
-              
-              {!editingSnippet && (
-                <div className="text-xs text-gray-500 text-center mt-2">
-                  Click any snippet button above to automatically open SMS with the message pre-filled
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* Activity Tab */}
-        {activeTab === 'activity' && (
-          <div className="p-4 space-y-4">
-            <div className="flex justify-between items-center">
-              <h4 className="font-semibold text-gray-900">Activity Timeline</h4>
-              <button
-                onClick={fetchActivities}
-                className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                ↻ Refresh
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              {activities.length === 0 ? (
-                <div className="text-center text-gray-500 py-8 bg-gray-50 rounded-lg">
-                  <div className="text-lg mb-2">🕒</div>
-                  <div className="text-sm">No activities yet</div>
-                  <div className="text-xs text-gray-400 mt-1">Actions will appear here as you work with this lead</div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {activities.map((activity) => {
-                    const getActivityIcon = (action: string) => {
-                      switch (action) {
-                        case 'preview_website': return '🌐';
-                        case 'view_google_reviews': return '⭐';
-                        case 'call_started': return '📞';
-                        case 'sms_answer_call_sent': return '💬';
-                        case 'sms_voicemail_1_sent': return '📝';
-                        case 'sms_voicemail_2_sent': return '🌐';
-                        case 'no_answer_call_texted': return '📵';
-                        case 'owner_name_added': return '👤';
-                        case 'owner_email_added': return '✅';
-                        case 'note_added': return '📝';
-                        case 'template_saved': return '🎨';
-                        case 'unsuccessful_call_marked': return '❌';
-                        case 'appointment_set': return '📅';
-                        case 'sale_made': return '💰';
-                        case 'callback_received': return '📞';
-                        case 'website_visited': return '👁️';
-                        case 'stage_moved': return '➡️';
-                        case 'tag_added': return '🏷️';
-                        case 'session_started': return '▶️';
-                        case 'session_ended': return '⏹️';
-                        default: return '📋';
-                      }
-                    };
-
-                    const getActivityLabel = (action: string) => {
-                      switch (action) {
-                        case 'preview_website': return 'Previewed Website';
-                        case 'view_google_reviews': return 'Viewed Google Reviews';
-                        case 'call_started': return 'Started Call';
-                        case 'sms_answer_call_sent': return 'Call Answered';
-                        case 'sms_voicemail_1_sent': return 'Sent Voicemail SMS Part 1';
-                        case 'sms_voicemail_2_sent': return 'Sent Voicemail SMS Part 2';
-                        case 'no_answer_call_texted': return 'No Answer Call Texted';
-                        case 'owner_name_added': return 'Added Owner Name';
-                        case 'owner_email_added': return 'Call Ended';
-                        case 'note_added': return 'Added Note';
-                        case 'template_saved': return 'Saved Template Changes';
-                        case 'unsuccessful_call_marked': return 'Marked as Unsuccessful Call';
-                        case 'appointment_set': return 'Set Appointment';
-                        case 'sale_made': return 'Sale Made';
-                        case 'callback_received': return 'Callback Received';
-                        case 'website_visited': return 'Website Visited';
-                        case 'stage_moved': return 'Stage Changed';
-                        case 'tag_added': return 'Tag Added';
-                        case 'session_started': return 'Cold Call Session Started';
-                        case 'session_ended': return 'Cold Call Session Ended';
-                        default: return action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                      }
-                    };
-
-                    return (
-                      <div key={activity.id} className="bg-white border border-gray-200 rounded-lg p-3">
-                        <div className="flex items-start gap-3">
-                          <span className="text-lg">{getActivityIcon(activity.action)}</span>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">
-                              {getActivityLabel(activity.action)}
-                            </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              {new Date(activity.created_at).toLocaleString()} • {activity.user_name}
-                              {activity.session_id && (
-                                <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
-                                  Session
-                                </span>
-                              )}
-                            </div>
-                            {activity.action_data && Object.keys(activity.action_data).length > 0 && (
-                              <div className="text-xs text-gray-600 mt-2 bg-gray-50 p-2 rounded">
-                                {activity.action === 'appointment_set' && activity.action_data.appointment_date ? (
-                                  <div>
-                                    <strong>📅 {activity.action_data.appointment_date}</strong>
-                                    {activity.action_data.appointment_time && <span> at {activity.action_data.appointment_time}</span>}
-                                    {activity.action_data.phone_number && <div>📞 {activity.action_data.phone_number}</div>}
-                                  </div>
-                                ) : activity.action === 'owner_email_added' && activity.action_data.owner_email ? (
-                                  <div>
-                                    {activity.action_data.owner_email !== 'Not provided' && (
-                                      <div>📧 {activity.action_data.owner_email}</div>
-                                    )}
-                                    {activity.action_data.owner_name && activity.action_data.owner_name !== 'Not provided' && (
-                                      <div>👤 {activity.action_data.owner_name}</div>
-                                    )}
-                                    {activity.action_data.note_content && (
-                                      <div className="italic">📝 "{activity.action_data.note_content}"</div>
-                                    )}
-                                    {activity.action_data.trigger_action && (
-                                      <div className="text-xs text-gray-500 mt-1">
-                                        Triggered by: {activity.action_data.trigger_action.replace(/_/g, ' ')}
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : activity.action === 'owner_name_added' && activity.action_data.owner_name ? (
-                                  <div>👤 {activity.action_data.owner_name}</div>
-                                ) : activity.action === 'note_added' && activity.action_data.note_content ? (
-                                  <div className="italic">📝 "{activity.action_data.note_content}"</div>
-                                ) : activity.action === 'website_visited' && activity.action_data.previous_stage ? (
-                                  <div>📊 Auto-moved from {activity.action_data.previous_stage} → site_viewed</div>
-                                ) : activity.action === 'stage_moved' ? (
-                                  <div>➡️ {activity.action_data.from_stage} → {activity.action_data.to_stage}</div>
-                                ) : null}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
@@ -1987,6 +1402,123 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     📅 Set Appointment & Send Email
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Contact Management
+                </h2>
+                <button
+                  onClick={() => setShowContactModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">{lead.company.name}</h3>
+                  <p className="text-sm text-gray-600">
+                    {lead.company.city}, {lead.company.state} • {lead.company.phone || 'No phone'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Owner Name
+                  </label>
+                  <input
+                    type="text"
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                    placeholder="Business owner name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Owner Email
+                  </label>
+                  <input
+                    type="email"
+                    value={ownerEmail}
+                    onChange={(e) => setOwnerEmail(e.target.value)}
+                    placeholder="owner@company.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={saveAllData}
+                    disabled={isSaving || (!ownerName.trim() && !ownerEmail.trim())}
+                    className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-300"
+                  >
+                    {isSaving ? 'Saving...' : 'Save to Pipeline'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!ownerName.trim() || !ownerEmail.trim()) {
+                        alert('Please enter both owner name and email to create a contact.');
+                        return;
+                      }
+                      
+                      setIsCreatingContact(true);
+                      
+                      try {
+                        // First save the data
+                        await saveAllData();
+                        
+                        // Then create Google contact
+                        const response = await fetch('/api/google/create-contact', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            ownerName: ownerName.trim(),
+                            ownerEmail: ownerEmail.trim(),
+                            companyName: lead.company.name,
+                            phone: lead.company.phone,
+                            notes: `Pipeline lead from ${lead.company.city}, ${lead.company.state}`
+                          })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (response.ok) {
+                          alert('✅ Contact created successfully in Google Contacts!');
+                          setShowContactModal(false);
+                        } else {
+                          alert(`❌ Failed to create contact: ${data.error}`);
+                        }
+                      } catch (error) {
+                        console.error('Error creating contact:', error);
+                        alert('❌ Error creating contact. Please try again.');
+                      } finally {
+                        setIsCreatingContact(false);
+                      }
+                    }}
+                    disabled={isCreatingContact || !ownerName.trim() || !ownerEmail.trim()}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-300"
+                  >
+                    {isCreatingContact ? 'Creating...' : '📱 Create Google Contact'}
                   </button>
                 </div>
               </div>

@@ -17,14 +17,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     console.log(`🔍 Loading pipeline: ${selectedPipelineType}`);
     
-    // 🆕 MODERNIZED: Get pipeline data with new JSON structure
+    // Get pipeline data (cleaned structure)
     const { data: pipelineEntries, error: pipelineError } = await supabaseAdmin
       .from('lead_pipeline')
-      .select(`
-        *,
-        notes_json,
-        tags
-      `)
+      .select('*')
       .eq('pipeline_type', selectedPipelineType)
       .order('updated_at', { ascending: false });
 
@@ -62,15 +58,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       companyMap.set(company.id, company);
     });
 
-    // 🆕 MODERNIZED: Transform data with new JSON structure
+    // Transform data with cleaned structure
     const leads = pipelineEntries.map(entry => {
       const company = companyMap.get(entry.company_id);
       
-      // Extract notes and tags from JSON, with fallback to legacy fields
-      const notes_list = entry.notes_json || [];
-      const tags_list = entry.tags || [];
-      const notes_count = notes_list.length;
-      const recent_note = notes_list.length > 0 ? notes_list[0]?.content?.substring(0, 100) : null;
+      // Notes and tags now come from companies table
+      const notes_text = company?.notes || '';
+      const recent_note = notes_text ? notes_text.substring(0, 100) : null;
       
       return {
         id: entry.id,
@@ -78,12 +72,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         stage: entry.stage,
         last_contact_date: entry.last_contact_date,
         next_follow_up_date: entry.next_follow_up_date,
-        notes: entry.notes || '', // Legacy field for backward compatibility
-        notes_json: notes_list, // 🆕 New JSON notes array
-        notes_count, // 🆕 Quick count for UI
-        recent_note, // 🆕 Preview of most recent note
-        tags: tags_list, // 🆕 Tags array
-        tags_count: tags_list.length, // 🆕 Quick count for UI
+        notes: notes_text, // Notes from companies table
+        notes_json: [], // Empty for compatibility
+        notes_count: notes_text ? 1 : 0, // Simple count
+        recent_note, // Preview of notes
+        tags: [], // Empty for compatibility
+        tags_count: 0, // No tags anymore
         created_at: entry.created_at,
         updated_at: entry.updated_at,
         pipeline_type: entry.pipeline_type,
