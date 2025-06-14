@@ -38,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       <Response>
         <Say>Atlas Growth, please hold while we connect you.</Say>
         <Dial timeout="30" record="record-from-ringing">
-          <Number>+15015573153</Number>
+          <Number>+12050051700</Number>
         </Dial>
         <Say>Sorry, we're not available right now. Please leave a message after the beep.</Say>
         <Record timeout="60" transcribe="true" />
