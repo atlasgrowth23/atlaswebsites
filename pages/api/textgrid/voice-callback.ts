@@ -32,11 +32,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // - Log as callback/return call if found
     // - Update lead status if this is a callback
 
-    // Respond with TwiML to handle the call
+    // Respond with TwiML to handle the call - forward to your phone
     res.setHeader('Content-Type', 'application/xml');
     res.status(200).send(`
       <Response>
         <Say>Atlas Growth, please hold while we connect you.</Say>
+        <Dial timeout="30" record="record-from-ringing">
+          <Number>+15015573153</Number>
+        </Dial>
+        <Say>Sorry, we're not available right now. Please leave a message after the beep.</Say>
+        <Record timeout="60" transcribe="true" />
       </Response>
     `);
 

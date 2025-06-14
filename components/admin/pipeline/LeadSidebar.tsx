@@ -133,6 +133,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   
   // Enhanced notes states  
   const [isPrivateNote, setIsPrivateNote] = useState(false);
+  const [showFullRecentNote, setShowFullRecentNote] = useState(false);
 
 
   useEffect(() => {
@@ -382,12 +383,53 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   };
 
 
-  const handleCall = () => {
-    if (lead?.company.phone) {
-      // Activity tracking removed
-      window.open(`tel:${lead.company.phone}`);
-      // Note: Removed auto-save to prevent unwanted "Added Note" activities
+  const handleCall = async () => {
+    if (!lead?.company.phone) return;
+    
+    try {
+      // Get TextGrid number based on lead location
+      const textGridNumber = getAssignedTextGridNumber(lead.company.state);
+      
+      console.log(`📞 Initiating call to ${lead.company.name} (${lead.company.phone}) from ${textGridNumber}`);
+      
+      // Make call through TextGrid API
+      const response = await fetch('/api/textgrid/make-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leadPhone: lead.company.phone,
+          fromNumber: textGridNumber,
+          leadName: lead.company.name,
+          leadId: lead.id
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        const displayName = lead.owner_name 
+          ? `${lead.company.name} (${lead.owner_name})`
+          : lead.company.name;
+        alert(`📞 Calling ${displayName} at ${lead.company.phone}...`);
+        console.log('Call initiated:', result);
+      } else {
+        alert(`❌ Call failed: ${result.error}`);
+        console.error('Call error:', result);
+      }
+      
+    } catch (error) {
+      console.error('Call error:', error);
+      alert('❌ Failed to make call. Please try again.');
     }
+  };
+
+  // Helper function to get assigned TextGrid number
+  const getAssignedTextGridNumber = (state: string) => {
+    if (state === 'Arkansas') {
+      return '+15015573153'; // Jared's Arkansas TextGrid number
+    }
+    // TODO: Add your Alabama TextGrid number here
+    return '+15015573153'; // Default to Jared's for now
   };
 
   const handleUnsuccessfulCall = () => {
@@ -937,20 +979,32 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                 )}
               </h4>
               {lead.recent_note && (
-                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="text-xs text-blue-600 font-medium mb-1">Most Recent:</div>
-                  <div className="text-sm text-gray-700 italic">"{lead.recent_note}..."</div>
+                <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs text-blue-600 font-medium">Most Recent:</div>
+                    {lead.notes && lead.notes.length > 300 && (
+                      <button
+                        onClick={() => setShowFullRecentNote(!showFullRecentNote)}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        {showFullRecentNote ? 'Show Less' : 'Show Full Note'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    "{showFullRecentNote ? lead.notes : lead.recent_note}"
+                  </div>
                 </div>
               )}
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="space-y-3 max-h-80 overflow-y-auto">
                 {(lead.notes_json || notes).map(note => {
                   const noteTypeColors = {
-                    general: 'border-gray-200 bg-gray-50',
-                    call: 'border-blue-200 bg-blue-50',
-                    email: 'border-green-200 bg-green-50',
-                    meeting: 'border-purple-200 bg-purple-50',
-                    follow_up: 'border-yellow-200 bg-yellow-50',
-                    urgent: 'border-red-200 bg-red-50'
+                    general: 'border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100',
+                    call: 'border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100',
+                    email: 'border-green-200 bg-gradient-to-r from-green-50 to-green-100',
+                    meeting: 'border-purple-200 bg-gradient-to-r from-purple-50 to-purple-100',
+                    follow_up: 'border-yellow-200 bg-gradient-to-r from-yellow-50 to-yellow-100',
+                    urgent: 'border-red-200 bg-gradient-to-r from-red-50 to-red-100'
                   };
                   
                   const noteTypeIcons = {
@@ -973,20 +1027,33 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   const icon = noteTypeIcons[detectedType as keyof typeof noteTypeIcons] || noteTypeIcons.general;
                   
                   return (
-                    <div key={note.id} className={`p-3 rounded-md border ${colorClass}`}>
-                      <div className="flex items-start gap-2">
-                        <span className="text-sm">{icon}</span>
-                        <div className="flex-1">
-                          <div className="text-gray-900 whitespace-pre-wrap text-sm">{note.content}</div>
-                          <div className="flex items-center justify-between mt-2">
-                            <div className="text-xs text-gray-500">
-                              {new Date(note.created_at).toLocaleString()}
+                    <div key={note.id} className={`p-4 rounded-lg border-2 shadow-sm hover:shadow-md transition-shadow ${colorClass}`}>
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg flex-shrink-0 bg-white rounded-full p-1 shadow-sm">{icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed font-medium">{note.content}</div>
+                          <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/60">
+                            <div className="text-xs text-gray-600 font-medium">
+                              {new Date(note.created_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
                             </div>
-                            {note.content.includes('@Jared') && (
-                              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                                Mention
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {note.created_by && (
+                                <span className="text-xs bg-white/80 text-gray-700 px-2 py-1 rounded-full font-medium">
+                                  {note.created_by}
+                                </span>
+                              )}
+                              {note.content.includes('@Jared') && (
+                                <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-medium">
+                                  🔔 Mention
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -994,7 +1061,11 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                   );
                 })}
                 {(lead.notes_json || notes).length === 0 && (
-                  <div className="text-gray-500 text-sm italic text-center py-4">No notes yet</div>
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-2">📋</div>
+                    <div className="text-gray-500 text-sm font-medium">No notes yet</div>
+                    <div className="text-gray-400 text-xs mt-1">Add your first note above</div>
+                  </div>
                 )}
               </div>
             </div>
