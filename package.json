@@ -74,7 +74,6 @@
     "lucide-react": "^0.507.0",
     "memoizee": "^0.4.17",
     "next": "^15.3.3",
-    "next-auth": "^4.24.11",
     "node-fetch": "^2.7.0",
     "openai": "^5.2.0",
     "openid-client": "^6.5.0",
