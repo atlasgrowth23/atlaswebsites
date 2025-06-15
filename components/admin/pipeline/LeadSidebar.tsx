@@ -425,11 +425,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
 
   // Helper function to get assigned TextGrid number
   const getAssignedTextGridNumber = (state: string) => {
-    if (state === 'Arkansas') {
-      return '+15015573153'; // Jared's Arkansas TextGrid number
-    }
-    // TODO: Add your Alabama TextGrid number here
-    return '+15015573153'; // Default to Jared's for now
+    return '+15012040257'; // Updated TextGrid number
   };
 
   const handleUnsuccessfulCall = () => {

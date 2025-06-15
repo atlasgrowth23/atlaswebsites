@@ -17,20 +17,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const authToken = process.env.TEXTGRID_AUTH_TOKEN;
     const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
     
-    const textGridResponse = await fetch('https://api.textgrid.com/calls', {
+    const textGridResponse = await fetch(`https://api.textgrid.com/2010-04-01/Accounts/${accountSid}/Calls.json`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        to: leadPhone,
-        from: fromNumber,
-        // Callback URLs for call status
-        status_callback: `https://atlasgrowth.ai/api/textgrid/status-callback`,
-        status_callback_method: 'POST',
-        // Optional: Play message while connecting
-        twiml: `<Response><Say>Connecting you now...</Say><Dial>${leadPhone}</Dial></Response>`
+      body: new URLSearchParams({
+        From: fromNumber,
+        To: leadPhone,
+        Url: `https://atlasgrowth.ai/api/textgrid/voice-twiml`,
+        StatusCallback: `https://atlasgrowth.ai/api/textgrid/status-callback`,
+        StatusCallbackMethod: 'POST'
       })
     });
 
