@@ -46,8 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type: 'work'
       }] : [],
       organizations: companyName ? [{ 
-        name: companyName,
-        type: 'work'
+        name: companyName
       }] : [],
       biographies: notes ? [{ 
         value: `Pipeline Lead: ${notes}`,

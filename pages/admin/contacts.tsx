@@ -17,9 +17,7 @@ export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [creatingGoogleContact, setCreatingGoogleContact] = useState<string | null>(null);
-  const [googleStatus, setGoogleStatus] = useState<{ [key: string]: string }>({});
-  const [googleConnected, setGoogleConnected] = useState(true); // Always connected with new OAuth
+  // Removed Google sync functionality - contacts are automatically synced via pipeline
 
   useEffect(() => {
     fetchContacts();
@@ -42,56 +40,7 @@ export default function ContactsPage() {
   };
 
 
-  const createGoogleContact = async (contact: Contact) => {
-    if (!contact.owner_name || !contact.owner_email) {
-      setGoogleStatus({ ...googleStatus, [contact.id]: '❌ Missing name or email' });
-      return;
-    }
-
-    setCreatingGoogleContact(contact.id);
-    setGoogleStatus({ ...googleStatus, [contact.id]: '⏳ Creating contact...' });
-
-    try {
-      const response = await fetch('/api/google/create-contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ownerName: contact.owner_name,
-          ownerEmail: contact.owner_email,
-          companyName: contact.company_name,
-          phone: contact.phone,
-          notes: `Contact from CRM - ${contact.city ? `${contact.city}, ${contact.state}` : 'Location unknown'}`
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setGoogleStatus({ ...googleStatus, [contact.id]: '✅ Google contact created!' });
-        // Update the contact in our list
-        setContacts(contacts.map(c => 
-          c.id === contact.id 
-            ? { ...c, google_contact_created: true }
-            : c
-        ));
-      } else {
-        setGoogleStatus({ ...googleStatus, [contact.id]: `❌ Failed: ${data.error}` });
-      }
-    } catch (error) {
-      console.error('Error creating Google contact:', error);
-      setGoogleStatus({ ...googleStatus, [contact.id]: '❌ Error creating contact' });
-    } finally {
-      setCreatingGoogleContact(null);
-      // Clear status after 5 seconds
-      setTimeout(() => {
-        setGoogleStatus(prev => {
-          const newStatus = { ...prev };
-          delete newStatus[contact.id];
-          return newStatus;
-        });
-      }, 5000);
-    }
-  };
+  // Google contact creation is now handled automatically in the pipeline
 
   const filteredContacts = contacts.filter(contact =>
     contact.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,31 +57,12 @@ export default function ContactsPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">📞 Contacts</h1>
               <p className="mt-2 text-gray-600">
-                Manage your business contacts and sync with Google Contacts
+                Manage your business contacts from the pipeline
               </p>
             </div>
             
-            {/* Google Connection Status */}
-            <div className="text-right">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-block w-3 h-3 rounded-full bg-green-500"></span>
-                <span className="text-sm font-medium">
-                  Google: Connected
-                </span>
-              </div>
-            </div>
           </div>
           
-          {/* System Status Messages */}
-          {googleStatus.system && (
-            <div className={`mt-4 px-4 py-2 rounded-lg text-sm ${
-              googleStatus.system.includes('✅') 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {googleStatus.system}
-            </div>
-          )}
         </div>
 
         {/* Search and Stats */}
@@ -160,7 +90,10 @@ export default function ContactsPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-block w-3 h-3 bg-blue-100 border border-blue-300 rounded-full"></span>
-                <span>Google Synced: {contacts.filter(c => c.google_contact_created).length}</span>
+                <span>Recently Added: {contacts.filter(c => {
+                  const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                  return new Date(c.created_at) > dayAgo;
+                }).length}</span>
               </div>
             </div>
           </div>
@@ -212,7 +145,7 @@ export default function ContactsPage() {
                       Phone
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Google
+                      Added
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -248,55 +181,28 @@ export default function ContactsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {contact.google_contact_created ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              ✅ Synced
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              ⚪ Not synced
-                            </span>
-                          )}
+                        <div className="text-sm text-gray-500">
+                          {new Date(contact.created_at).toLocaleDateString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex items-center gap-2">
-                          {!contact.google_contact_created && (
-                            <button
-                              onClick={() => createGoogleContact(contact)}
-                              disabled={creatingGoogleContact === contact.id}
-                              className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed"
-                            >
-                              {creatingGoogleContact === contact.id ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-3 w-3 border-b border-white mr-1"></div>
-                                  Creating...
-                                </>
-                              ) : (
-                                <>
-                                  📱 Create Google Contact
-                                </>
-                              )}
-                            </button>
-                          )}
-                          
                           <a
                             href={`mailto:${contact.owner_email}`}
                             className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
                           >
                             ✉️ Email
                           </a>
+                          
+                          {contact.phone && (
+                            <a
+                              href={`tel:${contact.phone}`}
+                              className="inline-flex items-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded text-green-700 bg-green-50 hover:bg-green-100"
+                            >
+                              📞 Call
+                            </a>
+                          )}
                         </div>
-                        
-                        {googleStatus[contact.id] && (
-                          <div className={`mt-2 text-xs ${
-                            googleStatus[contact.id].includes('✅') ? 'text-green-600' : 
-                            googleStatus[contact.id].includes('❌') ? 'text-red-600' : 'text-blue-600'
-                          }`}>
-                            {googleStatus[contact.id]}
-                          </div>
-                        )}
                       </td>
                     </tr>
                   ))}

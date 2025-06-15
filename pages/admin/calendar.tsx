@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GetServerSideProps } from 'next';
 import Head from 'next/head';
 import UnifiedAdminLayout from '@/components/UnifiedAdminLayout';
@@ -52,8 +52,43 @@ export default function AdminCalendar() {
     endDate: '',
     endTime: '',
     location: '',
-    attendeeEmail: ''
+    attendeeEmail: '',
+    attendeeName: ''
   });
+
+  // Contact search states
+  const [contactSearch, setContactSearch] = useState('');
+  const [contactResults, setContactResults] = useState<any[]>([]);
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const contactDropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedEventDuration, setSelectedEventDuration] = useState<number | null>(null);
+
+  // Helper function to calculate end time based on duration
+  const calculateEndTime = (startTime: string, startDate: string, durationMinutes: number) => {
+    if (!startTime || !startDate) return { endTime: '', endDate: startDate };
+    
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + durationMinutes;
+    
+    // Handle next day if needed
+    const endHours = Math.floor(endMinutes / 60) % 24;
+    const endMins = endMinutes % 60;
+    
+    let endDate = startDate;
+    if (endMinutes >= 24 * 60) {
+      // Meeting goes into next day
+      const startDateObj = new Date(startDate);
+      startDateObj.setDate(startDateObj.getDate() + 1);
+      endDate = startDateObj.toISOString().split('T')[0];
+    }
+    
+    return {
+      endTime: `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`,
+      endDate
+    };
+  };
 
   useEffect(() => {
     fetchCalendars();
@@ -65,6 +100,32 @@ export default function AdminCalendar() {
       fetchEvents();
     }
   }, [selectedCalendar]);
+
+  // Click outside to close contact dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (contactDropdownRef.current && !contactDropdownRef.current.contains(event.target as Node)) {
+        setShowContactDropdown(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Auto-calculate end time when start time changes (if duration is set)
+  useEffect(() => {
+    if (selectedEventDuration && newEvent.startTime && newEvent.startDate) {
+      const { endTime, endDate } = calculateEndTime(newEvent.startTime, newEvent.startDate, selectedEventDuration);
+      setNewEvent(prev => ({ 
+        ...prev, 
+        endTime,
+        endDate: endDate || prev.endDate
+      }));
+    }
+  }, [newEvent.startTime, newEvent.startDate, selectedEventDuration]);
 
   const fetchCalendars = async () => {
     try {
@@ -160,8 +221,13 @@ export default function AdminCalendar() {
           endDate: '',
           endTime: '',
           location: '',
-          attendeeEmail: ''
+          attendeeEmail: '',
+          attendeeName: ''
         });
+        setSelectedEventDuration(null);
+        setContactSearch('');
+        setContactResults([]);
+        setShowContactDropdown(false);
         fetchEvents();
         fetchUpcomingEvents();
       } else {
@@ -248,11 +314,28 @@ export default function AdminCalendar() {
                 <div className="space-y-3">
                   {upcomingEvents.slice(0, 5).map((event, index) => {
                     const { date, time } = formatEventTime(event);
+                    
+                    // Extract event type (remove "with Atlas Growth" suffix)
+                    const eventType = event.summary?.replace(/\s*(with\s+Atlas\s+Growth|Atlas\s+Growth)\s*$/i, '').trim() || event.summary;
+                    
+                    // Extract attendee info
+                    const attendeeInfo = event.attendees && event.attendees.length > 0 
+                      ? event.attendees.map(attendee => {
+                          const name = attendee.displayName || attendee.email?.split('@')[0] || attendee.email;
+                          return name;
+                        })[0] // Just show first attendee in sidebar
+                      : null;
+                    
                     return (
                       <div key={event.id || index} className="border-l-4 border-blue-500 pl-3">
                         <h4 className="font-medium text-gray-900 text-sm">
-                          {event.summary}
+                          {eventType}
                         </h4>
+                        {attendeeInfo && (
+                          <div className="text-xs text-gray-600 mt-1">
+                            with {attendeeInfo}
+                          </div>
+                        )}
                         <div className="flex items-center text-xs text-gray-500 mt-1">
                           <ClockIcon className="w-3 h-3 mr-1" />
                           {time}
@@ -333,18 +416,33 @@ export default function AdminCalendar() {
                   <div className="space-y-4">
                     {events.slice(0, 10).map((event, index) => {
                       const { date, time } = formatEventTime(event);
+                      
+                      // Extract event type (remove "with Atlas Growth" suffix)
+                      const eventType = event.summary?.replace(/\s*(with\s+Atlas\s+Growth|Atlas\s+Growth)\s*$/i, '').trim() || event.summary;
+                      
+                      // Extract attendee info
+                      const attendeeInfo = event.attendees && event.attendees.length > 0 
+                        ? event.attendees.map(attendee => {
+                            // Try to get display name or fall back to email
+                            const name = attendee.displayName || attendee.email?.split('@')[0] || attendee.email;
+                            return name;
+                          }).join(', ')
+                        : 'No attendees';
+                      
                       return (
                         <div key={event.id || index} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <h4 className="font-medium text-gray-900">
-                                {event.summary}
-                              </h4>
-                              {event.description && (
-                                <p className="text-sm text-gray-600 mt-1">
-                                  {event.description}
-                                </p>
-                              )}
+                              <div className="flex items-center gap-2 mb-1">
+                                <h4 className="font-medium text-gray-900">
+                                  {eventType}
+                                </h4>
+                                <span className="text-sm text-gray-500">•</span>
+                                <span className="text-sm text-gray-600">
+                                  {attendeeInfo}
+                                </span>
+                              </div>
+                              
                               <div className="flex items-center text-sm text-gray-500 mt-2 space-x-4">
                                 <div className="flex items-center">
                                   <ClockIcon className="w-4 h-4 mr-1" />
@@ -394,6 +492,83 @@ export default function AdminCalendar() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Create New Event
             </h3>
+
+            {/* Event Type Presets */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Event Type (Optional)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEventDuration(15);
+                    const { endTime, endDate } = calculateEndTime(newEvent.startTime, newEvent.startDate, 15);
+                    setNewEvent(prev => ({ 
+                      ...prev, 
+                      summary: 'Intro Call with Atlas Growth',
+                      description: `Quick 15-minute intro call to show you:
+• Your current website performance
+• SEO opportunities 
+• How we can help grow your business
+
+Nicholas | Atlas Growth
+nicholas@atlasgrowth.ai`,
+                      endTime,
+                      endDate: endDate || prev.endDate
+                    }));
+                  }}
+                  className="p-3 text-left border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-400 transition-colors"
+                >
+                  <div className="font-medium text-gray-900">📞 Intro Call</div>
+                  <div className="text-sm text-gray-600">15 minutes</div>
+                  <div className="text-xs text-gray-500">Website demo & SEO audit</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEventDuration(30);
+                    const { endTime, endDate } = calculateEndTime(newEvent.startTime, newEvent.startDate, 30);
+                    setNewEvent(prev => ({ 
+                      ...prev, 
+                      summary: 'Atlas Growth Strategy Meeting',
+                      description: `30-minute strategy session to discuss:
+• Your business growth goals
+• Marketing opportunities
+• Next steps for online expansion
+
+Nicholas | Atlas Growth
+nicholas@atlasgrowth.ai`,
+                      endTime,
+                      endDate: endDate || prev.endDate
+                    }));
+                  }}
+                  className="p-3 text-left border border-gray-300 rounded-lg hover:bg-green-50 hover:border-green-400 transition-colors"
+                >
+                  <div className="font-medium text-gray-900">🚀 Atlas Growth Meeting</div>
+                  <div className="text-sm text-gray-600">30 minutes</div>
+                  <div className="text-xs text-gray-500">Strategic growth discussion</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEventDuration(null);
+                    setNewEvent({ 
+                      ...newEvent, 
+                      summary: '',
+                      description: ''
+                    });
+                  }}
+                  className="p-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                >
+                  <div className="font-medium text-gray-900">✏️ Custom Event</div>
+                  <div className="text-sm text-gray-600">Manual setup</div>
+                  <div className="text-xs text-gray-500">Set your own details</div>
+                </button>
+              </div>
+            </div>
             
             <form onSubmit={handleCreateEvent} className="space-y-4">
               <div>
@@ -489,20 +664,128 @@ export default function AdminCalendar() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Attendee Email
+                  Add Attendee
                 </label>
-                <input
-                  type="email"
-                  value={newEvent.attendeeEmail}
-                  onChange={(e) => setNewEvent({ ...newEvent, attendeeEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="relative" ref={contactDropdownRef}>
+                  <input
+                    type="text"
+                    value={contactSearch}
+                    onChange={async (e) => {
+                      setContactSearch(e.target.value);
+                      if (e.target.value.length > 1) {
+                        setLoadingContacts(true);
+                        setShowContactDropdown(true);
+                        try {
+                          const response = await fetch(`/api/admin/google/contacts?search=${encodeURIComponent(e.target.value)}`);
+                          if (response.ok) {
+                            const data = await response.json();
+                            setContactResults(data.contacts || []);
+                          }
+                        } catch (error) {
+                          console.error('Error searching contacts:', error);
+                        } finally {
+                          setLoadingContacts(false);
+                        }
+                      } else {
+                        setShowContactDropdown(false);
+                        setContactResults([]);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (contactSearch.length > 1) {
+                        setShowContactDropdown(true);
+                      }
+                    }}
+                    placeholder="Search contacts by name or company..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  
+                  {/* Contact Search Dropdown */}
+                  {showContactDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {loadingContacts ? (
+                        <div className="p-3 text-center text-gray-500">
+                          <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+                          <span className="ml-2 text-sm">Searching...</span>
+                        </div>
+                      ) : contactResults.length > 0 ? (
+                        contactResults.map((contact) => (
+                          <button
+                            key={contact.id}
+                            type="button"
+                            onClick={() => {
+                              setNewEvent({ 
+                                ...newEvent, 
+                                attendeeEmail: contact.email,
+                                attendeeName: contact.name
+                              });
+                              setContactSearch(`${contact.name}${contact.company ? ` (${contact.company})` : ''}`);
+                              setShowContactDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900">{contact.name}</div>
+                            {contact.company && (
+                              <div className="text-sm text-gray-600">{contact.company}</div>
+                            )}
+                            <div className="text-sm text-gray-500">{contact.email}</div>
+                          </button>
+                        ))
+                      ) : contactSearch.length > 1 ? (
+                        <div className="p-3 text-center text-gray-500 text-sm">
+                          No contacts found for "{contactSearch}"
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Selected Contact Display */}
+                {newEvent.attendeeEmail && (
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-blue-900">
+                        {newEvent.attendeeName || newEvent.attendeeEmail}
+                      </span>
+                      {newEvent.attendeeName && (
+                        <span className="text-sm text-blue-700 ml-2">({newEvent.attendeeEmail})</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewEvent({ ...newEvent, attendeeEmail: '', attendeeName: '' });
+                        setContactSearch('');
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end space-x-3">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setNewEvent({
+                      summary: '',
+                      description: '',
+                      startDate: '',
+                      startTime: '',
+                      endDate: '',
+                      endTime: '',
+                      location: '',
+                      attendeeEmail: '',
+                      attendeeName: ''
+                    });
+                    setSelectedEventDuration(null);
+                    setContactSearch('');
+                    setContactResults([]);
+                    setShowContactDropdown(false);
+                  }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel

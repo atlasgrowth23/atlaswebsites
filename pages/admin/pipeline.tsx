@@ -4,7 +4,6 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import UnifiedAdminLayout from '@/components/UnifiedAdminLayout';
 import LeadSidebar from '@/components/admin/pipeline/LeadSidebar';
-import UpcomingAppointments from '@/components/admin/calendar/UpcomingAppointments';
 import { getAllCompanies } from '@/lib/supabase-db';
 
 interface Company {
@@ -419,7 +418,7 @@ export default function Pipeline({ companies }: PipelineProps) {
 
         {/* Pipeline Stats */}
         <div className="mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="text-2xl font-bold text-gray-900">{totalLeads}</div>
               <div className="text-gray-600">Total Leads</div>
@@ -436,9 +435,6 @@ export default function Pipeline({ companies }: PipelineProps) {
               </div>
               <div className="text-gray-600">Sales Closed</div>
               <div className="text-sm text-gray-500">Won deals</div>
-            </div>
-            <div className="lg:row-span-2">
-              <UpcomingAppointments maxEvents={3} className="h-full" />
             </div>
           </div>
         </div>

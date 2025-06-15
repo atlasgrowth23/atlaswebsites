@@ -64,7 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // Notes and tags now come from companies table
       const notes_text = company?.notes || '';
-      const recent_note = notes_text ? notes_text.substring(0, 100) : null;
+      const recent_note = notes_text ? notes_text.substring(0, 300) : null;
       
       return {
         id: entry.id,

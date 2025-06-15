@@ -10,7 +10,7 @@ interface AdminUser {
 
 interface UnifiedAdminLayoutProps {
   children: React.ReactNode;
-  currentPage?: 'pipeline' | 'templates' | 'contacts' | 'calendar';
+  currentPage?: 'pipeline' | 'templates' | 'contacts' | 'calendar' | 'tasks';
 }
 
 export default function UnifiedAdminLayout({ children, currentPage }: UnifiedAdminLayoutProps) {
@@ -150,6 +150,20 @@ export default function UnifiedAdminLayout({ children, currentPage }: UnifiedAdm
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   Calendar
+                </Link>
+
+            <Link 
+              href="/admin/tasks"
+              className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-md ${
+                    currentPage === 'tasks' 
+                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2H9m0 0v-6a2 2 0 012-2h2a2 2 0 012 2v6a2 2 0 01-2 2H9" />
+                  </svg>
+                  Tasks
                 </Link>
           </div>
         </nav>
