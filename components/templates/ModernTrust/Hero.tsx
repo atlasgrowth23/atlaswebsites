@@ -18,13 +18,28 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Single hero configuration
-  const heroConfig = {
-    image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
-    title: `Professional HVAC Service in`,
-    subtitle: (company as any).display_city || company.city || 'Your Area',
-    description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
+  // Hero configuration - customizable per company
+  const getHeroConfig = (company: Company) => {
+    // Custom headlines for specific companies
+    if (company.custom_domain === 'accuracyheatair.com' || company.slug === 'accuracy-heat-air-llc') {
+      return {
+        image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
+        title: "If It's Not Right The First Time,",
+        subtitle: "It's Not Accuracy",
+        description: "Licensed HVAC technicians providing reliable heating and cooling solutions with guaranteed accuracy."
+      };
+    }
+    
+    // Default configuration for all other companies
+    return {
+      image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
+      title: `Professional HVAC Service in`,
+      subtitle: (company as any).display_city || company.city || 'Your Area',
+      description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
+    };
   };
+
+  const heroConfig = getHeroConfig(company);
 
   const handleQuoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
