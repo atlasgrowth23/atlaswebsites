@@ -60,11 +60,27 @@ export default async function middleware(request: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
 
-      const { data: company } = await supabase
+      // Try exact match first, then try with/without www
+      let { data: company } = await supabase
         .from('companies')
         .select('slug, template_key')  
         .eq('custom_domain', hostname)
         .single();
+
+      // If no exact match, try alternative (with/without www)
+      if (!company) {
+        const alternativeHostname = hostname?.startsWith('www.') 
+          ? hostname.substring(4) // Remove www.
+          : `www.${hostname}`;    // Add www.
+        
+        const { data: altCompany } = await supabase
+          .from('companies')
+          .select('slug, template_key')  
+          .eq('custom_domain', alternativeHostname)
+          .single();
+        
+        company = altCompany;
+      }
 
       if (company && company.slug && company.template_key) {
         const url = request.nextUrl.clone();
