@@ -559,7 +559,7 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
     if (!lead?.company.email_1) return;
     
     const ownerNameToUse = ownerName || 'there';
-    const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
+    const websiteUrl = `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
     
     const subject = `Website for ${lead.company.name}`;
     const body = `Hello ${ownerNameToUse},
@@ -684,18 +684,41 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     setShowPostCallForm(true);
   };
 
-  const handleTextWebsite = () => {
+  const handleTextWebsite = async () => {
     if (!lead?.company.phone || !lead?.company.slug) return;
     
     const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
-    const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
+    const websiteUrl = `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
     const ownerNameToUse = ownerName || 'there';
     
     const message = `Hi ${ownerNameToUse}, here's the website I mentioned: ${websiteUrl}`;
     const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
     window.open(smsUrl);
     
+    // Save the text activity as a note immediately
+    const textNote = `📱 Texted website to ${lead.company.name} at ${new Date().toLocaleTimeString()}: ${websiteUrl}`;
+    
+    try {
+      await fetch('/api/pipeline/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: lead.id,
+          content: textNote,
+          is_private: false,
+          created_by: currentUser
+        })
+      });
+      
+      console.log('✅ Text activity saved to notes');
+      
+    } catch (error) {
+      console.error('Error saving text note:', error);
+    }
+    
+    // Auto-open connected form since we'll likely connect after texting
     setShowCallOutcomePopup(false);
+    setShowPostCallForm(true);
   };
 
   const handlePostCallSubmit = async () => {
@@ -711,7 +734,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
       // 2. Add notes if provided
       if (postCallForm.notes.trim()) {
-        await fetch('/api/pipeline/notes', {
+        const notesResponse = await fetch('/api/pipeline/notes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -721,6 +744,12 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
             created_by: currentUser
           })
         });
+        
+        if (!notesResponse.ok) {
+          console.error('Failed to save notes:', await notesResponse.text());
+        } else {
+          console.log('✅ Notes saved successfully');
+        }
       }
 
       // 3. Add outcome tags (using existing tag system)
@@ -920,9 +949,31 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                       Connected
                     </button>
                     <button
-                      onClick={() => {
-                        setNewNote(prev => prev + `📞 They called back at ${new Date().toLocaleTimeString()}\n`);
-                        onMoveStage(lead.id, 'connected');
+                      onClick={async () => {
+                        // Save the callback note immediately
+                        const callbackNote = `📞 They called back at ${new Date().toLocaleTimeString()}`;
+                        
+                        try {
+                          await fetch('/api/pipeline/notes', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              lead_id: lead.id,
+                              content: callbackNote,
+                              is_private: false,
+                              created_by: currentUser
+                            })
+                          });
+                          
+                          // Move to connected stage
+                          await onMoveStage(lead.id, 'connected');
+                          
+                          // Refresh notes to show the update
+                          fetchNotes();
+                          
+                        } catch (error) {
+                          console.error('Error saving callback note:', error);
+                        }
                       }}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded-lg text-xs"
                       title="They called you back"
@@ -1043,6 +1094,17 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                       {tag.display_name}
                     </span>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Recent Activity (if no tags, show recent notes) */}
+            {(!lead.tags || lead.tags.length === 0) && (lead.recent_note || lead.notes) && (
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200 mb-4">
+                <h4 className="font-medium text-gray-900 mb-2 text-sm">📝 Recent Activity</h4>
+                <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {lead.recent_note || lead.notes?.substring(0, 300)}
+                  {(lead.notes?.length || 0) > 300 && '...'}
                 </div>
               </div>
             )}
