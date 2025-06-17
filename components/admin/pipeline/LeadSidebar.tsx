@@ -675,7 +675,30 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
 
   const handleNoAnswer = async () => {
     if (!lead) return;
-    await onMoveStage(lead.id, 'contacted');
+    
+    try {
+      console.log(`Moving lead ${lead.id} from ${lead.stage} to contacted`);
+      
+      // Add note for no answer
+      await fetch('/api/pipeline/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead_id: lead.id,
+          content: `📞 Called at ${new Date().toLocaleTimeString()} - No Answer`,
+          is_private: false,
+          created_by: currentUser
+        })
+      });
+      
+      // Move to contacted stage
+      await onMoveStage(lead.id, 'contacted');
+      console.log('✅ Successfully moved to contacted stage');
+      
+    } catch (error) {
+      console.error('❌ Error moving to contacted stage:', error);
+    }
+    
     setShowCallOutcomePopup(false);
   };
 
@@ -691,8 +714,7 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     const websiteUrl = `https://atlasgrowth.ai/t/moderntrust/${lead.company.slug}`;
     const ownerNameToUse = ownerName || 'there';
     
-    const message = `Hi ${ownerNameToUse}, here's the website I mentioned: ${websiteUrl}`;
-    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(websiteUrl)}`;
     window.open(smsUrl);
     
     // Save the text activity as a note immediately
