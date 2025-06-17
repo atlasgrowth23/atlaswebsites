@@ -88,6 +88,17 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   const [isCreatingContact, setIsCreatingContact] = useState(false);
   const hasActiveSession = false; // Sessions functionality removed
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const [showPostCallForm, setShowPostCallForm] = useState(false);
+  const [showCallOutcomePopup, setShowCallOutcomePopup] = useState(false);
+  const [postCallForm, setPostCallForm] = useState({
+    notes: '',
+    websiteSent: false,
+    followUpNeeded: false,
+    meetingScheduled: false,
+    notInterested: false,
+    followUpDate: '',
+    followUpTime: '14:00'
+  });
   const [appointmentForm, setAppointmentForm] = useState({
     date: new Date().toISOString().split('T')[0],
     time: '14:00',
@@ -383,50 +394,23 @@ export default function LeadSidebar({ lead, isOpen, onClose, onUpdateLead, onMov
   };
 
 
-  const handleCall = async () => {
+  const handleCall = () => {
     if (!lead?.company.phone) return;
     
-    try {
-      // Get TextGrid number based on lead location
-      const textGridNumber = getAssignedTextGridNumber(lead.company.state);
-      
-      console.log(`📞 Initiating call to ${lead.company.name} (${lead.company.phone}) from ${textGridNumber}`);
-      
-      // Make call through TextGrid API
-      const response = await fetch('/api/textgrid/make-call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadPhone: lead.company.phone,
-          fromNumber: textGridNumber,
-          leadName: lead.company.name,
-          leadId: lead.id
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        const displayName = lead.owner_name 
-          ? `${lead.company.name} (${lead.owner_name})`
-          : lead.company.name;
-        alert(`📞 Calling ${displayName} at ${lead.company.phone}...`);
-        console.log('Call initiated:', result);
-      } else {
-        alert(`❌ Call failed: ${result.error}`);
-        console.error('Call error:', result);
-      }
-      
-    } catch (error) {
-      console.error('Call error:', error);
-      alert('❌ Failed to make call. Please try again.');
+    // Use tel: link to open phone dialer
+    const phoneNumber = lead.company.phone.replace(/[^\d+]/g, '');
+    const telUrl = `tel:${phoneNumber}`;
+    window.open(telUrl);
+    
+    // Show call outcome popup for new leads
+    if (lead.stage === 'new_lead') {
+      setShowCallOutcomePopup(true);
     }
+    
+    // Log the call attempt
+    console.log(`📞 Opening phone dialer for ${lead.company.name} (${lead.company.phone})`);
   };
 
-  // Helper function to get assigned TextGrid number
-  const getAssignedTextGridNumber = (state: string) => {
-    return '+15012040257'; // Updated TextGrid number
-  };
 
   const handleUnsuccessfulCall = () => {
     if (!lead) return;
@@ -689,6 +673,152 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
     };
   }, [isResizing]);
 
+  const handleNoAnswer = async () => {
+    if (!lead) return;
+    await onMoveStage(lead.id, 'contacted');
+    setShowCallOutcomePopup(false);
+  };
+
+  const handleConnected = () => {
+    setShowCallOutcomePopup(false);
+    setShowPostCallForm(true);
+  };
+
+  const handleTextWebsite = () => {
+    if (!lead?.company.phone || !lead?.company.slug) return;
+    
+    const phoneNumber = lead.company.phone.replace(/[^\d]/g, '');
+    const websiteUrl = `https://yourwebsitedomain.com/t/moderntrust/${lead.company.slug}`;
+    const ownerNameToUse = ownerName || 'there';
+    
+    const message = `Hi ${ownerNameToUse}, here's the website I mentioned: ${websiteUrl}`;
+    const smsUrl = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+    window.open(smsUrl);
+    
+    setShowCallOutcomePopup(false);
+  };
+
+  const handlePostCallSubmit = async () => {
+    if (!lead) return;
+
+    try {
+      // 1. Move to appropriate stage based on outcome
+      let newStage = 'connected';
+      if (postCallForm.notInterested) {
+        newStage = 'not_interested';
+      }
+      await onMoveStage(lead.id, newStage);
+
+      // 2. Add notes if provided
+      if (postCallForm.notes.trim()) {
+        await fetch('/api/pipeline/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lead_id: lead.id,
+            content: `📞 Call completed: ${postCallForm.notes.trim()}`,
+            is_private: false,
+            created_by: currentUser
+          })
+        });
+      }
+
+      // 3. Add outcome tags (using existing tag system)
+      const outcomes = [];
+      if (postCallForm.websiteSent) outcomes.push('website_sent');
+      if (postCallForm.followUpNeeded) outcomes.push('follow_up_needed');
+      if (postCallForm.meetingScheduled) outcomes.push('meeting_scheduled');
+      if (postCallForm.notInterested) outcomes.push('not_interested');
+
+      // Add tags via API
+      if (outcomes.length > 0) {
+        await fetch('/api/pipeline/add-tags', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lead_id: lead.id,
+            tag_types: outcomes
+          })
+        });
+      }
+
+      // 4. Create follow-up task if needed
+      if (postCallForm.followUpNeeded && postCallForm.followUpDate) {
+        const followUpDateTime = `${postCallForm.followUpDate} ${postCallForm.followUpTime}`;
+        await fetch('/api/admin/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: `Follow up with ${lead.company.name}`,
+            description: `Follow-up call scheduled from previous conversation. Contact: ${lead.company.phone}`,
+            assigned_to: currentUser,
+            due_date: followUpDateTime,
+            priority: 'medium',
+            status: 'pending',
+            type: 'follow_up_call',
+            related_company_id: lead.company_id
+          })
+        });
+      }
+
+      // 5. Create Google Calendar event for meeting if scheduled
+      if (postCallForm.meetingScheduled) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(14, 0, 0, 0); // Default 2pm tomorrow
+        
+        const startDateTime = tomorrow.toISOString().slice(0, 19);
+        const endDateTime = new Date(tomorrow.getTime() + 60 * 60 * 1000).toISOString().slice(0, 19); // 1 hour later
+
+        try {
+          await fetch('/api/admin/calendar/pipeline-appointment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              leadData: {
+                companyName: lead.company.name,
+                contactEmail: ownerEmail || lead.company.email_1 || 'noemail@example.com',
+                contactPhone: lead.company.phone,
+                address: `${lead.company.city}, ${lead.company.state}`,
+                notes: `Internal meeting from call outcome. Notes: ${postCallForm.notes}`
+              },
+              appointmentData: {
+                title: `Meeting with ${lead.company.name}`,
+                startTime: startDateTime,
+                endTime: endDateTime,
+                timeZone: 'America/Chicago'
+              }
+            })
+          });
+          console.log('✅ Google Calendar event created for meeting');
+        } catch (calendarError) {
+          console.warn('⚠️ Google Calendar event creation failed:', calendarError);
+        }
+      }
+
+      // 6. Reset form and close
+      setPostCallForm({
+        notes: '',
+        websiteSent: false,
+        followUpNeeded: false,
+        meetingScheduled: false,
+        notInterested: false,
+        followUpDate: '',
+        followUpTime: '14:00'
+      });
+      setShowPostCallForm(false);
+
+      // 6. Refresh data
+      fetchNotes();
+      
+      alert('✅ Call outcome saved successfully!');
+
+    } catch (error) {
+      console.error('Error saving call outcome:', error);
+      alert('❌ Failed to save call outcome. Please try again.');
+    }
+  };
+
   if (!isOpen || !lead) return null;
 
   return (
@@ -766,31 +896,44 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         <div className="flex flex-col gap-3">
           {/* Top Row: Core Actions */}
           <div className="flex items-center gap-2">
-            {/* Call Icon - Always there */}
+            {/* Call Icon - Smart Actions */}
             {lead.company.phone && (
-              <button
-                onClick={handleCall}
-                className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors"
-                title={`Call ${lead.company.phone}`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-              </button>
+              <div className="flex gap-1">
+                <button
+                  onClick={handleCall}
+                  className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg transition-colors"
+                  title={`Call ${lead.company.phone}`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                </button>
+                
+                {/* Buttons for contacted stage */}
+                {lead.stage === 'contacted' && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => setShowPostCallForm(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-lg text-xs"
+                      title="Log call outcome"
+                    >
+                      Connected
+                    </button>
+                    <button
+                      onClick={() => {
+                        setNewNote(prev => prev + `📞 They called back at ${new Date().toLocaleTimeString()}\n`);
+                        onMoveStage(lead.id, 'connected');
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-2 rounded-lg text-xs"
+                      title="They called you back"
+                    >
+                      Called Back
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
             
-            {/* Unsuccessful Call Button - Only during active session */}
-            {hasActiveSession && (
-              <button
-                onClick={handleUnsuccessfulCall}
-                className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors"
-                title="Mark as unsuccessful call"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18 17M5.636 5.636L7 7m0 0a9 9 0 1012.728 12.728M7 7l5 5-5-5z" />
-                </svg>
-              </button>
-            )}
 
             {/* Preview Website Button - Always there */}
             {lead.company.slug && (
@@ -881,6 +1024,29 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="p-4 space-y-4">
+
+            {/* Call Outcomes Tags */}
+            {(lead.tags && lead.tags.length > 0) && (
+              <div className="bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border border-green-200 mb-4">
+                <h4 className="font-medium text-gray-900 mb-2 text-sm">📞 Call Outcomes</h4>
+                <div className="flex flex-wrap gap-2">
+                  {lead.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                      style={{ 
+                        backgroundColor: tag.color + '20', 
+                        color: tag.color,
+                        border: `1px solid ${tag.color}40`
+                      }}
+                    >
+                      {tag.display_name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Business Info Cards */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div className="bg-gray-50 p-3 rounded-lg">
@@ -1588,6 +1754,206 @@ ${lead.company.phone ? `\nCall/Text: ${lead.company.phone}` : ''}`;
                     {isCreatingContact ? 'Creating...' : '📱 Create Google Contact'}
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Post-Call Form */}
+      {showPostCallForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">📞 Call Outcome</h2>
+                <button
+                  onClick={() => setShowPostCallForm(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium text-gray-900 mb-2">{lead.company.name}</h3>
+                  <p className="text-sm text-gray-600">
+                    Call completed - select outcomes and add notes
+                  </p>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Call Notes
+                  </label>
+                  <textarea
+                    value={postCallForm.notes}
+                    onChange={(e) => setPostCallForm({...postCallForm, notes: e.target.value})}
+                    placeholder="What happened on the call?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+
+                {/* Outcomes - Multiple Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Call Outcomes (select all that apply)
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={postCallForm.websiteSent}
+                        onChange={(e) => setPostCallForm({...postCallForm, websiteSent: e.target.checked})}
+                        className="mr-2"
+                      />
+                      🌐 Website Sent
+                    </label>
+                    <div>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={postCallForm.followUpNeeded}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            const tomorrow = new Date();
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            const tomorrowString = tomorrow.toISOString().split('T')[0];
+                            
+                            setPostCallForm({
+                              ...postCallForm, 
+                              followUpNeeded: isChecked,
+                              followUpDate: isChecked ? tomorrowString : ''
+                            });
+                          }}
+                          className="mr-2"
+                        />
+                        📅 Follow-up Needed
+                      </label>
+                      
+                      {/* Follow-up scheduling */}
+                      {postCallForm.followUpNeeded && (
+                        <div className="ml-6 mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
+                              <input
+                                type="date"
+                                value={postCallForm.followUpDate}
+                                onChange={(e) => setPostCallForm({...postCallForm, followUpDate: e.target.value})}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1">Time</label>
+                              <input
+                                type="time"
+                                value={postCallForm.followUpTime}
+                                onChange={(e) => setPostCallForm({...postCallForm, followUpTime: e.target.value})}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={postCallForm.meetingScheduled}
+                        onChange={(e) => setPostCallForm({...postCallForm, meetingScheduled: e.target.checked})}
+                        className="mr-2"
+                      />
+                      🤝 Meeting Scheduled
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={postCallForm.notInterested}
+                        onChange={(e) => setPostCallForm({...postCallForm, notInterested: e.target.checked})}
+                        className="mr-2"
+                      />
+                      ❌ Not Interested
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPostCallForm(false);
+                      setPostCallForm({
+                        notes: '',
+                        websiteSent: false,
+                        followUpNeeded: false,
+                        meetingScheduled: false,
+                        notInterested: false,
+                        followUpDate: '',
+                        followUpTime: '14:00'
+                      });
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePostCallSubmit}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    💾 Save Call Outcome
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Call Outcome Popup */}
+      {showCallOutcomePopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">📞 Call Outcome</h2>
+                <button
+                  onClick={() => setShowCallOutcomePopup(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm text-gray-600 mb-4">
+                  How did the call with <strong>{lead.company.name}</strong> go?
+                </p>
+
+                <button
+                  onClick={handleNoAnswer}
+                  className="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  ❌ No Answer
+                </button>
+
+                <button
+                  onClick={handleConnected}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  ✅ Connected
+                </button>
+
+                <button
+                  onClick={handleTextWebsite}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  📱 Text Website
+                </button>
               </div>
             </div>
           </div>

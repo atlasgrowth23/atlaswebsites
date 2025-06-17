@@ -39,8 +39,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Get company IDs
+    // Get company IDs and lead IDs
     const companyIds = pipelineEntries.map(entry => entry.company_id);
+    const leadIds = pipelineEntries.map(entry => entry.id);
     
     const { data: companies, error: companiesError } = await supabaseAdmin
       .from('companies')
@@ -52,15 +53,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Failed to fetch companies' });
     }
 
+    // Get tags for all leads
+    const { data: leadTags, error: tagsError } = await supabaseAdmin
+      .from('lead_tags')
+      .select(`
+        lead_id,
+        tag_type,
+        tag_definitions (
+          display_name,
+          color
+        )
+      `)
+      .in('lead_id', leadIds);
+
+    if (tagsError) {
+      console.error('Tags error:', tagsError);
+      // Continue without tags rather than failing
+    }
+
     // Create company lookup map
     const companyMap = new Map();
     companies?.forEach(company => {
       companyMap.set(company.id, company);
     });
 
+    // Create tags lookup map
+    const tagsMap = new Map();
+    leadTags?.forEach(tagEntry => {
+      if (!tagsMap.has(tagEntry.lead_id)) {
+        tagsMap.set(tagEntry.lead_id, []);
+      }
+      tagsMap.get(tagEntry.lead_id).push({
+        tag_type: tagEntry.tag_type,
+        display_name: tagEntry.tag_definitions?.display_name || tagEntry.tag_type,
+        color: tagEntry.tag_definitions?.color || '#6B7280'
+      });
+    });
+
     // Transform data with cleaned structure
     const leads = pipelineEntries.map(entry => {
       const company = companyMap.get(entry.company_id);
+      const tags = tagsMap.get(entry.id) || [];
       
       // Notes and tags now come from companies table
       const notes_text = company?.notes || '';
@@ -76,8 +109,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         notes_json: [], // Empty for compatibility
         notes_count: notes_text ? 1 : 0, // Simple count
         recent_note, // Preview of notes
-        tags: [], // Empty for compatibility
-        tags_count: 0, // No tags anymore
+        tags: tags, // Actual tags from lead_tags table
+        tags_count: tags.length, // Actual tag count
         created_at: entry.created_at,
         updated_at: entry.updated_at,
         pipeline_type: entry.pipeline_type,

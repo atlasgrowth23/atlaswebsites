@@ -17,33 +17,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const authToken = process.env.TEXTGRID_AUTH_TOKEN;
     const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
     
-    const textGridResponse = await fetch(`https://api.textgrid.com/2010-04-01/Accounts/${accountSid}/Calls.json`, {
+    // Clean phone numbers (remove spaces and formatting)
+    const cleanLeadPhone = leadPhone.replace(/[\s\-\(\)]/g, '');
+    const cleanFromNumber = fromNumber.replace(/[\s\-\(\)]/g, '');
+    
+    console.log(`🔍 Making call with Account SID: ${accountSid}, From: ${cleanFromNumber}, To: ${cleanLeadPhone}`);
+    console.log(`📡 URL: https://api.textgrid.com/v1/accounts/${accountSid}/calls`);
+    
+    const textGridResponse = await fetch(`https://api.textgrid.com/v1/accounts/${accountSid}/calls`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        From: fromNumber,
-        To: leadPhone,
-        Url: `https://atlasgrowth.ai/api/textgrid/voice-twiml`,
-        StatusCallback: `https://atlasgrowth.ai/api/textgrid/status-callback`,
+        From: cleanFromNumber,
+        To: cleanLeadPhone,
+        Url: `https://ecff9f9a-4730-4865-9bc1-4171f6a31017-00-27datk18aao4y.picard.replit.dev/api/textgrid/voice-twiml`,
+        StatusCallback: `https://ecff9f9a-4730-4865-9bc1-4171f6a31017-00-27datk18aao4y.picard.replit.dev/api/textgrid/status-callback`,
         StatusCallbackMethod: 'POST'
       })
     });
 
+    console.log(`📊 Response status: ${textGridResponse.status}`);
+    
     if (!textGridResponse.ok) {
       const errorData = await textGridResponse.text();
       console.error('TextGrid API error:', errorData);
+      console.error('Response headers:', Object.fromEntries(textGridResponse.headers.entries()));
       return res.status(500).json({ error: 'Failed to initiate call', details: errorData });
     }
 
-    const callData = await textGridResponse.json();
+    const callData = await textGridResponse.text();
+    console.log('📞 TextGrid response:', callData);
     
     // Log call attempt in database
     try {
       // TODO: Add database logging here
-      console.log(`📞 Call initiated - Lead: ${leadName} (${leadPhone}), From: ${fromNumber}, Call SID: ${callData.sid}`);
+      console.log(`📞 Call initiated - Lead: ${leadName} (${leadPhone}), From: ${cleanFromNumber}`);
     } catch (dbError) {
       console.error('Database logging error:', dbError);
       // Don't fail the API call if logging fails
@@ -51,8 +62,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({
       success: true,
-      callSid: callData.sid,
-      status: callData.status,
+      response: callData,
       message: `Call initiated to ${leadName} (${leadPhone})`
     });
 

@@ -46,13 +46,12 @@ interface PipelineProps {
 }
 
 const STAGES = [
-  { key: 'new_lead', title: 'New Lead', color: 'bg-blue-500', textColor: 'text-white', description: 'Ready to contact' },
-  { key: 'live_call', title: 'Live Call', color: 'bg-green-500', textColor: 'text-white', description: 'Talked to them' },
-  { key: 'voicemail', title: 'Voicemail', color: 'bg-indigo-500', textColor: 'text-white', description: 'Left voicemail' },
-  { key: 'site_viewed', title: 'Site Viewed', color: 'bg-purple-500', textColor: 'text-white', description: 'Visited website' },
-  { key: 'appointment', title: 'Appointment', color: 'bg-orange-500', textColor: 'text-white', description: 'Meeting set' },
+  { key: 'new_lead', title: 'New Lead', color: 'bg-blue-500', textColor: 'text-white', description: 'Fresh leads ready for contact' },
+  { key: 'contacted', title: 'Contacted', color: 'bg-yellow-500', textColor: 'text-white', description: 'Call attempted' },
+  { key: 'connected', title: 'Connected', color: 'bg-green-500', textColor: 'text-white', description: 'Successfully spoke with them' },
+  { key: 'follow_up', title: 'Follow-up', color: 'bg-orange-500', textColor: 'text-white', description: 'Need to contact again' },
   { key: 'sale_made', title: 'Sale Made', color: 'bg-emerald-600', textColor: 'text-white', description: 'Deal won' },
-  { key: 'unsuccessful', title: 'Unsuccessful', color: 'bg-gray-500', textColor: 'text-white', description: 'Not interested' }
+  { key: 'not_interested', title: 'Not Interested', color: 'bg-gray-500', textColor: 'text-white', description: 'Dead lead' }
 ];
 
 export default function Pipeline({ companies }: PipelineProps) {
