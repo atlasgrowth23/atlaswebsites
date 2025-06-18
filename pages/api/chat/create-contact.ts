@@ -18,7 +18,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       conversationId,
       name,
       email,
-      phone
+      phone,
+      details
     } = req.body;
 
     // Validate required fields
@@ -109,6 +110,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.error('Error linking contact to conversation:', linkError);
         // Don't fail the request for this, just log it
       }
+    }
+
+    // If details are provided, add them as a chat message
+    if (details && details.trim() && conversationId) {
+      await supabase
+        .from('chat_messages')
+        .insert({
+          conversation_id: conversationId,
+          company_id: companyId,
+          visitor_id: visitorId,
+          message: `Additional details: ${details.trim()}`,
+          is_from_visitor: true,
+          message_type: 'text'
+        });
     }
 
     res.status(201).json({

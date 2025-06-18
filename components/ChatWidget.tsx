@@ -13,6 +13,14 @@ interface ContactForm {
   name: string;
   email: string;
   phone: string;
+  details: string;
+  consent: boolean;
+}
+
+interface ChatState {
+  step: 'welcome' | 'service_selected' | 'collecting_contact' | 'completed';
+  selectedService: string | null;
+  showContactForm: boolean;
 }
 
 interface ChatWidgetProps {
@@ -35,19 +43,24 @@ export default function ChatWidget({
   const [inputMessage, setInputMessage] = useState('');
   const [visitorId] = useState(() => uuidv4());
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [showContactForm, setShowContactForm] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [contactForm, setContactForm] = useState<ContactForm>({
     name: '',
     email: '',
-    phone: ''
+    phone: '',
+    details: '',
+    consent: false
+  });
+  const [chatState, setChatState] = useState<ChatState>({
+    step: 'welcome',
+    selectedService: null,
+    showContactForm: false
   });
   const [mounted, setMounted] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -61,24 +74,18 @@ export default function ChatWidget({
     }
   }, [isOpen]);
 
-  // Focus name input when contact form shows
-  useEffect(() => {
-    if (showContactForm) {
-      setTimeout(() => nameInputRef.current?.focus(), 100);
-    }
-  }, [showContactForm]);
 
   // Set mounted state to avoid hydration issues
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Initialize chat with welcome message
+  // Initialize chat with welcome message and buttons
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeMessage: Message = {
         id: uuidv4(),
-        text: `Hi! Welcome to ${companyName}. How can we help you today?`,
+        text: `Hi! Welcome to ${companyName}. Send us a message or choose from the options below:`,
         isFromVisitor: false,
         timestamp: new Date(),
         type: 'text'
@@ -87,32 +94,53 @@ export default function ChatWidget({
     }
   }, [isOpen, companyName, messages.length]);
 
-  const getSimpleResponse = (message: string): string => {
-    const lowerMessage = message.toLowerCase();
-    
-    // Quote/estimate requests
-    if (lowerMessage.includes('quote') || lowerMessage.includes('estimate') || lowerMessage.includes('price') || lowerMessage.includes('cost')) {
-      return "Great! We'd love to help with a quote. Share your details below and we'll get back to you quickly!";
+  const handleServiceSelection = (service: string) => {
+    const serviceResponses = {
+      'Repair': "Got it - repair request! Would you like to share any details, or tap 'Contact Me' and someone will reach out to you shortly.",
+      'Install': "Perfect - installation inquiry! Would you like to share any details, or tap 'Contact Me' and someone will reach out to you shortly.", 
+      'Tune Up': "Great - maintenance service! Would you like to share any details, or tap 'Contact Me' and someone will reach out to you shortly.",
+      'Emergency': "Emergency service needed! Would you like to share any details, or tap 'Contact Me' and we'll get someone to you ASAP."
+    };
+
+    const serviceMessage: Message = {
+      id: uuidv4(),
+      text: service,
+      isFromVisitor: true,
+      timestamp: new Date(),
+      type: 'text'
+    };
+
+    const botResponse: Message = {
+      id: uuidv4(),
+      text: serviceResponses[service as keyof typeof serviceResponses],
+      isFromVisitor: false,
+      timestamp: new Date(),
+      type: 'text'
+    };
+
+    setMessages(prev => [...prev, serviceMessage, botResponse]);
+    setChatState({
+      step: 'service_selected',
+      selectedService: service,
+      showContactForm: true
+    });
+  };
+
+
+  const getContextualResponse = (message: string, currentState: ChatState): { response: string; newState: ChatState } => {
+    // If service is selected and user provides details
+    if (currentState.step === 'service_selected') {
+      return {
+        response: "Thanks for the details! Let me get your contact info so we can help you.",
+        newState: { ...currentState, showContactForm: true }
+      };
     }
     
-    // Service requests
-    if (lowerMessage.includes('service') || lowerMessage.includes('repair') || lowerMessage.includes('fix') || lowerMessage.includes('hvac') || lowerMessage.includes('heating') || lowerMessage.includes('cooling')) {
-      return "We can definitely help with that! Please share your contact information and we'll reach out to schedule a service call.";
-    }
-    
-    // Emergency requests
-    if (lowerMessage.includes('emergency') || lowerMessage.includes('urgent') || lowerMessage.includes('broken') || lowerMessage.includes('not working')) {
-      return "We understand this is urgent! Please provide your contact details and we'll get someone to help you right away.";
-    }
-    
-    // Default responses
-    const defaultResponses = [
-      "Thanks for reaching out! We're here to help with all your HVAC needs.",
-      "I'd be happy to assist you! Please share your contact info so we can follow up.",
-      "Great question! Let me connect you with our team who can provide detailed information.",
-    ];
-    
-    return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+    // Default response for any other messages
+    return {
+      response: "Thanks for reaching out! Feel free to use the buttons above or tell me how I can help you.",
+      newState: currentState
+    };
   };
 
   const sendMessage = async () => {
@@ -145,22 +173,23 @@ export default function ChatWidget({
         })
       });
 
-      // Simple AI response
+      // Get contextual response based on current state
+      const { response, newState } = getContextualResponse(userMessage.text, chatState);
+      
+      // Update chat state
+      setChatState(newState);
+
+      // AI response with delay
       setTimeout(() => {
         const aiResponse: Message = {
           id: uuidv4(),
-          text: getSimpleResponse(userMessage.text),
+          text: response,
           isFromVisitor: false,
           timestamp: new Date(),
           type: 'text'
         };
         setMessages(prev => [...prev, aiResponse]);
         setIsWaitingForResponse(false);
-        
-        // Show contact form after 2-3 messages
-        if (messages.length >= 4) {
-          setShowContactForm(true);
-        }
       }, 1000 + Math.random() * 1000);
 
     } catch (error) {
@@ -191,25 +220,26 @@ export default function ChatWidget({
           conversationId,
           name: contactForm.name.trim(),
           email: contactForm.email.trim() || undefined,
-          phone: contactForm.phone.trim() || undefined
+          phone: contactForm.phone.trim() || undefined,
+          details: contactForm.details.trim() || undefined
         })
       });
 
       if (response.ok) {
-        setShowContactForm(false);
+        // Hide contact form and show thank you message
+        setChatState(prev => ({ ...prev, showContactForm: false, step: 'completed' }));
         
-        // Thank you message
-        const thankYou: Message = {
+        const thankYouMessage: Message = {
           id: uuidv4(),
-          text: `Thanks ${contactForm.name}! We have your contact info and will follow up with you soon. Feel free to ask any other questions!`,
+          text: `Thanks ${contactForm.name}! We'll contact you at your preferred method shortly.`,
           isFromVisitor: false,
           timestamp: new Date(),
           type: 'system'
         };
-        setMessages(prev => [...prev, thankYou]);
+        setMessages(prev => [...prev, thankYouMessage]);
         
         // Reset form
-        setContactForm({ name: '', email: '', phone: '' });
+        setContactForm({ name: '', email: '', phone: '', details: '', consent: false });
       }
     } catch (error) {
       console.error('Error creating contact:', error);
@@ -350,51 +380,88 @@ export default function ChatWidget({
               </div>
             )}
 
-            {/* Contact Form */}
-            {showContactForm && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-                <div className="text-center">
-                  <h4 className="font-semibold text-gray-800 mb-1">Get a Quick Response</h4>
-                  <p className="text-sm text-gray-600">Share your details for faster service</p>
+            {/* Service Buttons - Show only if no service selected and first message */}
+            {chatState.step === 'welcome' && messages.length === 1 && (
+              <div className="p-4 space-y-3">
+                <p className="text-center text-sm text-gray-600 font-medium">What can we help you with?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {['Repair', 'Install', 'Tune Up', 'Emergency'].map((service) => (
+                    <button
+                      key={service}
+                      onClick={() => handleServiceSelection(service)}
+                      className="px-4 py-3 bg-white border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl text-center font-semibold text-gray-800 transition-all duration-200 hover:shadow-md active:scale-95"
+                    >
+                      {service}
+                    </button>
+                  ))}
                 </div>
-                <div className="space-y-2">
+              </div>
+            )}
+
+
+            {/* Contact Form */}
+            {chatState.showContactForm && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4 mx-2">
+                <div className="text-center">
+                  <h4 className="font-semibold text-gray-800 mb-1">Contact Information</h4>
+                  <p className="text-sm text-gray-600">We'll reach out to you shortly</p>
+                </div>
+                
+                <div className="space-y-3">
                   <input
-                    ref={nameInputRef}
                     type="text"
-                    placeholder="Your name"
+                    placeholder="Your name *"
                     value={contactForm.name}
                     onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <input
-                    type="email"
-                    placeholder="Your email"
-                    value={contactForm.email}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Your phone number"
-                    value={contactForm.phone}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setShowContactForm(false)}
-                      className="flex-1 px-3 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                    >
-                      Skip
-                    </button>
-                    <button
-                      onClick={handleContactSubmit}
-                      disabled={!contactForm.name.trim()}
-                      className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      Submit
-                    </button>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="tel"
+                      placeholder="Phone number"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email address"
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
+                  
+                  <textarea
+                    placeholder="Additional details about your request (optional)"
+                    value={contactForm.details}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, details: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    rows={3}
+                  />
+                  
+                  <label className="flex items-start space-x-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={contactForm.consent}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, consent: e.target.checked }))}
+                      className="mt-0.5 text-blue-600"
+                    />
+                    <span>I consent to receive messages about my service request</span>
+                  </label>
+                  
+                  <button
+                    onClick={handleContactSubmit}
+                    disabled={
+                      !contactForm.name.trim() || 
+                      (!contactForm.phone.trim() && !contactForm.email.trim()) ||
+                      !contactForm.consent
+                    }
+                    className="w-full px-4 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Submit Request
+                  </button>
                 </div>
               </div>
             )}
@@ -402,30 +469,39 @@ export default function ChatWidget({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="p-3 sm:p-4 border-t border-gray-100 bg-white">
-            <div className="flex space-x-2 sm:space-x-3">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="flex-1 px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                disabled={isWaitingForResponse}
-              />
-              <button
-                onClick={sendMessage}
-                disabled={!inputMessage.trim() || isWaitingForResponse}
-                className="px-3 py-2 sm:px-4 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[2.5rem] sm:min-w-[3rem]"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
+          {/* Input Area - Only show after service selected */}
+          {chatState.step !== 'welcome' && (
+            <div className="p-3 sm:p-4 border-t border-gray-100 bg-white">
+              <div className="flex space-x-2 sm:space-x-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message..."
+                  className="flex-1 px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  disabled={isWaitingForResponse}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={!inputMessage.trim() || isWaitingForResponse}
+                  className="px-3 py-2 sm:px-4 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center min-w-[2.5rem] sm:min-w-[3rem]"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Welcome State Message */}
+          {chatState.step === 'welcome' && (
+            <div className="p-4 border-t border-gray-100 bg-gray-50 text-center">
+              <p className="text-sm text-gray-600">👆 Please select an option above to get started</p>
+            </div>
+          )}
         </div>
       )}
     </>
