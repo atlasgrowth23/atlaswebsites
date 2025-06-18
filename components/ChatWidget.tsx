@@ -10,10 +10,10 @@ interface Message {
 }
 
 interface ContactForm {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
-  details: string;
   consent: boolean;
 }
 
@@ -46,10 +46,10 @@ export default function ChatWidget({
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [contactForm, setContactForm] = useState<ContactForm>({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
-    details: '',
     consent: false
   });
   const [chatState, setChatState] = useState<ChatState>({
@@ -80,12 +80,51 @@ export default function ChatWidget({
     setMounted(true);
   }, []);
 
-  // Initialize chat with welcome message and buttons
+  // Helper function to get stored contact ID
+  const getStoredContactId = () => {
+    try {
+      const stored = localStorage.getItem(`hvac_contact_${companyId}`);
+      if (stored) {
+        const contact = JSON.parse(stored);
+        return contact.contactId;
+      }
+    } catch (error) {
+      console.error('Error getting stored contact:', error);
+    }
+    return null;
+  };
+
+  // Helper function to get stored contact info
+  const getStoredContact = () => {
+    try {
+      const stored = localStorage.getItem(`hvac_contact_${companyId}`);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Error getting stored contact:', error);
+    }
+    return null;
+  };
+
+  // Initialize chat with welcome message (return visitor detection)
   useEffect(() => {
     if (isOpen && messages.length === 0) {
+      const storedContact = getStoredContact();
+      
+      let welcomeText;
+      if (storedContact && storedContact.name) {
+        // Return visitor
+        const firstName = storedContact.name.split(' ')[0];
+        welcomeText = `Hey ${firstName}! Good to see you again. What can we help you with today?`;
+      } else {
+        // New visitor
+        welcomeText = `Hi! Welcome to ${companyName}. Send us a message or choose from the options below:`;
+      }
+
       const welcomeMessage: Message = {
         id: uuidv4(),
-        text: `Hi! Welcome to ${companyName}. Send us a message or choose from the options below:`,
+        text: welcomeText,
         isFromVisitor: false,
         timestamp: new Date(),
         type: 'text'
@@ -94,14 +133,7 @@ export default function ChatWidget({
     }
   }, [isOpen, companyName, messages.length]);
 
-  const handleServiceSelection = (service: string) => {
-    const serviceResponses = {
-      'Repair': "Got it - repair request! Would you like to share any details, or tap 'Contact Me' and someone will reach out to you shortly.",
-      'Install': "Perfect - installation inquiry! Would you like to share any details, or tap 'Contact Me' and someone will reach out to you shortly.", 
-      'Tune Up': "Great - maintenance service! Would you like to share any details, or tap 'Contact Me' and someone will reach out to you shortly.",
-      'Emergency': "Emergency service needed! Would you like to share any details, or tap 'Contact Me' and we'll get someone to you ASAP."
-    };
-
+  const handleServiceSelection = async (service: string) => {
     const serviceMessage: Message = {
       id: uuidv4(),
       text: service,
@@ -110,20 +142,40 @@ export default function ChatWidget({
       type: 'text'
     };
 
-    const botResponse: Message = {
-      id: uuidv4(),
-      text: serviceResponses[service as keyof typeof serviceResponses],
-      isFromVisitor: false,
-      timestamp: new Date(),
-      type: 'text'
-    };
+    setMessages(prev => [...prev, serviceMessage]);
 
-    setMessages(prev => [...prev, serviceMessage, botResponse]);
+    // Check if return visitor - skip form if we have their info
+    const storedContact = getStoredContact();
+    const skipForm = storedContact && storedContact.contactId;
+
     setChatState({
       step: 'service_selected',
       selectedService: service,
-      showContactForm: true
+      showContactForm: !skipForm
     });
+
+    try {
+      // Send service selection as a message to track the request
+      const response = await fetch('/api/hvac/send-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: service,
+          companyId,
+          visitorId,
+          conversationId,
+          serviceType: service,
+          isFromVisitor: true
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setConversationId(data.conversationId);
+      }
+    } catch (error) {
+      console.error('Error sending service selection:', error);
+    }
   };
 
 
@@ -160,8 +212,8 @@ export default function ChatWidget({
     setShowSuggestions(false);
 
     try {
-      // Send to API
-      await fetch('/api/chat/send-message', {
+      // Send to HVAC API
+      const messageResponse = await fetch('/api/hvac/send-message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -169,9 +221,16 @@ export default function ChatWidget({
           companyId,
           visitorId,
           conversationId,
-          companyName
+          contactId: getStoredContactId(),
+          serviceType: chatState.selectedService,
+          isFromVisitor: true
         })
       });
+
+      if (messageResponse.ok) {
+        const data = await messageResponse.json();
+        setConversationId(data.conversationId);
+      }
 
       // Get contextual response based on current state
       const { response, newState } = getContextualResponse(userMessage.text, chatState);
@@ -207,31 +266,44 @@ export default function ChatWidget({
   };
 
   const handleContactSubmit = async () => {
-    if (!contactForm.name.trim()) return;
+    if (!contactForm.firstName.trim() || !contactForm.lastName.trim()) return;
 
     try {
-      // Create contact record
-      const response = await fetch('/api/chat/create-contact', {
+      // Create HVAC contact record
+      const response = await fetch('/api/hvac/create-contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           companyId,
           visitorId,
           conversationId,
-          name: contactForm.name.trim(),
+          firstName: contactForm.firstName.trim(),
+          lastName: contactForm.lastName.trim(),
           email: contactForm.email.trim() || undefined,
           phone: contactForm.phone.trim() || undefined,
-          details: contactForm.details.trim() || undefined
+          serviceType: chatState.selectedService
         })
       });
 
       if (response.ok) {
+        const data = await response.json();
+        
+        // Store contact info in localStorage for return visitor detection
+        const contactInfo = {
+          contactId: data.contact.id,
+          name: `${contactForm.firstName.trim()} ${contactForm.lastName.trim()}`,
+          phone: contactForm.phone.trim() || null,
+          email: contactForm.email.trim() || null,
+          lastVisit: Date.now()
+        };
+        localStorage.setItem(`hvac_contact_${companyId}`, JSON.stringify(contactInfo));
+
         // Hide contact form and show thank you message
         setChatState(prev => ({ ...prev, showContactForm: false, step: 'completed' }));
         
         const thankYouMessage: Message = {
           id: uuidv4(),
-          text: `Thanks ${contactForm.name}! We'll contact you at your preferred method shortly.`,
+          text: `Thanks ${contactForm.firstName}! We'll contact you at your preferred method shortly.`,
           isFromVisitor: false,
           timestamp: new Date(),
           type: 'system'
@@ -239,7 +311,7 @@ export default function ChatWidget({
         setMessages(prev => [...prev, thankYouMessage]);
         
         // Reset form
-        setContactForm({ name: '', email: '', phone: '', details: '', consent: false });
+        setContactForm({ firstName: '', lastName: '', email: '', phone: '', consent: false });
       }
     } catch (error) {
       console.error('Error creating contact:', error);
@@ -403,18 +475,29 @@ export default function ChatWidget({
             {chatState.showContactForm && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-4 mx-2">
                 <div className="text-center">
-                  <h4 className="font-semibold text-gray-800 mb-1">Contact Information</h4>
-                  <p className="text-sm text-gray-600">We'll reach out to you shortly</p>
+                  <h4 className="font-semibold text-gray-800 mb-1">
+                    {chatState.selectedService} Request
+                  </h4>
+                  <p className="text-sm text-gray-600">Fill out the form below. If you'd like to include more details or have a question for us, please <strong>send a message below</strong>.</p>
                 </div>
                 
                 <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Your name *"
-                    value={contactForm.name}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="First name *"
+                      value={contactForm.firstName}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, firstName: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Last name *"
+                      value={contactForm.lastName}
+                      onChange={(e) => setContactForm(prev => ({ ...prev, lastName: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input
@@ -433,14 +516,6 @@ export default function ChatWidget({
                     />
                   </div>
                   
-                  <textarea
-                    placeholder="Additional details about your request (optional)"
-                    value={contactForm.details}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, details: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={3}
-                  />
-                  
                   <label className="flex items-start space-x-2 text-xs text-gray-600">
                     <input
                       type="checkbox"
@@ -448,13 +523,14 @@ export default function ChatWidget({
                       onChange={(e) => setContactForm(prev => ({ ...prev, consent: e.target.checked }))}
                       className="mt-0.5 text-blue-600"
                     />
-                    <span>I consent to receive messages about my service request</span>
+                    <span>I agree to receive calls, texts, and emails from {companyName} regarding my service request. Message and data rates may apply.</span>
                   </label>
                   
                   <button
                     onClick={handleContactSubmit}
                     disabled={
-                      !contactForm.name.trim() || 
+                      !contactForm.firstName.trim() || 
+                      !contactForm.lastName.trim() ||
                       (!contactForm.phone.trim() && !contactForm.email.trim()) ||
                       !contactForm.consent
                     }

@@ -18,8 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       conversationId,
       name,
       email,
-      phone,
-      details
+      phone
     } = req.body;
 
     // Validate required fields
@@ -112,19 +111,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // If details are provided, add them as a chat message
-    if (details && details.trim() && conversationId) {
-      await supabase
-        .from('chat_messages')
-        .insert({
-          conversation_id: conversationId,
-          company_id: companyId,
-          visitor_id: visitorId,
-          message: `Additional details: ${details.trim()}`,
-          is_from_visitor: true,
-          message_type: 'text'
-        });
-    }
 
     res.status(201).json({
       success: true,
