@@ -29,6 +29,7 @@ interface ChatWidgetProps {
   companyHours?: any;
   companyLocation?: { latitude?: number; longitude?: number };
   companyLogo?: string;
+  isPreview?: boolean;
 }
 
 export default function ChatWidget({ 
@@ -36,7 +37,8 @@ export default function ChatWidget({
   companyName, 
   companyHours, 
   companyLocation,
-  companyLogo 
+  companyLogo,
+  isPreview = false
 }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);

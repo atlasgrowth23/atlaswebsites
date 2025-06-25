@@ -47,6 +47,7 @@ export default async function middleware(request: NextRequest) {
       !hostname || 
       hostname.includes('localhost') ||
       hostname.includes('vercel.app') ||
+      hostname.includes('replit.dev') ||
       hostname === 'atlasgrowth.ai') {
     return NextResponse.next();
   }

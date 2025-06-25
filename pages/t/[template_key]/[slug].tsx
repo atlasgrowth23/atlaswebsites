@@ -65,7 +65,7 @@ export const getServerSideProps: GetServerSideProps = async ({ params }) => {
     }
     
     // Check if the template exists
-    if (!['moderntrust', 'boldenergy', 'naturalearthpro'].includes(template_key as string)) {
+    if (!['moderntrust', 'naturalearthpro'].includes(template_key as string)) {
       return { notFound: true };
     }
     

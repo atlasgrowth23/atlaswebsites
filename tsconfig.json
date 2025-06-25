@@ -16,7 +16,13 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@/products/*": ["src/products/*"],
+      "@/admin/*": ["src/admin/*"],
+      "@/shared/*": ["src/products/shared/*"],
+      "@/atlashvac/*": ["src/products/atlashvac/*"],
+      "@/websites/*": ["src/products/websites/*"],
+      "@/reviews/*": ["src/products/reviews/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],

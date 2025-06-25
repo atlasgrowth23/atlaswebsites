@@ -8,6 +8,52 @@ interface HeroProps {
 }
 
 const Hero: React.FC<HeroProps> = ({ company }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    try {
+      const response = await fetch('/api/contact-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          companyName: company.name,
+          companySlug: company.slug
+        }),
+      });
+
+      if (response.ok) {
+        setSubmitStatus('success');
+        setFormData({ name: '', phone: '', email: '', message: '' });
+      } else {
+        setSubmitStatus('error');
+      }
+    } catch (error) {
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Hero configuration - customizable per company
   const getHeroConfig = (company: Company) => {
@@ -105,6 +151,16 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
                   Start Chat - Get Quote
                 </div>
               </button>
+
+              <a 
+                href={`/hvac/login?company=${company.slug}&auto=true`}
+                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/30 transform hover:-translate-y-1 flex items-center justify-center group border-2 border-blue-500/30"
+              >
+                <svg className="h-5 w-5 mr-2 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Try Your HVAC Software
+              </a>
             </div>
 
             {/* Trust Indicators */}
@@ -138,9 +194,101 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
             </div>
           </div>
 
-          {/* Right Column - Additional Content Space */}
-          <div className="hidden lg:block">
-            {/* This space could be used for additional content like service highlights, certifications, or testimonials */}
+          {/* Right Column - Contact Form */}
+          <div className="lg:flex lg:justify-end">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl max-w-md w-full mx-auto lg:mx-0">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Get Free Estimate</h3>
+                <p className="text-gray-600">Fill out the form and we'll text you back quickly!</p>
+              </div>
+
+              {submitStatus === 'success' && (
+                <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                  Thank you! We'll text you back shortly.
+                </div>
+              )}
+
+              {submitStatus === 'error' && (
+                <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                  Sorry, there was an error. Please try again or call us directly.
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Your Name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="Your Phone Number"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Your Email (Optional)"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+
+                <div>
+                  <textarea
+                    name="message"
+                    placeholder="Tell us about your HVAC needs..."
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </div>
+                  ) : (
+                    'Get Free Estimate'
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-500">
+                  Or call us directly: 
+                  <a href={`tel:${company.phone}`} className="text-red-600 font-semibold ml-1 hover:underline">
+                    {company.phone}
+                  </a>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
