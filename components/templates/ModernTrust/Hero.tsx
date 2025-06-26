@@ -57,10 +57,28 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
 
   // Hero configuration - customizable per company
   const getHeroConfig = (company: Company) => {
+    // Get custom image first (priority)
+    const customImage = getPhotoUrl(company, 'hero_img', 'moderntrust');
+    
+    // Determine background media - custom image > video > stock image fallback
+    let backgroundMedia;
+    let mediaType: 'image' | 'video' = 'image';
+    
+    if (customImage) {
+      // Use custom image if available
+      backgroundMedia = customImage;
+      mediaType = 'image';
+    } else {
+      // Use video as fallback if no custom image
+      backgroundMedia = '/images/hvac-hero-video.mov';
+      mediaType = 'video';
+    }
+
     // Custom headlines for specific companies
     if (company.custom_domain === 'accuracyheatair.com' || company.slug === 'accuracy-heat-air-llc') {
       return {
-        image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
+        backgroundMedia,
+        mediaType,
         title: "If It's Not Right The First Time,",
         subtitle: "It's Not Accuracy",
         description: "Licensed HVAC technicians providing reliable heating and cooling solutions with guaranteed accuracy."
@@ -69,7 +87,8 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
     
     // Default configuration for all other companies
     return {
-      image: getPhotoUrl(company, 'hero_img', 'moderntrust'),
+      backgroundMedia,
+      mediaType,
       title: `Professional HVAC Service in`,
       subtitle: (company as any).display_city || company.city || 'Your Area',
       description: "Licensed technicians providing reliable heating and cooling solutions for your home and business."
@@ -80,11 +99,11 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
 
   return (
     <div className="relative min-h-[85vh] lg:min-h-[calc(100vh-80px)] flex items-center overflow-hidden">
-      {/* Single Hero Background */}
+      {/* Hero Background - Image or Video */}
       <div className="absolute inset-0">
-        {heroConfig.image && (
+        {heroConfig.mediaType === 'image' && heroConfig.backgroundMedia && (
           <Image 
-            src={heroConfig.image} 
+            src={heroConfig.backgroundMedia} 
             alt={`Professional HVAC services by ${company?.name || 'our company'}`}
             fill
             className="object-cover object-center"
@@ -93,6 +112,22 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
             sizes="100vw"
           />
         )}
+        
+        {heroConfig.mediaType === 'video' && heroConfig.backgroundMedia && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover object-center"
+          >
+            <source src={heroConfig.backgroundMedia} type="video/mp4" />
+            <source src={heroConfig.backgroundMedia} type="video/quicktime" />
+            {/* Fallback for browsers that don't support video */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-900 via-blue-800 to-blue-900"></div>
+          </video>
+        )}
+        
         <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
       </div>
 
@@ -152,15 +187,18 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
                 </div>
               </button>
 
-              <a 
-                href={`/hvac/login?company=${company.slug}&auto=true`}
-                className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/30 transform hover:-translate-y-1 flex items-center justify-center group border-2 border-blue-500/30"
-              >
-                <svg className="h-5 w-5 mr-2 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                Try Your HVAC Software
-              </a>
+              {/* Hide HVAC Software button for Accuracy Heat Air */}
+              {company.slug !== 'accuracy-heat-air-llc' && company.custom_domain !== 'accuracyheatair.com' && (
+                <a 
+                  href={`/hvac/login?company=${company.slug}&auto=true`}
+                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/30 transform hover:-translate-y-1 flex items-center justify-center group border-2 border-blue-500/30"
+                >
+                  <svg className="h-5 w-5 mr-2 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  Try Your HVAC Software
+                </a>
+              )}
             </div>
 
             {/* Trust Indicators */}
@@ -194,9 +232,10 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
             </div>
           </div>
 
-          {/* Right Column - Contact Form */}
-          <div className="lg:flex lg:justify-end">
-            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl max-w-md w-full mx-auto lg:mx-0">
+          {/* Right Column - Contact Form (hidden for Accuracy Heat Air) */}
+          {company.slug !== 'accuracy-heat-air-llc' && company.custom_domain !== 'accuracyheatair.com' && (
+            <div className="lg:flex lg:justify-end">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl max-w-md w-full mx-auto lg:mx-0">
               <div className="text-center mb-6">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Get Free Estimate</h3>
                 <p className="text-gray-600">Fill out the form and we'll text you back quickly!</p>
@@ -290,6 +329,7 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
               </div>
             </div>
           </div>
+          )}
         </div>
       </div>
 
