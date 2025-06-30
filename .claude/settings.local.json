@@ -12,7 +12,8 @@
       "Bash(npm install:*)",
       "Bash(npm run dev:*)",
       "Bash(psql:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "WebFetch(domain:help.gohighlevel.com)"
     ],
     "deny": []
   }
