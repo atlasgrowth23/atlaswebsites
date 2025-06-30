@@ -15,9 +15,10 @@ import ChatWidget from '@/components/ChatWidget';
 
 interface LayoutProps {
   company: Company;
+  isVideoIntroMode?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ company }) => {
+const Layout: React.FC<LayoutProps> = ({ company, isVideoIntroMode = false }) => {
   const router = useRouter();
   
   // Check if this is a preview mode (should NOT track analytics)
@@ -76,17 +77,19 @@ const Layout: React.FC<LayoutProps> = ({ company }) => {
       {/* Analytics tracking - only when NOT in preview mode */}
       {!isPreview && company.id && <SimpleTracker companyId={String(company.id)} />}
       
-      {/* Chat Widget - always show for testing */}
-      <ChatWidget 
-        companyId={String(company.id)}
-        companyName={company.name}
-        companyHours={company.hours || undefined}
-        companyLocation={{
-          latitude: company.latitude,
-          longitude: company.longitude
-        }}
-        companyLogo={company.logoUrl}
-      />
+      {/* Chat Widget - only show when NOT in video intro mode */}
+      {!isVideoIntroMode && (
+        <ChatWidget 
+          companyId={String(company.id)}
+          companyName={company.name}
+          companyHours={company.hours || undefined}
+          companyLocation={{
+            latitude: company.latitude,
+            longitude: company.longitude
+          }}
+          companyLogo={company.logoUrl}
+        />
+      )}
     </div>
   );
 };

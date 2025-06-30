@@ -57,19 +57,19 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
 
   // Hero configuration - customizable per company
   const getHeroConfig = (company: Company) => {
-    // Get custom image first (priority)
-    const customImage = getPhotoUrl(company, 'hero_img', 'moderntrust');
+    // Check if company has custom image (company_frames only, not template_frames)
+    const hasCustomImage = company?.company_frames && company.company_frames['hero_img'];
     
     // Determine background media - custom image > video > stock image fallback
     let backgroundMedia;
     let mediaType: 'image' | 'video' = 'image';
     
-    if (customImage) {
-      // Use custom image if available
-      backgroundMedia = customImage;
+    if (hasCustomImage) {
+      // Use custom company image if available
+      backgroundMedia = getPhotoUrl(company, 'hero_img', 'moderntrust');
       mediaType = 'image';
     } else {
-      // Use video as fallback if no custom image
+      // Use video as fallback if no custom company image
       backgroundMedia = '/images/hvac-hero-video.mov';
       mediaType = 'video';
     }
@@ -187,18 +187,6 @@ const Hero: React.FC<HeroProps> = ({ company }) => {
                 </div>
               </button>
 
-              {/* Hide HVAC Software button for Accuracy Heat Air */}
-              {company.slug !== 'accuracy-heat-air-llc' && company.custom_domain !== 'accuracyheatair.com' && (
-                <a 
-                  href={`/hvac/login?company=${company.slug}&auto=true`}
-                  className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/30 transform hover:-translate-y-1 flex items-center justify-center group border-2 border-blue-500/30"
-                >
-                  <svg className="h-5 w-5 mr-2 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  Try Your HVAC Software
-                </a>
-              )}
             </div>
 
             {/* Trust Indicators */}

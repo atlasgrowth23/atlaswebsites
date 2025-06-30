@@ -27,6 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Get video data for this company (hardcoded for testing)
     const videoMapping: Record<string, any> = {
+      // Alabama Test Companies
       'ready-heating-and-air-llc': {
         videoId: 'n7b7b7cf2w1',
         videoLink: 'https://app.repliq.co/videos/n7b7b7cf2w1',
@@ -47,6 +48,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         videoPreview: 'https://app.repliq.co/medias/n71ea2cc4w1',
         firstName: 'Robert',
         lastName: 'Suun'
+      },
+      // Arkansas Test Companies
+      'chill-factor-mechanical': {
+        videoId: 'n7b7b7cf2w1',
+        videoLink: 'https://app.repliq.co/videos/n7b7b7cf2w1',
+        videoPreview: 'https://app.repliq.co/medias/n7b7b7cf2w1',
+        firstName: 'Jared',
+        lastName: 'Thompson'
+      },
+      'airpro': {
+        videoId: 'n799e78ebw1',
+        videoLink: 'https://app.repliq.co/videos/n799e78ebw1',
+        videoPreview: 'https://app.repliq.co/medias/n799e78ebw1',
+        firstName: 'Jared',
+        lastName: 'Thompson'
+      },
+      'hook-mechanical-llc': {
+        videoId: 'n71ea2cc4w1',
+        videoLink: 'https://app.repliq.co/videos/n71ea2cc4w1', 
+        videoPreview: 'https://app.repliq.co/medias/n71ea2cc4w1',
+        firstName: 'Jared',
+        lastName: 'Thompson'
       }
     };
 
